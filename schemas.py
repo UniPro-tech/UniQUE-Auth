@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
 from datetime import datetime
+from pydantic import BaseModel, Field
 
 class UserBase(BaseModel):
     user_id: str = Field(..., min_length=1, max_length=15, regex=r'^[a-zA-Z0-9_]+$')
