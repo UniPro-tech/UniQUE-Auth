@@ -1,10 +1,10 @@
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime
 
-from .database import Base
+import database
 
 
-class User(Base):
+class User(database.Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
