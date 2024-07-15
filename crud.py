@@ -23,8 +23,7 @@ def get_user_by_email_password(
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
     return (db.query(models.User)
             .filter(models.User.email == email,
-                    models.User.hashed_password == hashed_password
-                    )
+                    models.User.hashed_password == hashed_password)
             .first())
 
 
@@ -35,3 +34,9 @@ def create_user(db: Session, user: schemas.UserCreate) -> schemas.User:
     db.commit()
     db.refresh(db_user)
     return db_user
+
+
+def delete_user(db: Session, user_id: int):
+    db.query(models.User).filter(models.User.id == user_id).delete()
+    db.commit()
+    return
