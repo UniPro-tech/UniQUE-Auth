@@ -1,7 +1,5 @@
 from datetime import datetime
-
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, DateTime
 
 from .database import Base
 
@@ -16,7 +14,3 @@ class User(Base):
     hashed_password = Column(String)
 
     created_at = Column(DateTime, default=datetime.now("UTC"))
-
-
-
-
