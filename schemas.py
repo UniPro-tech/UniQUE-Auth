@@ -2,8 +2,8 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 
 class UserBase(BaseModel):
-    name: str = Field(..., min_length=1, max_length=32, regex=r'^[a-zA-Z0-9_]+$')
-    email: str = Field(..., min_length=1, max_length=15, regex=r'/^[a-z\d][\w.-]*@[\w.-]+\.[a-z\d]+$/i')
+    user_id: str = Field(..., min_length=1, max_length=15, regex=r'^[a-zA-Z0-9_]+$')
+    email: str = Field(..., regex=r'/^[a-z\d][\w.-]*@[\w.-]+\.[a-z\d]+$/i')
 
 
 class UserCreate(UserBase):
@@ -12,6 +12,7 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
+    name: str = Field(..., min_length=1, max_length=32, regex=r'^[a-zA-Z0-9_]+$')
     created_at: datetime
 
     class Config:
