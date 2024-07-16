@@ -1,4 +1,5 @@
 import hashlib
+import json
 from sqlalchemy.orm import Session
 
 import models
@@ -36,7 +37,7 @@ def create_user(db: Session, user: schemas.UserCreate) -> schemas.User:
     return db_user
 
 
-def delete_user(db: Session, user_id: int):
+def delete_user(db: Session, user_id: int) -> json:
     db.query(models.User).filter(models.User.id == user_id).delete()
     db.commit()
-    return
+    return {"message": "User deleted"}
