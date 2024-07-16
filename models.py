@@ -1,10 +1,10 @@
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime
 
-import database
+from database import Base
 
 
-class User(database.Base):
+class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
@@ -13,4 +13,4 @@ class User(database.Base):
     email = Column(String(150), unique=True, index=True)
     hashed_password = Column(String)
 
-    created_at = Column(DateTime, default=datetime.now("UTC"))
+    created_at = Column(DateTime, default=datetime.now())
