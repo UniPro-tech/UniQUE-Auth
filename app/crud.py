@@ -1,7 +1,7 @@
 import hashlib
 import json
+import time
 from sqlalchemy.orm import Session
-
 import models
 import schemas
 
@@ -30,7 +30,9 @@ def get_user_by_email_password(
 
 def create_user(db: Session, user: schemas.UserCreate) -> schemas.User:
     hashed_password = hashlib.sha256(user.password.encode()).hexdigest()
-    db_user = models.User(email=user.email, hashed_password=hashed_password)
+    db_user = models.User(
+        email=user.email, hashed_password=hashed_password,
+        name=user.name, user_id=user.user_id, created_at=int(time.time()))
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
