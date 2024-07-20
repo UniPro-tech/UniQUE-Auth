@@ -5,6 +5,7 @@ from ...database import get_db
 
 router = APIRouter(
     prefix="/users/invite",
+    tags=["users", "invite"],
 )
 
 
