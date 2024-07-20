@@ -1,3 +1,5 @@
 fastapi
 sqlalchemy
 pydantic
+PyJWT
+python-dotenv
