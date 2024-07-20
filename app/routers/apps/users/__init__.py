@@ -5,7 +5,7 @@ from ....database import get_db
 
 router = APIRouter(
     prefix="/apps",
-    tags=["apps","users"],
+    tags=["apps", "users"],
 )
 
 
