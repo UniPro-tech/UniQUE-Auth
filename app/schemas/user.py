@@ -32,7 +32,7 @@ class User(UserBase):
         orm_mode = True
 
 
-class MeBase(UserBase):
+class Me(UserBase):
     email: str
     
     is_locked: bool
@@ -41,7 +41,7 @@ class MeBase(UserBase):
     deleted_at: int
 
 
-class AdminBase(UserBase):
+class Admin(UserBase):
     permission_bit: int
     is_enable: bool 
     is_enable: bool
