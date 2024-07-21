@@ -38,3 +38,15 @@ def generate_access_token(
     }
 
     return generate_token(payload=payload)
+
+
+def generate_refresh_token(
+        token_id: int
+        ):
+    payload = {
+        'iss': 'https://portal.uniproject-tech.net',
+        'sub': token_id,
+        'exp': int(time.time()) + 1209600,
+    }
+
+    return generate_token(payload=payload)
