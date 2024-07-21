@@ -19,6 +19,7 @@ class AccessToken(BaseToken):
 
 
 class RefreshToken(BaseToken):
+    token_id: int = Field(..., description="TokenID")
 
     class Config:
         orm_mode = True
