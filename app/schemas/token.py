@@ -1,6 +1,7 @@
 from typing import List
-from pydantic import BaseModel, Field
 import time
+from pydantic import BaseModel, Field
+from nanoid import generate
 
 
 class BaseToken(BaseModel):
@@ -20,8 +21,8 @@ class AccessToken(BaseToken):
 
 
 class RefreshToken(BaseToken):
-    token_id: int = Field(..., description="TokenID")
+    token_id: int = Field(..., default=generate(), description="TokenID")
     exp: int = Field(..., default=time.time() + 1209600, description="有効期限")
-    
+
     class Config:
         orm_mode = True
