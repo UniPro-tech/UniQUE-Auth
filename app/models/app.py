@@ -1,5 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy.orm import relationship
 from ..database import Base
+from .middle_table import user_apps
 
 
 class App(Base):
@@ -17,3 +19,6 @@ class App(Base):
     is_active = Column(Boolean, default=True)
     is_locked = Column(Boolean, default=False)
     is_banned = Column(Boolean, default=False)
+
+    # 多対多リレーション
+    users = relationship('User', secondary=user_apps, back_populates='apps')

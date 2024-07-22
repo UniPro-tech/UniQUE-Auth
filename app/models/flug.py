@@ -1,5 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy.orm import relationship
 from ..database import Base
+from .middle_table import user_flags
 
 
 class Flag(Base):
@@ -14,3 +16,6 @@ class Flag(Base):
     updated_at = Column(Integer)
     deleted_at = Column(Integer)
     is_deleted = Column(Boolean, default=False)
+
+    # 多対多リレーション
+    users = relationship('User', secondary=user_flags, back_populates='flags')

@@ -1,5 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy.orm import relationship
 from ..database import Base
+from .middle_table import user_roles
 
 
 class Role(Base):
@@ -14,3 +16,5 @@ class Role(Base):
     read_only = Column(Boolean, default=False)
     can_assign = Column(Boolean, default=False)
 
+    # 多対多リレーション
+    users = relationship('User', secondary=user_roles, back_populates='roles')
