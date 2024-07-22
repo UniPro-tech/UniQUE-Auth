@@ -53,17 +53,10 @@ def generate_refresh_token(
 
 def verified_token(token: str):
     global __SQLALCHEMY_DATABASE_URI
-    try:
-        decoded_jwt = jwt.decode(
+
+    decoded_jwt = jwt.decode(
             jwt=token, key=__SQLALCHEMY_DATABASE_URI,
             issuer="https://portal.uniproject-tech.net"
             )
-    except jwt.ExpiredSignatureError:
-        # 有効期限切れ
-        return False, None
-    except jwt.InvalidTokenError:
-        return False, None
-    except jwt.InvalidIssuerError:
-        return False, None
-    
+
     return True, decoded_jwt
