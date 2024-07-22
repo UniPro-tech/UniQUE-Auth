@@ -24,11 +24,3 @@ user_apps = Table(
     Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
     Column('app_id', Integer, ForeignKey('apps.id'), primary_key=True)
 )
-
-# AppとFlagの多対多リレーション
-app_flags = Table(
-    'app_flags',
-    Base.metadata,
-    Column('app_id', Integer, ForeignKey('apps.id'), primary_key=True),
-    Column('flag_id', Integer, ForeignKey('flags.id'), primary_key=True)
-)
