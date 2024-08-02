@@ -8,14 +8,17 @@ class App(Base):
     __tablename__ = "apps"
 
     id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(String, index=True)
+    client_id = Column(String)
     name = Column(String, index=True)
+    image_url = Column(String)
     description = Column(String, index=True)
-    owner_id = Column(Integer, index=True)
-    created_at = Column(Integer)
-    updated_at = Column(Integer)
-    deleted_at = Column(Integer)
+    enabled = Column(Boolean, default=True)
     is_locked = Column(Boolean, default=False)
 
     # 多対多リレーション
-    users = relationship('User', secondary=user_apps, back_populates='apps')
+    users = relationship(
+        'User', secondary=user_apps, back_populates='apps'
+        )
+
+    # 多対一リレーション
+    logs = relationship('AppLog', back_populates='app')

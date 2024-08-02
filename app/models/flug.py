@@ -10,12 +10,12 @@ class Flag(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     description = Column(String, index=True)
-    owner_id = Column(Integer, index=True)
-    users = Column(String, index=True)
-    created_at = Column(Integer)
-    updated_at = Column(Integer)
-    deleted_at = Column(Integer)
-    is_deleted = Column(Boolean, default=False)
+    image_url = Column(String, index=True)
 
     # 多対多リレーション
-    users = relationship('User', secondary=user_flags, back_populates='flags')
+    users = relationship(
+        'User', secondary=user_flags, back_populates='flags'
+        )
+
+    # 多対一リレーション
+    logs = relationship('UserLog', back_populates='flag')
