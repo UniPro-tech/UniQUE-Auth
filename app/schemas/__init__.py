@@ -1,8 +1,7 @@
 from .user import (
     User,
     UserCreate,
-    Me,
-    Admin
+    Me
 )
 from .token import (
     AccessToken,
