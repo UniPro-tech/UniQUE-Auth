@@ -2,7 +2,10 @@ import os
 import time
 from typing import List
 import jwt
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from dotenv import load_dotenv
+from ..schemas.token import AccessToken, RefreshToken
+
 
 # .envファイルの内容を読み込見込む
 load_dotenv(dotenv_path='../../.env')
@@ -58,12 +61,34 @@ def generate_refresh_token(
     return generate_token(payload=payload)
 
 
-def verified_token(token: str):
+def decode_token(token: str):
     global __SQLALCHEMY_DATABASE_URI
-
-    decoded_jwt = jwt.decode(
+    try:
+        decoded_jwt = jwt.decode(
             jwt=token, key=__SQLALCHEMY_DATABASE_URI,
             issuer="https://portal.uniproject-tech.net"
             )
 
-    return True, decoded_jwt
+        AccessToken()
+
+        return decoded_jwt
+
+    except ExpiredSignatureError:
+        # トークンの有効期限が切れた場合の処理
+        print("Token has expired")
+        return None
+
+    except InvalidTokenError:
+        # その他のトークンの無効エラーの処理
+        print("Invalid token")
+        return None
+
+    except Exception as e:
+        # その他の予期しないエラーの処理
+        print(f"An unexpected error occurred: {e}")
+        return None
+
+
+def verified_acsess_token(token: str):
+
+    decode_token(token=token)
