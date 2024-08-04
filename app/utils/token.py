@@ -1,4 +1,5 @@
 import os
+import time
 from typing import List
 import jwt
 from dotenv import load_dotenv
@@ -25,27 +26,33 @@ def generate_token(
 
 
 def generate_access_token(
-        client_id: int, user_id: int,
-        scope: List[str], exp: int
+        client_app_id: int, client_user_id: int,
+        scope: List[str], exp: int, uuid: str
         ):
     payload = {
         'iss': 'https://portal.uniproject-tech.net',
-        'sub': client_id,
-        'user': user_id,
+        'sub': client_app_id,  # AppのClientID
         'exp': exp,
-        'scope': scope
+        'iat': int(time.time()),
+        'scope': scope,
+        'for': client_user_id,
+        'jti': uuid
     }
 
     return generate_token(payload=payload)
 
 
 def generate_refresh_token(
-        token_id: int, exp: int
+        exp: int, uuid: str,
+        client_user_id: int, client_app_id: int
         ):
     payload = {
         'iss': 'https://portal.uniproject-tech.net',
-        'sub': token_id,
+        'sub': client_app_id,
         'exp': exp,
+        'iat': int(time.time()),
+        'jti': uuid,
+        'for': client_user_id
     }
 
     return generate_token(payload=payload)
