@@ -11,7 +11,7 @@ class UserBase(BaseModel):
                               min_length=1, max_length=32,
                               pattern=r'^[a-zA-Z0-9_]+$'
                               )
-    is_bot: bool = Field(..., default=False)
+    is_bot: bool = Field(default=False)
 
 
 class UserCreate(UserBase):
@@ -26,7 +26,7 @@ class UserCreate(UserBase):
 
 
 class User(UserBase):
-    description: str = Field(..., max_length=1024)
+    description: str = Field(max_length=1024)
 
     class Config:
         orm_mode = True
@@ -39,12 +39,3 @@ class Me(UserBase):
     created_at: int
     updated_at: int
     deleted_at: int
-
-
-class Admin(UserBase):
-    permission_bit: int
-    is_enable: bool 
-    is_enable: bool
-    readonly: bool
-    can_assign: bool
-    sort: 0
