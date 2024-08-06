@@ -13,7 +13,6 @@ __all__ = [
     "User",
     "UserCreate",
     "Me",
-    "Admin",
     "AccessToken",
     "RefreshToken",
 ]
