@@ -24,19 +24,3 @@ user_apps = Table(
     Column('user_id', Integer, ForeignKey('users.id')),
     Column('app_id', Integer, ForeignKey('apps.id'))
 )
-
-# userとclientの多対多リレーション
-user_clients = Table(
-    'user_clients',
-    Base.metadata,
-    Column('user_id', Integer, ForeignKey('users.id')),
-    Column('client_id', Integer, ForeignKey('clients'))
-)
-
-# appとclientの多対多リレーション
-app_clients = Table(
-    'app_clients',
-    Base.metadata,
-    Column('app_id', Integer, ForeignKey('apps.id')),
-    Column('client_id', Integer, ForeignKey('clients'))
-)

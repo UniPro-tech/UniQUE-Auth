@@ -22,3 +22,4 @@ class App(Base):
 
     # 多対一リレーション
     logs = relationship('AppLog', back_populates='app')
+    clients = relationship('Client', back_populates='app')

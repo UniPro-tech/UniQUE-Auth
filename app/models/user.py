@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 from ..database import Base
-from .middle_table import user_roles, user_flags, user_apps
+from .middle_table import user_roles, user_flags, user_apps, user_clients
 
 
 class User(Base):
@@ -26,6 +26,7 @@ class User(Base):
         )
     # 多対一リレーション
     logs = relationship('UserLog', back_populates='user')
+    clients = relationship('Client', back_populates='user')
 
     email_verified = Column(Boolean, default=False)
     is_enable = Column(Boolean, default=False)

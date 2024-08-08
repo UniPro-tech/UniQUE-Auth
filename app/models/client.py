@@ -1,18 +1,14 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from ..database import Base
-from .middle_table import user_clients
 
 
 class Client(Base):
-    __tablename__ = "clients"
+    __tablename__ = 'clients'
+    id = Column(Integer, primary_key=True)
+    is_enable = Column(Boolean, default=False)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    app_id = Column(Integer, ForeignKey('apps.id'))
 
-    id = Column(Integer, primary_key=True, index=True)
-    type = Column(String, index=True)
-    is_enabled = Column(Boolean, default=True)
-    is_locked = Column(Boolean, default=False)
-
-    # 多対多リレーション
-    users = relationship(
-        'User', secondary=user_clients, back_populates='clients'
-        )
+    user = relationship('User', back_populates='clients')
+    app = relationship('App', back_populates='clients')
