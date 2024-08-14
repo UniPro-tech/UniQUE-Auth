@@ -24,3 +24,10 @@ user_apps = Table(
     Column('user_id', Integer, ForeignKey('users.id')),
     Column('app_id', Integer, ForeignKey('apps.id'))
 )
+
+app_admin_users = Table(
+    "app_admin_users",
+    Base.metadata,
+    Column("app_id", Integer, ForeignKey("apps.id")),
+    Column("user_id", Integer, ForeignKey("users.id"))
+)

@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 from ..database import Base
-from .middle_table import user_roles, user_flags, user_apps, user_clients
+from .middle_table import user_roles, user_flags, user_apps, app_admin_users
 
 
 class User(Base):
@@ -23,6 +23,9 @@ class User(Base):
         )
     apps = relationship(
         'App', secondary=user_apps, back_populates='users'
+        )
+    admin_apps = relationship(
+        'App', secondary=app_admin_users, back_populates='admin_users'
         )
     # 多対一リレーション
     logs = relationship('UserLog', back_populates='user')
