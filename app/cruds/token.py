@@ -1,5 +1,4 @@
 import os
-from sqlalchemy.orm import Session
 from uuid_extensions import uuid7str
 import jwt
 from .. import schemas
@@ -33,7 +32,7 @@ def create_access_token(
         headers={'alg': token.alg, 'typ': token.typ}
     )
 
-    return access_token
+    return access_token, uuid
 
 
 def create_refresh_token(
@@ -54,4 +53,4 @@ def create_refresh_token(
         algorithm=token.alg,
         headers={'alg': token.alg, 'typ': token.typ}
     )
-    return refresh_token
+    return refresh_token, uuid
