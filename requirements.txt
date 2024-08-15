@@ -4,3 +4,4 @@ pydantic
 PyJWT
 python-dotenv
 nanoid
+uuid7
