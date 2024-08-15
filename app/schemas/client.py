@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from typing import List
 
 
 class BaseClient(BaseModel):
@@ -26,7 +27,7 @@ class UserClient(BaseClient):
         <is_enable> <bool>:
                 有効かどうか
     """
-    users: list[int] = Field([], title="ユーザIDのリスト")
+    users: List[int] = Field([], title="ユーザIDのリスト")
 
 
 class AppClient(BaseClient):
@@ -38,4 +39,4 @@ class AppClient(BaseClient):
         <is_enable> <bool>:
                 有効かどうか
     """
-    apps: list[int] = Field([], title="アプリケーションIDのリスト")
+    apps: List[int] = Field([], title="アプリケーションIDのリスト")

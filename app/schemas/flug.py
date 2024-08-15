@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from typing import List
 
 
 class BaseFlug(BaseModel):
@@ -7,7 +8,7 @@ class BaseFlug(BaseModel):
     """
     id: int
     name: str = Field(..., min_length=1, max_length=32)
-    users: list[int] = Field(default=[])
+    users: List[int] = Field(default=[])
 
 
 class Flug(BaseFlug):
@@ -16,8 +17,8 @@ class Flug(BaseFlug):
     """
     description: str = Field(..., max_length=1024)
     image_url: str = Field(..., max_length=256)
-    users: list[int] = Field(default=[])
-    logs: list[int] = Field(default=[])
+    users: List[int] = Field(default=[])
+    logs: List[int] = Field(default=[])
 
 
 class CreateFlug(BaseFlug):

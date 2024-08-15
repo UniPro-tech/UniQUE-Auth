@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from typing import List
 
 
 class UserBase(BaseModel):
@@ -82,4 +83,4 @@ class Me(UserBase):
                        )
     email_verified: bool = Field(default=False)
     is_enable: bool = Field(default=False)
-    roles: list[] = Field(default=[])
+    roles: List[int] = Field(default=[])
