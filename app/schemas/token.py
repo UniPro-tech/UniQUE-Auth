@@ -24,9 +24,10 @@ class BaseToken(BaseModel):
     alg: str = Field(default="HS256")
     typ: str = Field(default="JWT")
     iss: str = Field(default="https://portal.uniproject-tech.net")
-    jti: int = Field(default=generate(), description="TokenID")
+    jti: int = Field(..., description="TokenID")
     sub: int = Field(..., description="ClientAppID")
     for_: int = Field(..., description="ClientUserID")
+    iat: int = Field(default=int(time.time()), description="発行日時")
 
 
 class AccessToken(BaseToken):
