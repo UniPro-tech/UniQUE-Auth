@@ -27,7 +27,7 @@ class UserBase(BaseModel):
     is_bot: bool = Field(default=False)
 
 
-class UserCreate(UserBase):
+class CreateUser(UserBase):
     """
     Userの作成用クラス
     Args:
