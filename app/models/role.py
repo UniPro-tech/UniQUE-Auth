@@ -19,4 +19,4 @@ class Role(Base):
         )
 
     # 多対一リレーション
-    logs = relationship('RoleLog', back_populates='role')
+    logs = relationship('Log', back_populates='app')

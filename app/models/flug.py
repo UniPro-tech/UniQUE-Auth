@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from ..database import Base
 from .middle_table import user_flags
@@ -18,4 +18,4 @@ class Flag(Base):
         )
 
     # 多対一リレーション
-    logs = relationship('UserLog', back_populates='flag')
+    logs = relationship('Log', back_populates='app')

@@ -28,7 +28,7 @@ class User(Base):
         'App', secondary=app_admin_users, back_populates='admin_users'
         )
     # 多対一リレーション
-    logs = relationship('UserLog', back_populates='user')
+    logs = relationship('Log', back_populates='app')
     clients = relationship('Client', back_populates='user')
 
     email_verified = Column(Boolean, default=False)
