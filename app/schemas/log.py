@@ -20,7 +20,7 @@ class UserLog(BaseLog):
     user_id: int
 
     class Config:
-        orm_mode = True
+        model_validate = True
 
 
 class AppLog(BaseLog):
@@ -31,7 +31,7 @@ class AppLog(BaseLog):
     app_id: int
 
     class Config:
-        orm_mode = True
+        model_validate = True
 
 
 class FlugLog(BaseLog):
@@ -42,7 +42,7 @@ class FlugLog(BaseLog):
     flug_id: int
 
     class Config:
-        orm_mode = True
+        model_validate = True
 
 
 class RoleLog(BaseLog):
@@ -53,4 +53,4 @@ class RoleLog(BaseLog):
     role_id: int
 
     class Config:
-        orm_mode = True
+        model_validate = True

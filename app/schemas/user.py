@@ -43,7 +43,7 @@ class CreateUser(UserBase):
                                )
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class User(UserBase):
@@ -56,7 +56,7 @@ class User(UserBase):
     description: str = Field(max_length=1024)
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class Me(UserBase):
@@ -84,3 +84,6 @@ class Me(UserBase):
     flugs: List[int] = Field(default=[])
     apps: List[int] = Field(default=[])
     admin_apps: List[int] = Field(default=[])
+
+    class Config:
+        from_attributes = True

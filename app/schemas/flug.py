@@ -27,4 +27,4 @@ class CreateFlug(BaseFlug):
     """
 
     class Config:
-        orm_mode = True
+        model_validate = True

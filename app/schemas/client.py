@@ -29,6 +29,9 @@ class UserClient(BaseClient):
     """
     users: List[int] = Field([], title="ユーザIDのリスト")
 
+    class Config:
+        model_validate = True
+
 
 class AppClient(BaseClient):
     """
@@ -40,3 +43,6 @@ class AppClient(BaseClient):
                 有効かどうか
     """
     apps: List[int] = Field([], title="アプリケーションIDのリスト")
+
+    class Config:
+        model_validate = True

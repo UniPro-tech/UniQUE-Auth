@@ -16,11 +16,11 @@ class Role(RoleBase):
     logs: List[int] = Field(default=[])
 
     class Config:
-        orm_mode = True
+        model_validate = True
 
 
 class CreateRole(RoleBase):
     description: str = Field(..., max_length=255)
 
     class Config:
-        orm_mode = True
+        model_validate = True

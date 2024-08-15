@@ -19,4 +19,4 @@ class App(BaseApp):
 class CreateApp(BaseApp):
 
     class Config:
-        orm_mode = True
+        model_validate = True
