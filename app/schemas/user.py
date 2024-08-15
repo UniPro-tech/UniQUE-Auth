@@ -12,8 +12,6 @@ class UserBase(BaseModel):
                 ユーザー名
         <display_name> <str>:
                 表示名
-        <is_bot> <bool>:
-                ボットかどうか
     """
     id: int
     name: str = Field(...,
@@ -24,7 +22,6 @@ class UserBase(BaseModel):
                               min_length=1, max_length=32,
                               pattern=r'^[a-zA-Z0-9_]+$'
                               )
-    is_bot: bool = Field(default=False)
 
 
 class CreateUser(UserBase):
@@ -40,10 +37,10 @@ class CreateUser(UserBase):
                        min_length=1, max_length=256,
                        pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
                        )
-    password: str = Field(...,
-                          min_length=8, max_length=256,
-                          pattern=r'^[a-zA-Z0-9_]+$'
-                          )
+    hash_password: str = Field(...,
+                               min_length=8, max_length=256,
+                               pattern=r'^[a-zA-Z0-9_]+$'
+                               )
 
     class Config:
         orm_mode = True
@@ -84,3 +81,6 @@ class Me(UserBase):
     email_verified: bool = Field(default=False)
     is_enable: bool = Field(default=False)
     roles: List[int] = Field(default=[])
+    flugs: List[int] = Field(default=[])
+    apps: List[int] = Field(default=[])
+    admin_apps: List[int] = Field(default=[])
