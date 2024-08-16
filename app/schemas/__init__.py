@@ -19,6 +19,10 @@ from .flug import (
     Flug,
     CreateFlug
 )
+from .client import (
+    UserClient,
+    AppClient
+)
 
 
 __all__ = [
@@ -32,5 +36,7 @@ __all__ = [
     "App",
     "CreateApp",
     "Flug",
-    "CreateFlug"
+    "CreateFlug",
+    "UserClient",
+    "AppClient",
 ]
