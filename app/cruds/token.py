@@ -1,7 +1,9 @@
 import os
+from sqlalchemy.orm import Session
 from uuid_extensions import uuid7str
 import jwt
 from .. import schemas
+from ..models import Token
 from dotenv import load_dotenv
 
 
@@ -54,3 +56,32 @@ def create_refresh_token(
         headers={'alg': token.alg, 'typ': token.typ}
     )
     return refresh_token, uuid
+
+
+async def add_db_token(
+        db: Session, jti: str, user_id: int,
+        app_id: int, is_enabled: bool = True
+        ):
+    token = Token(
+        tokenid=jti, userid=user_id,
+        appid=app_id, is_enabled=is_enabled
+        )
+    db.add(token)
+    db.commit()
+    db.refresh(token)
+    return token
+
+
+async def get_db_token(db: Session, jti: str):
+    token = db.query(Token).filter(Token.tokenid == jti).first()
+    return token
+
+
+async def update_db_token(db: Session, jti: str, is_enabled: bool):
+    token = db.query(Token).filter(Token.tokenid == jti).first()
+    if token:
+        token.is_enabled = is_enabled
+        db.commit()
+        db.refresh(token)
+        return token
+    return None
