@@ -1,6 +1,8 @@
 from ..models import User as UserModel
-from ..schemas import User as UserSchema
-from ..schemas import CreateUser as CreateUserSchema
+from ..schemas import (
+    User as UserSchema,
+    CreateUser as CreateUserSchema
+)
 
 
 async def get_user_by_email(db, email):
