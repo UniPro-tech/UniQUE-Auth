@@ -1,3 +1,4 @@
+from sqlalchemy.orm import Session
 from ..models import User as UserModel
 from ..schemas import (
     User as UserSchema,
@@ -5,23 +6,23 @@ from ..schemas import (
 )
 
 
-async def get_user_by_email(db, email):
+async def get_user_by_email(db: Session, email: str):
     user = db.query(UserModel).filter(UserModel.email == email).first()
     return UserSchema.model_validate(user) if user else None
 
 
-async def get_user_by_id(db, user_id):
+async def get_user_by_id(db: Session, user_id: int):
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     return UserSchema.model_validate(user) if user else None
 
 
-async def get_users(db, skip: int = 0, limit: int = 100):
+async def get_users(db: Session, skip: int = 0, limit: int = 100):
     # WARNING: この関数を使用するユーザーは制限すること。
     users = db.query(UserModel).offset(skip).limit(limit).all()
     return [UserSchema.model_validate(user) for user in users]
 
 
-async def create_user(db, user: CreateUserSchema):
+async def create_user(db: Session, user: CreateUserSchema):
     user = UserModel(**user.model_dump())
     db.add(user)
     db.commit()
@@ -29,7 +30,7 @@ async def create_user(db, user: CreateUserSchema):
     return UserSchema.model_validate(user)
 
 
-async def update_user(db, user_id: int, user: CreateUserSchema):
+async def update_user(db: Session, user_id: int, user: CreateUserSchema):
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if user:
         user.update(**user.model_dump())
@@ -39,7 +40,7 @@ async def update_user(db, user_id: int, user: CreateUserSchema):
     return None
 
 
-async def delete_user(db, user_id: int):
+async def delete_user(db: Session, user_id: int):
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if user:
         db.delete(user)
