@@ -81,7 +81,7 @@ class Me(UserBase):
     email_verified: bool = Field(default=False)
     is_enable: bool = Field(default=False)
     roles: List[int] = Field(default=[])
-    flugs: List[int] = Field(default=[])
+    flags: List[int] = Field(default=[])
     apps: List[int] = Field(default=[])
     admin_apps: List[int] = Field(default=[])
 

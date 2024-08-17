@@ -34,12 +34,12 @@ class AppLog(BaseLog):
         model_validate = True
 
 
-class FlugLog(BaseLog):
+class FlagLog(BaseLog):
     """
-    FlugLogの詳細クラス
+    flagLogの詳細クラス
     """
     user_id: int
-    flug_id: int
+    flag_id: int
 
     class Config:
         model_validate = True

@@ -4,8 +4,8 @@ from ..database import Base
 from .middle_table import user_flags
 
 
-class Flug(Base):
-    __tablename__ = "flugs"
+class Flag(Base):
+    __tablename__ = "flags"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)

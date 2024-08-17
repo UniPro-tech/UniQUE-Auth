@@ -15,7 +15,7 @@ from .app import (
     App,
     CreateApp
 )
-from .flug import (
+from .flag import (
     Flug,
     CreateFlug
 )

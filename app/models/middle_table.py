@@ -14,7 +14,7 @@ user_flags = Table(
     'user_flags',
     Base.metadata,
     Column('user_id', Integer, ForeignKey('users.id')),
-    Column('flag_id', Integer, ForeignKey('flugs.id'))
+    Column('flag_id', Integer, ForeignKey('flags.id'))
 )
 
 # UserとAppの多対多リレーション
