@@ -16,8 +16,8 @@ from .app import (
     CreateApp
 )
 from .flag import (
-    Flug,
-    CreateFlug
+    Flag,
+    CreateFlag
 )
 from .client import (
     UserClient,
@@ -27,7 +27,7 @@ from .log import (
     AppLog,
     UserLog,
     RoleLog,
-    FlugLog,
+    FlagLog,
 )
 
 
@@ -41,12 +41,12 @@ __all__ = [
     "CreateRole",
     "App",
     "CreateApp",
-    "Flug",
-    "CreateFlug",
+    "Flag",
+    "CreateFlag",
     "UserClient",
     "AppClient",
     "AppLog",
     "UserLog",
     "RoleLog",
-    "FlugLog",
+    "FlagLog",
 ]
