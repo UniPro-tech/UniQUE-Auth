@@ -1,7 +1,7 @@
 from .app import App
 from .user import User
 from .role import Role
-from .flug import Flag
+from .flug import Flug
 from .client import Client
 from .token import Token
 from .log import (
@@ -17,7 +17,7 @@ __all__ = [
     "App",
     "User",
     "Role",
-    "Flag",
+    "Flug",
     "Client",
     "Token",
     "AppLog",
