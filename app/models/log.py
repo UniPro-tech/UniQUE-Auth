@@ -4,17 +4,6 @@ from sqlalchemy.orm import relationship
 from ..database import Base
 
 
-class Log(Base):
-    __tablename__ = 'logs'
-
-    log_id = Column(Integer, primary_key=True, autoincrement=True)
-    action_type = Column(String(50), nullable=False)
-    user_id = Column(Integer, nullable=False, index=True)
-    app_id = Column(Integer, nullable=False, index=True)
-    details = Column(String(255))
-    timestamp = Column(Integer, default=int(time.time()))
-
-
 class UserLog(Base):
     __tablename__ = 'user_logs'
 
@@ -23,6 +12,7 @@ class UserLog(Base):
     action_at = Column(Integer, default=int(time.time()))
     description = Column(String(255))
     ipadress = Column(String(50))
+    timestamp = Column(Integer, default=int(time.time()))
 
     user = relationship('User', back_populates='logs')
 
@@ -35,6 +25,7 @@ class RoleLog(Base):
     action_at = Column(Integer, default=int(time.time()))
     action_user = Column(Integer, nullable=False)
     description = Column(String(255))
+    timestamp = Column(Integer, default=int(time.time()))
 
     role = relationship('Role', back_populates='logs')
 
@@ -47,6 +38,7 @@ class FlagLog(Base):
     action_at = Column(Integer, default=int(time.time()))
     action_user = Column(Integer, nullable=False)
     description = Column(String(255))
+    timestamp = Column(Integer, default=int(time.time()))
 
     flag = relationship('Flag', back_populates='logs')
 
@@ -59,6 +51,7 @@ class AppLog(Base):
     action_at = Column(Integer, default=int(time.time()))
     action_user = Column(Integer, nullable=False)
     description = Column(String(255))
+    timestamp = Column(Integer, default=int(time.time()))
 
     app = relationship('App', back_populates='logs')
 
@@ -71,5 +64,6 @@ class ClientLog(Base):
     action_at = Column(Integer, default=int(time.time()))
     action_user = Column(Integer, nullable=False)
     description = Column(String(255))
+    timestamp = Column(Integer, default=int(time.time()))
 
     client = relationship('Client', back_populates='logs')
