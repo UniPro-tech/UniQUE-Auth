@@ -7,13 +7,10 @@ class BaseClient(BaseModel):
     Args:
         <id> <int>:
                 クライアントID
-        <type_> <str>:
-                クライアントの種類(User, App)
         <is_enable> <bool>:
                 有効かどうか
     """
     id: int
-    type_: str
     is_enable: bool
 
 

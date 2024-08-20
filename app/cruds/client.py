@@ -10,11 +10,6 @@ from ..models import (
 )
 
 
-async def get_client_by_name(db: Session, name: str):
-    client = db.query(ClientModel).filter(ClientModel.name == name).first()
-    return UserClientSchema.model_validate(client) if client else None
-
-
 async def get_client_by_id(db: Session, client_id: int):
     client = db.query(ClientModel).filter(ClientModel.id == client_id).first()
     return UserClientSchema.model_validate(client) if client else None
