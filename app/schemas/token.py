@@ -1,4 +1,3 @@
-from typing import List
 import time
 from pydantic import BaseModel, Field
 
@@ -38,8 +37,9 @@ class AccessToken(BaseToken):
         <exp> <int>:
                 有効期限(AccessTokenは7日間)
     """
-    scope: List[str] = Field(..., description="permissions")
+    scope: int = Field(..., description="permissions")
     exp: int = Field(default=time.time() + 604800, description="有効期限")
+    is_geted: bool = Field(default=False, description="取得済みかどうか")
 
     class Config:
         model_validate = True
