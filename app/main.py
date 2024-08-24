@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from .routers import apps, flugs, users, token, roles
-from .routers.apps import (
+from routers import apps, flugs, users, token, roles
+from routers.apps import (
     users as apps_users,
     list as apps_list
     )
@@ -26,7 +26,9 @@ from .database import engine, Base
 # Create the database tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(
+    root_path="/api/v1"
+)
 
 # apps配下
 app.include_router(apps.router)
