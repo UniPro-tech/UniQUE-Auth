@@ -1,12 +1,14 @@
 from sqlalchemy.orm import Session
 from ..models import User as UserModel
+import hashlib
 from ..schemas import (
     User as UserSchema,
-    CreateUser as CreateUserSchema
+    CreateUser as CreateUserSchema,
+
 )
 
 
-async def get_user_by_email(db: Session, email: str):
+async def get_user_by_email(db: Session, email: str) -> UserSchema:
     user = db.query(UserModel).filter(UserModel.email == email).first()
     return UserSchema.model_validate(user) if user else None
 
@@ -47,3 +49,17 @@ async def delete_user(db: Session, user_id: int):
         db.commit()
         return UserSchema.model_validate(user)
     return None
+
+
+async def get_user_by_email_passwd(
+        db: Session, email: str, passwd: str
+        ) -> bool:
+    user: CreateUserSchema = (
+        db.query(UserModel)
+        .filter(UserModel.email == email)
+        .first()
+    )
+    if not user:
+        return False
+    hashed_passwd = hashlib.sha256(passwd.encode()).hexdigest()
+    return user.hash_password == hashed_passwd if user else False
