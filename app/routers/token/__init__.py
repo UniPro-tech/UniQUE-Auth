@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ... import schemas
 from ...cruds.token import (
-    recrate_token
+    recrate_token, decode_token
 )
 from ...cruds.client import create_user_client
 from ...cruds.user import get_user_by_email_passwd
@@ -47,9 +47,15 @@ async def create_token(
         raise HTTPException(status_code=404, detail="User not found")
 
 
-
-@router.get("/", response_model=schemas.Token)
+@router.get("/", response_model=str)
 async def verify_token(token: str, db: Session = Depends(get_db)):
+    token = decode_token(token, is_acsess_token=True)
+    pass
+
+
+@router.put("/", response_model=schemas.Token)
+async def update_token(token: str, db: Session = Depends(get_db)):
+    token = decode_token(token, is_acsess_token=False)
     pass
 
 
