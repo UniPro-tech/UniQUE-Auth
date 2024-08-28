@@ -116,3 +116,17 @@ async def recrate_token(user_id: int, client_id: int, scope: int, db: Session):
     )
 
     return access_token, refresh_token
+
+
+def decode_token(
+        token: str, is_acsess_token: bool = True
+        ) -> schemas.AccessToken | schemas.RefreshToken:
+    plane_token_data = jwt.decode(
+        token, key=__SQLALCHEMY_DATABASE_URI, algorithms=['HS256']
+        )
+    if is_acsess_token:
+        token_data = schemas.AccessToken(**plane_token_data)
+    else:
+        token_data = schemas.RefreshToken(**plane_token_data)
+
+    return token_data
