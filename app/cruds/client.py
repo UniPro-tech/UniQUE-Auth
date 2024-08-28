@@ -15,11 +15,10 @@ async def get_client_by_id(db: Session, client_id: int):
     return UserClientSchema.model_validate(client) if client else None
 
 
-async def create_user_client(db: Session, client: AppClientSchema):
-    user = db.query(UserModel).filter(UserModel.id == client.user).first()
-    if not user:
-        return None
-    client = ClientModel(**client.model_dump(), user=user)
+async def create_user_client(
+        db: Session, client: AppClientSchema
+        ) -> UserClientSchema:
+    client = ClientModel(**client.model_dump())
     db.add(client)
     db.commit()
     db.refresh(client)
