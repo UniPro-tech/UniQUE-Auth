@@ -6,8 +6,8 @@ class Token(Base):
     __tablename__ = "tokens"
 
     id = Column(Integer, primary_key=True, index=True)
-    tokenid = Column(String, index=True)
-    userid = Column(String, index=True)
-    appid = Column(Integer, default=0)
+    acsess_token_id = Column(String, index=True)
+    refresh_token_id = Column(String, index=True)
+    user_id = Column(String, index=True)
+    client_id = Column(Integer, default=0)
     is_enabled = Column(Boolean, default=True)
-    is_geted = Column(Boolean, default=False)
