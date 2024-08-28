@@ -112,7 +112,7 @@ async def recrate_token(user_id: int, client_id: int, scope: int, db: Session):
     await add_db_token(
         db, acsess_token_id=access_token[1],
         refresh_token_id=refresh_token[1],
-        user_id=user_id, client_id=client_id
+        scope=scope, user_id=user_id, client_id=client_id
     )
 
     return access_token, refresh_token
