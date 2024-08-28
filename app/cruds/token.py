@@ -45,11 +45,9 @@ def create_refresh_token(
     refresh_token = jwt.encode(
         payload={
             'iss': token.iss,
-            'sub': token.sub,
             'exp': token.exp,
             'iat': token.iat,
             'jti': uuid,
-            'for': token.for_
         },
         key=__SQLALCHEMY_DATABASE_URI,
         algorithm=token.alg,
@@ -59,12 +57,10 @@ def create_refresh_token(
 
 
 async def add_db_token(
-        db: Session, jti: str, user_id: int,
-        app_id: int, is_enabled: bool = True
+        db: Session, dbtoken: schemas.DBToken
         ):
     token = Token(
-        tokenid=jti, userid=user_id,
-        appid=app_id, is_enabled=is_enabled
+        **dbtoken.model_dump()
         )
     db.add(token)
     db.commit()
@@ -72,16 +68,51 @@ async def add_db_token(
     return token
 
 
-async def get_db_token(db: Session, jti: str):
-    token = db.query(Token).filter(Token.tokenid == jti).first()
+async def get_db_token_by_refresh_token(
+        db: Session, refresh_token_id: str
+        ) -> schemas.DBToken | None:
+    # リフレッシュトークンからトークンを取得する
+    token = (
+        db.query(Token)
+        .filter(Token.refresh_token_id == refresh_token_id)
+        .first()
+        )
+    if token:
+        return None
     return token
 
 
-async def update_db_token(db: Session, jti: str, is_enabled: bool):
-    token = db.query(Token).filter(Token.tokenid == jti).first()
+async def update_db_token(
+        db: Session, jti: str, is_enabled: bool, is_refresh: bool = True
+        ):
+    # トークンを無効化する
+    if is_refresh:
+        token = db.query(Token).filter(Token.refresh_token_id == jti).first()
+    else:
+        token = db.query(Token).filter(Token.acsess_token_id == jti).first()
     if token:
         token.is_enabled = is_enabled
         db.commit()
         db.refresh(token)
         return token
     return None
+
+
+async def recrate_token(user_id: int, client_id: int, scope: int, db: Session):
+    access_token_data = schemas.AccessToken(
+        sub=user_id,
+        iss=client_id,
+        scope=scope
+    )
+    access_token = create_access_token(access_token_data)
+
+    refresh_token_data = schemas.RefreshToken()
+    refresh_token = create_refresh_token(refresh_token_data)
+
+    await add_db_token(
+        db, acsess_token_id=access_token[1],
+        refresh_token_id=refresh_token[1],
+        user_id=user_id, client_id=client_id
+    )
+
+    return access_token, refresh_token
