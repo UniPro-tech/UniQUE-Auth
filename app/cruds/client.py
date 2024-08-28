@@ -26,7 +26,11 @@ async def create_user_client(
 
 
 async def update_user_client(db: Session, client: UserClientSchema):
-    existing_client = db.query(ClientModel).filter(ClientModel.id == client.id).first()
+    existing_client = (
+        db.query(ClientModel)
+        .filter(ClientModel.id == client.id)
+        .first()
+        )
     if existing_client:
         user = db.query(UserModel).filter(UserModel.id == client.user).first()
         if not user:
@@ -50,7 +54,11 @@ async def create_app_client(db: Session, client: AppClientSchema):
 
 
 async def update_app_client(db: Session, client: AppClientSchema):
-    existing_client = db.query(ClientModel).filter(ClientModel.id == client.id).first()
+    existing_client = (
+        db.query(ClientModel)
+        .filter(ClientModel.id == client.id)
+        .first()
+        )
     if existing_client:
         app = db.query(AppModel).filter(AppModel.id == client.app).first()
         if not app:
