@@ -5,7 +5,8 @@ from .user import (
 )
 from .token import (
     AccessToken,
-    RefreshToken
+    RefreshToken,
+    DBToken
 )
 from .role import (
     Role,
@@ -37,6 +38,7 @@ __all__ = [
     "CreateUser",
     "AccessToken",
     "RefreshToken",
+    "DBToken",
     "Role",
     "CreateRole",
     "App",
