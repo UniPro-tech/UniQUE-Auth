@@ -68,15 +68,22 @@ async def add_db_token(
     return token
 
 
-async def get_db_token_by_refresh_token(
-        db: Session, refresh_token_id: str
+async def get_db_token_by_token(
+        db: Session, token_id: str, is_refresh: bool = True
         ) -> schemas.DBToken | None:
     # リフレッシュトークンからトークンを取得する
-    token = (
-        db.query(Token)
-        .filter(Token.refresh_token_id == refresh_token_id)
-        .first()
-        )
+    if is_refresh:
+        token = (
+            db.query(Token)
+            .filter(Token.refresh_token_id == token_id)
+            .first()
+            )
+    else:
+        token = (
+            db.query(Token)
+            .filter(Token.acsess_token_id == token_id)
+            .first()
+            )
     if token:
         return None
     return token
