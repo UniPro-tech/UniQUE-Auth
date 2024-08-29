@@ -1,8 +1,10 @@
+from time import time
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ... import schemas
 from ...cruds.token import (
-    recrate_token, decode_token
+    recrate_token, decode_token,
+    get_db_token_by_token
 )
 from ...cruds.client import create_user_client
 from ...cruds.user import get_user_by_email_passwd
@@ -49,8 +51,14 @@ async def create_token(
 
 @router.get("/", response_model=str)
 async def verify_token(token: str, db: Session = Depends(get_db)):
-    token = decode_token(token, is_acsess_token=True)
-    pass
+    token: schemas.AccessToken = decode_token(token, is_acsess_token=True)
+    token_data: schemas.DBToken = get_db_token_by_token(
+        db, token.jti, is_refresh=False
+        )
+
+    if token.exp > time() or token_data.is_enabled:
+        return HTTPException(status_code=401, detail="Token is invalid")
+    return {"message": "Token is valid"}
 
 
 @router.put("/", response_model=schemas.Token)
