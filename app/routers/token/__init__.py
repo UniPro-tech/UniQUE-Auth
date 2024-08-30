@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from ... import schemas
 from ...cruds.token import (
     recrate_token, decode_token,
-    get_db_token_by_token
+    get_db_token_by_token, update_db_token
 )
 from ...cruds.client import create_user_client
 from ...cruds.user import get_user_by_email_passwd
@@ -55,18 +55,21 @@ async def verify_token(token: str, db: Session = Depends(get_db)):
     token_data: schemas.DBToken = get_db_token_by_token(
         db, token.jti, is_refresh=False
         )
-
     if token.exp > time() or token_data.is_enabled:
         return HTTPException(status_code=401, detail="Token is invalid")
+
     return {"message": "Token is valid"}
 
 
-@router.put("/", response_model=schemas.Token)
-async def update_token(token: str, db: Session = Depends(get_db)):
-    token = decode_token(token, is_acsess_token=False)
-    pass
-
-
 @router.delete("/", response_model=schemas.Token)
-async def delete_token(db: Session = Depends(get_db)):
-    pass
+async def delete_token(token: str, db: Session = Depends(get_db)):
+    token: schemas.AccessToken = decode_token(token, is_acsess_token=True)
+    token_data: schemas.DBToken = get_db_token_by_token(
+        db, token.jti, is_refresh=False
+        )
+    if token.exp > time() or token_data.is_enabled:
+        return HTTPException(status_code=401, detail="Token is invalid")
+
+    update_db_token(db, token.jti, False, is_refresh=False)
+
+    return {"message": "Token is deleted"}
