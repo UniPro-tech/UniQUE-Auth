@@ -13,6 +13,11 @@ async def get_user_by_email(db: Session, email: str) -> UserSchema:
     return UserSchema.model_validate(user) if user else None
 
 
+async def get_user_by_name(db: Session, name: str) -> UserSchema:
+    user = db.query(UserModel).filter(UserModel.name == name).first()
+    return UserSchema.model_validate(user) if user else None
+
+
 async def get_user_by_id(db: Session, user_id: int):
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     return UserSchema.model_validate(user) if user else None
