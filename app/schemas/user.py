@@ -33,14 +33,14 @@ class CreateUser(UserBase):
         <password> <str>:
                 パスワード
     """
-    email: str = Field(...,
-                       min_length=1, max_length=256,
-                       pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
-                       )
-    hash_password: str = Field(...,
-                               min_length=8, max_length=256,
-                               pattern=r'^[a-zA-Z0-9_]+$'
-                               )
+    email: str = Field(
+            ..., min_length=1, max_length=256,
+            pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        )
+    hash_password: str = Field(
+            ..., min_length=8, max_length=256,
+            pattern=r'^[a-zA-Z0-9_]+$'
+       )
 
     class Config:
         from_attributes = True
@@ -74,10 +74,10 @@ class Me(UserBase):
         <updated_at> <int>:
                 更新日時
     """
-    email: str = Field(...,
-                       min_length=1, max_length=256,
-                       pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
-                       )
+    email: str = Field(
+            ..., min_length=1, max_length=256,
+            pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        )
     email_verified: bool = Field(default=False)
     is_enable: bool = Field(default=False)
     roles: List[int] = Field(default=[])
