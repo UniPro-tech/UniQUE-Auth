@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from ... import schemas
 from ...database import get_db
 from ...cruds.token import (
-    get_db_token_by_refresh_token, recrate_token,
+    get_db_token_by_token, recrate_token,
     update_db_token
     )
 
@@ -14,11 +14,11 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=schemas.Token)
+@router.get("/", response_model={"access_token": str, "refresh_token": str})
 async def create_code(code: str, db: Session = Depends(get_db)):
     # リフレッシュトークンを検索
-    token: schemas.DBToken | None = await get_db_token_by_refresh_token(
-        db, code
+    token: schemas.DBToken | None = await get_db_token_by_token(
+        db, code, is_refresh=True
         )
     if not token:
         raise HTTPException(status_code=404, detail="Token not found")
