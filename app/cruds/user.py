@@ -29,7 +29,7 @@ async def get_users(db: Session, skip: int = 0, limit: int = 100):
     return [UserSchema.model_validate(user) for user in users]
 
 
-async def create_user(db: Session, user: CreateUserSchema):
+async def create_user(db: Session, user: CreateUserSchema) -> UserSchema:
     user = UserModel(**user.model_dump())
     db.add(user)
     db.commit()
