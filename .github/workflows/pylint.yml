@@ -4,6 +4,7 @@ on: [push]
 
 jobs:
   build:
+    container: ubuntu:latest
     runs-on: k8s-runnners
     strategy:
       matrix:
