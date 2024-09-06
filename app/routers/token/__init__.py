@@ -61,7 +61,7 @@ async def verify_token(token: str, db: Session = Depends(get_db)):
     return {"message": "Token is valid"}
 
 
-@router.delete("/", response_model=schemas.Token)
+@router.delete("/", response_model=str)
 async def delete_token(token: str, db: Session = Depends(get_db)):
     token: schemas.AccessToken = decode_token(token, is_acsess_token=True)
     token_data: schemas.DBToken = get_db_token_by_token(
