@@ -4,6 +4,7 @@ import hashlib
 from ..schemas import (
     User as UserSchema,
     CreateUser as CreateUserSchema,
+    Me as MeSchema
 
 )
 
@@ -29,12 +30,12 @@ async def get_users(db: Session, skip: int = 0, limit: int = 100):
     return [UserSchema.model_validate(user) for user in users]
 
 
-async def create_user(db: Session, user: CreateUserSchema) -> UserSchema:
+async def create_user(db: Session, user: CreateUserSchema) -> MeSchema:
     user = UserModel(**user.model_dump())
     db.add(user)
     db.commit()
     db.refresh(user)
-    return UserSchema.model_validate(user)
+    return MeSchema.model_validate(user)
 
 
 async def update_user(db: Session, user_id: int, user: CreateUserSchema):
