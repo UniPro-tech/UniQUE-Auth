@@ -4,8 +4,7 @@ import hashlib
 from ..schemas import (
     User as UserSchema,
     CreateUser as CreateUserSchema,
-    Me as MeSchema
-
+    Me as MeSchema,
 )
 
 
