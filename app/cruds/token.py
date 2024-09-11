@@ -1,8 +1,16 @@
 import os
 from sqlalchemy.orm import Session
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from uuid_extensions import uuid7str
 import jwt
-from .. import schemas
+from ..schemas import (
+    DBToken as DBTokenSchema,
+    Me as MeSchema,
+    AccessToken as AccessTokenSchema,
+    RefreshToken as RefreshTokenSchema
+)
+from ..database import get_db
 from ..models import Token
 from dotenv import load_dotenv
 
@@ -13,9 +21,11 @@ load_dotenv(dotenv_path='../../.env')
 
 __SQLALCHEMY_DATABASE_URI = os.environ['SECRET_KEY']
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 
 def create_access_token(
-        token: schemas.AccessToken
+        token: AccessTokenSchema
         ) -> str:
     uuid = uuid7str()
 
@@ -38,7 +48,7 @@ def create_access_token(
 
 
 def create_refresh_token(
-        token: schemas.RefreshToken
+        token: RefreshTokenSchema
         ) -> str:
     uuid = uuid7str()
     # TODO:トークンをDBに保存する処理を追加する
@@ -57,7 +67,7 @@ def create_refresh_token(
 
 
 async def add_db_token(
-        db: Session, dbtoken: schemas.DBToken
+        db: Session, dbtoken: DBTokenSchema
         ):
     token = Token(
         **dbtoken.model_dump()
@@ -70,7 +80,7 @@ async def add_db_token(
 
 async def get_db_token_by_token(
         db: Session, token_id: str, is_refresh: bool = True
-        ) -> schemas.DBToken | None:
+        ) -> DBTokenSchema | None:
     # リフレッシュトークンからトークンを取得する
     if is_refresh:
         token = (
@@ -106,14 +116,14 @@ async def update_db_token(
 
 
 async def recrate_token(user_id: int, client_id: int, scope: int, db: Session):
-    access_token_data = schemas.AccessToken(
+    access_token_data = AccessTokenSchema(
         sub=user_id,
         iss=client_id,
         scope=scope
     )
     access_token = create_access_token(access_token_data)
 
-    refresh_token_data = schemas.RefreshToken()
+    refresh_token_data = RefreshTokenSchema()
     refresh_token = create_refresh_token(refresh_token_data)
 
     await add_db_token(
@@ -127,13 +137,35 @@ async def recrate_token(user_id: int, client_id: int, scope: int, db: Session):
 
 def decode_token(
         token: str, is_acsess_token: bool = True
-        ) -> schemas.AccessToken | schemas.RefreshToken:
+        ) -> AccessTokenSchema | RefreshTokenSchema:
     plane_token_data = jwt.decode(
         token, key=__SQLALCHEMY_DATABASE_URI, algorithms=['HS256']
         )
     if is_acsess_token:
-        token_data = schemas.AccessToken(**plane_token_data)
+        token_data = AccessTokenSchema(**plane_token_data)
     else:
-        token_data = schemas.RefreshToken(**plane_token_data)
+        token_data = RefreshTokenSchema(**plane_token_data)
 
     return token_data
+
+
+async def verify_token(
+            token: str = Depends(oauth2_scheme),
+            db: Session = Depends(get_db)
+        ) -> MeSchema | None:
+    try:
+        token_data = DBTokenSchema.model_validate(
+            decode_token(token, is_acsess_token=False)
+        )
+        user = (
+            db.query(DBTokenSchema)
+            .filter(DBTokenSchema.user_id == token_data.user_id)
+            .first()
+        )
+        return MeSchema.model_validate(user) if user else None
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
