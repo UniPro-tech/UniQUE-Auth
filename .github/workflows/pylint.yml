@@ -11,7 +11,9 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
     steps:
     - name: Git Init
-      run: apt install git
+      run: |
+        apt update
+        apt install git
     - uses: actions/checkout@v4
       name: Checkout the Repository
     - name: Set up Python ${{ matrix.python-version }}
