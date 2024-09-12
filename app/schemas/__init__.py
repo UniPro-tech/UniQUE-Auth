@@ -2,6 +2,7 @@ from .user import (
     User,
     Me,
     CreateUser,
+    UpdataMe
 )
 from .token import (
     AccessToken,
@@ -46,6 +47,7 @@ __all__ = [
     "Flag",
     "CreateFlag",
     "UserClient",
+    "UpdataMe",
     "AppClient",
     "AppLog",
     "UserLog",
