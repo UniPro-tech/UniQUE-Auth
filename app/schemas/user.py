@@ -87,3 +87,25 @@ class Me(UserBase):
 
     class Config:
         from_attributes = True
+
+
+class UpdataMe(UserBase):
+    """
+    Meの更新用スキーマ
+    Args:
+        <email> <str>:
+                メールアドレス
+        <email_verified> <bool>:
+                メールアドレスが確認済みかどうか
+        <is_enable> <bool>:
+                アカウントが有効かどうか
+    """
+    email: str = Field(
+            ..., min_length=1, max_length=256,
+            pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        )
+    email_verified: bool = Field(default=False)
+    is_enable: bool = Field(default=False)
+
+    class Config:
+        from_attributes = True
