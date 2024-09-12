@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from ... import crud, models, schemas
 from ...database import get_db
 from ...cruds.token import verify_token
+from ...cruds.user import update_user
 
 router = APIRouter(
     prefix="/users/me",
@@ -23,5 +24,4 @@ async def update_users_me(
         new_user: schemas.UpdataMe = Depends(),
         db: Session = Depends(get_db)
         ):
-    return crud.update_user(db, user.id, new_user)
-    pass
+    return update_user(db, new_user)

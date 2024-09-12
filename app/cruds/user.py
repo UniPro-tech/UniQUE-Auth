@@ -5,6 +5,7 @@ from ..schemas import (
     User as UserSchema,
     CreateUser as CreateUserSchema,
     Me as MeSchema,
+    UpdataMe as UpdataMeSchema
 )
 
 
@@ -37,14 +38,29 @@ async def create_user(db: Session, user: CreateUserSchema) -> MeSchema:
     return MeSchema.model_validate(user)
 
 
-async def update_user(db: Session, user: CreateUserSchema):
-    user = db.query(UserModel).filter(UserModel.id == user.id).first()
-    if user:
-        user.update(**user.model_dump())
-        db.commit()
-        db.refresh(user)
-        return UserSchema.model_validate(user)
-    return None
+async def update_user(
+            db: Session, user: MeSchema,
+            new_user_data: UpdataMeSchema
+        ):
+    user: MeSchema = (
+        db.query(UserModel)
+        .filter(UserModel.id == user.id)
+        .first()
+        )
+
+    if new_user_data.display_name:
+        user.display_name = new_user_data.display_name
+    if new_user_data.discription:
+        user.discription = new_user_data.discription
+    if new_user_data.email:
+        user.email = new_user_data.email
+        user.email_verified = False
+    if new_user_data.hash_password:
+        user.hash_password = new_user_data.hash_password
+
+    db.commit()
+
+    return UserSchema.model_validate(user)
 
 
 async def delete_user(db: Session, user_id: int):

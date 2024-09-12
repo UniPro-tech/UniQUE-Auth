@@ -79,6 +79,7 @@ class Me(UserBase):
             pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
         )
     email_verified: bool = Field(default=False)
+    discription: str = Field(max_length=1024)
     is_enable: bool = Field(default=False)
     roles: List[int] = Field(default=[])
     flags: List[int] = Field(default=[])
@@ -100,11 +101,15 @@ class UpdataMe(UserBase):
         <is_enable> <bool>:
                 アカウントが有効かどうか
     """
+    hash_password: str = Field(
+            ..., min_length=8, max_length=256,
+            pattern=r'^[a-zA-Z0-9_]+$'
+       )
     email: str = Field(
             ..., min_length=1, max_length=256,
             pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
         )
-    email_verified: bool = Field(default=False)
+    discription: str = Field(max_length=1024)
     is_enable: bool = Field(default=False)
 
     class Config:
