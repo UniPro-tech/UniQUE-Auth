@@ -37,8 +37,8 @@ async def create_user(db: Session, user: CreateUserSchema) -> MeSchema:
     return MeSchema.model_validate(user)
 
 
-async def update_user(db: Session, user_id: int, user: CreateUserSchema):
-    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+async def update_user(db: Session, user: CreateUserSchema):
+    user = db.query(UserModel).filter(UserModel.id == user.id).first()
     if user:
         user.update(**user.model_dump())
         db.commit()
