@@ -1,6 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ... import crud, models, schemas
+from ...schemas import (
+    App as AppSchema,
+    CreateApp as AppCreateSchema,
+    Me as MeSchema,
+)
+from ...cruds.app import create_app
+from ...cruds.token import verify_token
 from ...database import get_db
 
 router = APIRouter(
@@ -10,8 +17,13 @@ router = APIRouter(
 
 
 @router.post("/", response_model=schemas.App)
-async def create_app(app: schemas.AppCreate, db: Session = Depends(get_db)):
-    return crud.create_app(db=db, app=app)
+async def create_app(
+            app: AppCreateSchema,
+            user: MeSchema = Depends(verify_token),
+            db: Session = Depends(get_db)
+        ):
+    
+    return create_app(db=db, app=app)
 
 
 @router.get("/{app_id}", response_model=schemas.App)
