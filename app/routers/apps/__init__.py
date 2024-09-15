@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from ... import crud, models, schemas
 from ...schemas import (
     App as AppSchema,
     CreateApp as AppCreateSchema,
@@ -19,7 +18,7 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=schemas.App)
+@router.post("/", response_model=AppSchema)
 async def create_apps(
             app: AppCreateSchema,
             user: MeSchema = Depends(verify_token),
@@ -30,7 +29,7 @@ async def create_apps(
     return app
 
 
-@router.get("/{app_id}", response_model=schemas.App)
+@router.get("/{app_id}", response_model=AppSchema)
 async def read_app(
             app_id: int,
             user: MeSchema = Depends(verify_token),
@@ -44,7 +43,7 @@ async def read_app(
     return app
 
 
-@router.patch("/{app_id}", response_model=schemas.App)
+@router.patch("/{app_id}", response_model=AppSchema)
 async def edit_app(
             app_id: int,
             app: AppSchema,
@@ -60,7 +59,7 @@ async def edit_app(
     return app
 
 
-@router.delete("/{app_id}", response_model=schemas.App)
+@router.delete("/{app_id}", response_model=AppSchema)
 async def delete_apps(
             app_id: int,
             user: MeSchema = Depends(verify_token),
