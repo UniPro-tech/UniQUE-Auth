@@ -7,6 +7,7 @@ class BaseApp(BaseModel):
 
 
 class App(BaseApp):
+    id: int = Field()
     image_url: str = Field(..., max_length=256)
     description: str = Field(..., max_length=1024)
     verified: bool = Field(default=False)
