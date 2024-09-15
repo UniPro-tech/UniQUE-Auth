@@ -79,7 +79,7 @@ class Me(UserBase):
             pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
         )
     email_verified: bool = Field(default=False)
-    discription: str = Field(max_length=1024)
+    discription: str = Field(default="", max_length=1024)
     is_enable: bool = Field(default=False)
     roles: List[int] = Field(default=[])
     flags: List[int] = Field(default=[])
