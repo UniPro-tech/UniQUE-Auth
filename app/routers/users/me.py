@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from ... import crud, models, schemas
+from ... import schemas
 from ...database import get_db
 from ...cruds.token import verify_token
 from ...cruds.user import update_user
@@ -8,7 +8,6 @@ from ...cruds.user import update_user
 router = APIRouter(
     prefix="/users/me",
     tags=["users"],
-    dependencies=[],
     responses={404: {"description": "Not found"}},
 )
 
@@ -24,4 +23,4 @@ async def update_users_me(
         new_user: schemas.UpdataMe = Depends(),
         db: Session = Depends(get_db)
         ):
-    return update_user(db, new_user)
+    return update_user(db, user, new_user)
