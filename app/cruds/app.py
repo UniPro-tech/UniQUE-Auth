@@ -55,7 +55,7 @@ def add_user_to_app(db: Session, app_id: int, user_id: int):
         app.users.append(user)
         db.commit()
         db.refresh(app)
-    return app
+    return AppSchema.model_validate(app)
 
 
 def remove_user_from_app(db: Session, app_id: int, user_id: int):
@@ -65,7 +65,7 @@ def remove_user_from_app(db: Session, app_id: int, user_id: int):
         app.users.remove(user)
         db.commit()
         db.refresh(app)
-    return app
+    return AppSchema.model_validate(app)
 
 
 def add_admin_user_to_app(db: Session, app_id: int, user_id: int):
@@ -75,7 +75,7 @@ def add_admin_user_to_app(db: Session, app_id: int, user_id: int):
         app.admin_users.append(user)
         db.commit()
         db.refresh(app)
-    return app
+    return AppSchema.model_validate(app)
 
 
 def remove_admin_user_from_app(db: Session, app_id: int, user_id: int):
@@ -85,4 +85,4 @@ def remove_admin_user_from_app(db: Session, app_id: int, user_id: int):
         app.admin_users.remove(user)
         db.commit()
         db.refresh(app)
-    return app
+    return AppSchema.model_validate(app)
