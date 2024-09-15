@@ -15,7 +15,7 @@ async def get_app_by_name(db: Session, name: str):
     return AppSchema.model_validate(app) if app else None
 
 
-async def get_app_by_id(db: Session, app_id: int):
+async def get_app_by_id(db: Session, app_id: int) -> AppSchema | None:
     app = db.query(AppModel).filter(AppModel.id == app_id).first()
     return AppSchema.model_validate(app) if app else None
 
