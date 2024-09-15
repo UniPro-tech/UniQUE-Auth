@@ -6,7 +6,7 @@ from ...schemas import (
     CreateApp as AppCreateSchema,
     Me as MeSchema,
 )
-from ...cruds.app import create_app
+from ...cruds.app import create_app, add_admin_user_to_app
 from ...cruds.token import verify_token
 from ...database import get_db
 
@@ -17,13 +17,14 @@ router = APIRouter(
 
 
 @router.post("/", response_model=schemas.App)
-async def create_app(
+async def create_apps(
             app: AppCreateSchema,
             user: MeSchema = Depends(verify_token),
             db: Session = Depends(get_db)
         ):
-    
-    return create_app(db=db, app=app)
+    new_app: AppSchema = create_app(db=db, app=app)
+    app: AppSchema = add_admin_user_to_app(db, new_app.id, user.id)
+    return app
 
 
 @router.get("/{app_id}", response_model=schemas.App)
