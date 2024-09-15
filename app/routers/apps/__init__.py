@@ -6,7 +6,10 @@ from ...schemas import (
     CreateApp as AppCreateSchema,
     Me as MeSchema,
 )
-from ...cruds.app import create_app, add_admin_user_to_app, get_app_by_id
+from ...cruds.app import (
+    create_app, add_admin_user_to_app,
+    get_app_by_id, update_app, delete_app
+)
 from ...cruds.token import verify_token
 from ...database import get_db
 
@@ -42,10 +45,31 @@ async def read_app(
 
 
 @router.patch("/{app_id}", response_model=schemas.App)
-async def edit_app(app_id: int, db: Session = Depends(get_db)):
-    pass
+async def edit_app(
+            app_id: int,
+            app: AppSchema,
+            user: MeSchema = Depends(verify_token),
+            db: Session = Depends(get_db)
+        ):
+    app: AppSchema = update_app(db, app_id, app)
+    if not app:
+        raise HTTPException(status_code=404, detail="App not found")
+    elif app.admin_users != user.id:
+        raise HTTPException(status_code=403, detail="Permission denied")
+
+    return app
 
 
 @router.delete("/{app_id}", response_model=schemas.App)
-async def delete_app(app_id: int, db: Session = Depends(get_db)):
-    pass
+async def delete_apps(
+            app_id: int,
+            user: MeSchema = Depends(verify_token),
+            db: Session = Depends(get_db)
+        ):
+    app: AppSchema = get_app_by_id(db, app_id)
+
+    if app.admin_users not in user.id:
+        raise HTTPException(status_code=403, detail="Permission denied")
+    app: AppSchema = delete_app(db, app_id)
+
+    return app
