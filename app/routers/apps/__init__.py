@@ -6,7 +6,7 @@ from ...schemas import (
     CreateApp as AppCreateSchema,
     Me as MeSchema,
 )
-from ...cruds.app import create_app, add_admin_user_to_app
+from ...cruds.app import create_app, add_admin_user_to_app, get_app_by_id
 from ...cruds.token import verify_token
 from ...database import get_db
 
@@ -28,8 +28,17 @@ async def create_apps(
 
 
 @router.get("/{app_id}", response_model=schemas.App)
-async def read_app(app_id: int, db: Session = Depends(get_db)):
-    pass
+async def read_app(
+            app_id: int,
+            user: MeSchema = Depends(verify_token),
+            db: Session = Depends(get_db)
+        ):
+    app: AppSchema = get_app_by_id(db, app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail="App not found")
+    elif app.is_enable is False:
+        raise HTTPException(status_code=404, detail="App is not enable")
+    return app
 
 
 @router.patch("/{app_id}", response_model=schemas.App)
