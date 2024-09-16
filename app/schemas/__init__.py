@@ -11,7 +11,8 @@ from .token import (
 )
 from .role import (
     Role,
-    CreateRole
+    CreateRole,
+    UpdateRole
 )
 from .app import (
     App,
@@ -42,6 +43,7 @@ __all__ = [
     "DBToken",
     "Role",
     "CreateRole",
+    "UpdateRole",
     "App",
     "CreateApp",
     "Flag",
