@@ -38,3 +38,10 @@ flag_admin_users = Table(
     Column("flag_id", Integer, ForeignKey("flags.id")),
     Column("user_id", Integer, ForeignKey("users.id"))
 )
+
+flag_roles = Table(
+    "flag_roles",
+    Base.metadata,
+    Column("flag_id", Integer, ForeignKey("flags.id")),
+    Column("role_id", Integer, ForeignKey("roles.id"))
+)
