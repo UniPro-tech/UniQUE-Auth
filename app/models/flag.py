@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from ..database import Base
-from .middle_table import user_flags,flag_admin_users
+from .middle_table import user_flags, flag_admin_users
 
 
 class Flag(Base):
