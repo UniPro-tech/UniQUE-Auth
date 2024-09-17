@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from ..database import Base
-from .middle_table import user_flags
+from .middle_table import user_flags,flag_admin_users
 
 
 class Flag(Base):
@@ -15,6 +15,9 @@ class Flag(Base):
     # 多対多リレーション
     users = relationship(
         'User', secondary=user_flags, back_populates='flags'
+        )
+    admin_users = relationship(
+        'User', secondary=flag_admin_users, back_populates='admin_apps'
         )
 
     # 多対一リレーション

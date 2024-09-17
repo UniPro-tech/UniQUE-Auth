@@ -31,3 +31,10 @@ app_admin_users = Table(
     Column("app_id", Integer, ForeignKey("apps.id")),
     Column("user_id", Integer, ForeignKey("users.id"))
 )
+
+flag_admin_users = Table(
+    "flag_admin_users",
+    Base.metadata,
+    Column("flag_id", Integer, ForeignKey("flags.id")),
+    Column("user_id", Integer, ForeignKey("users.id"))
+)
