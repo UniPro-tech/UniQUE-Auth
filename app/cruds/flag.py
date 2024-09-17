@@ -66,3 +66,25 @@ async def remove_user_from_flug(db: Session, flug_id: int, user_id: int):
         db.refresh(flug)
         return FlagSchema.model_validate(flug)
     return None
+
+
+async def add_admin_user_to_flug(db: Session, flug_id: int, user_id: int):
+    flug = db.query(FlagModel).filter(FlagModel.id == flug_id).first()
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    if flug and user:
+        flug.admin_users.append(user)
+        db.commit()
+        db.refresh(flug)
+        return FlagSchema.model_validate(flug)
+    return None
+
+
+async def remove_admin_user_from_flug(db: Session, flug_id: int, user_id: int):
+    flug = db.query(FlagModel).filter(FlagModel.id == flug_id).first()
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    if flug and user:
+        flug.admin_users.remove(user)
+        db.commit()
+        db.refresh(flug)
+        return FlagSchema.model_validate(flug)
+    return None
