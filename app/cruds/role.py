@@ -37,7 +37,7 @@ async def update_role(db: Session, role_id: int, role: CreateRoleSchema):
     return None
 
 
-async def delete_role(db, role_id: int):
+async def delete_role(db: Session, role_id: int):
     role = db.query(RoleModel).filter(RoleModel.id == role_id).first()
     if role:
         db.delete(role)
