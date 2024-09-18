@@ -9,6 +9,7 @@ class Flag(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
+    display_name = Column(String, index=True)
     description = Column(String, index=True)
     image_url = Column(String)
     is_enabled = Column(Boolean, default=True)
