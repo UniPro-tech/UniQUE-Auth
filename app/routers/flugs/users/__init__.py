@@ -5,11 +5,11 @@ from ....database import get_db
 from typing import List
 
 router = APIRouter(
-    prefix="/flugs",
-    tags=["flugs", "users"],
+    prefix="/flags",
+    tags=["flags", "users"],
 )
 
 
-@router.get("/{flug_id}/users", response_model=List[schemas.User])
-async def read_users(flug_id: int, db: Session = Depends(get_db)):
+@router.get("/{flag_id}/users", response_model=List[schemas.User])
+async def read_users(flag_id: int, db: Session = Depends(get_db)):
     pass

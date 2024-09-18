@@ -9,82 +9,82 @@ from ..models import (
 )
 
 
-async def get_flug_by_id(db: Session, flug_id: int):
-    role = db.query(FlagModel).filter(FlagModel.id == flug_id).first()
+async def get_flag_by_id(db: Session, flag_id: int):
+    role = db.query(FlagModel).filter(FlagModel.id == flag_id).first()
     return FlagSchema.model_validate(role) if role else None
 
 
-async def get_flug_by_name(db: Session, name: str):
+async def get_flag_by_name(db: Session, name: str):
     role = db.query(FlagModel).filter(FlagModel.name == name).first()
     return FlagSchema.model_validate(role) if role else None
 
 
-async def create_flug(db: Session, flug: CreateFlagSchema):
-    flug = FlagModel(**flug.model_dump())
-    db.add(flug)
+async def create_flag(db: Session, flag: CreateFlagSchema):
+    flag = FlagModel(**flag.model_dump())
+    db.add(flag)
     db.commit()
-    db.refresh(flug)
-    return FlagSchema.model_validate(flug)
+    db.refresh(flag)
+    return FlagSchema.model_validate(flag)
 
 
-async def update_flug(db: Session, flug_id: int, flug: CreateFlagSchema):
-    flug = db.query(FlagModel).filter(FlagModel.id == flug_id).first()
-    if flug:
-        flug.update(**flug.model_dump())
+async def update_flag(db: Session, flag_id: int, flag: CreateFlagSchema):
+    flag = db.query(FlagModel).filter(FlagModel.id == flag_id).first()
+    if flag:
+        flag.update(**flag.model_dump())
         db.commit()
-        db.refresh(flug)
-        return FlagSchema.model_validate(flug)
+        db.refresh(flag)
+        return FlagSchema.model_validate(flag)
     return None
 
 
-async def delete_flug(db: Session, flug_id: int):
-    flug = db.query(FlagModel).filter(FlagModel.id == flug_id).first()
-    if flug:
-        db.delete(flug)
+async def delete_flag(db: Session, flag_id: int):
+    flag = db.query(FlagModel).filter(FlagModel.id == flag_id).first()
+    if flag:
+        db.delete(flag)
         db.commit()
-        return FlagSchema.model_validate(flug)
+        return FlagSchema.model_validate(flag)
     return None
 
 
-async def add_user_to_flug(db: Session, flug_id: int, user_id: int):
-    flug = db.query(FlagModel).filter(FlagModel.id == flug_id).first()
+async def add_user_to_flag(db: Session, flag_id: int, user_id: int):
+    flag = db.query(FlagModel).filter(FlagModel.id == flag_id).first()
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
-    if flug and user:
-        flug.users.append(user)
+    if flag and user:
+        flag.users.append(user)
         db.commit()
-        db.refresh(flug)
-        return FlagSchema.model_validate(flug)
+        db.refresh(flag)
+        return FlagSchema.model_validate(flag)
     return None
 
 
-async def remove_user_from_flug(db: Session, flug_id: int, user_id: int):
-    flug = db.query(FlagModel).filter(FlagModel.id == flug_id).first()
+async def remove_user_from_flag(db: Session, flag_id: int, user_id: int):
+    flag = db.query(FlagModel).filter(FlagModel.id == flag_id).first()
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
-    if flug and user:
-        flug.users.remove(user)
+    if flag and user:
+        flag.users.remove(user)
         db.commit()
-        db.refresh(flug)
-        return FlagSchema.model_validate(flug)
+        db.refresh(flag)
+        return FlagSchema.model_validate(flag)
     return None
 
 
-async def add_admin_user_to_flug(db: Session, flug_id: int, user_id: int):
-    flug = db.query(FlagModel).filter(FlagModel.id == flug_id).first()
+async def add_admin_user_to_flag(db: Session, flag_id: int, user_id: int):
+    flag = db.query(FlagModel).filter(FlagModel.id == flag_id).first()
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
-    if flug and user:
-        flug.admin_users.append(user)
+    if flag and user:
+        flag.admin_users.append(user)
         db.commit()
-        db.refresh(flug)
-        return FlagSchema.model_validate(flug)
+        db.refresh(flag)
+        return FlagSchema.model_validate(flag)
     return None
 
 
-async def remove_admin_user_from_flug(db: Session, flug_id: int, user_id: int):
-    flug = db.query(FlagModel).filter(FlagModel.id == flug_id).first()
+async def remove_admin_user_from_flag(db: Session, flag_id: int, user_id: int):
+    flag = db.query(FlagModel).filter(FlagModel.id == flag_id).first()
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
-    if flug and user:
-        flug.admin_users.remove(user)
+    if flag and user:
+        flag.admin_users.remove(user)
         db.commit()
-        db.refresh(flug)
-        return FlagSchema.model_validate(flug)
+        db.refresh(flag)
+        return FlagSchema.model_validate(flag)
     return None

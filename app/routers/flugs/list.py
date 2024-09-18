@@ -5,15 +5,15 @@ from ...database import get_db
 from typing import List
 
 router = APIRouter(
-    prefix="/flugs/list",
-    tags=["flugs", "list"],
+    prefix="/flags/list",
+    tags=["flags", "list"],
 )
 
 
-@router.get("/", response_model=List[schemas.Flug])
-async def read_flugs_list(
+@router.get("/", response_model=List[schemas.flag])
+async def read_flags_list(
         skip: int = 0, limit: int = 100,
         db: Session = Depends(get_db)
         ):
-    flugs = crud.flug.get_multi(db, skip=skip, limit=limit)
-    return flugs
+    flags = crud.flag.get_multi(db, skip=skip, limit=limit)
+    return flags
