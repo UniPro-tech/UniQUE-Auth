@@ -16,6 +16,8 @@ class Flag(BaseFlag):
     id: int
     description: str = Field(..., max_length=1024)
     image_url: str = Field(..., max_length=256)
+    is_enabled: bool = Field(default=True)
+    can_assign: bool = Field(default=True)
     users: List[int] = Field(default=[])
     logs: List[int] = Field(default=[])
 
