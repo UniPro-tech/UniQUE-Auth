@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from ..schemas import (
     Flag as FlagSchema,
-    CreateFlag as CreateFlagSchema
+    CreateFlag as CreateFlagSchema,
+    UpdataFlag as UpdataFlagSchema
 )
 from ..models import (
     Flag as FlagModel,
@@ -27,8 +28,8 @@ async def create_flag(db: Session, flag: CreateFlagSchema):
     return FlagSchema.model_validate(flag)
 
 
-async def update_flag(db: Session, flag_id: int, flag: CreateFlagSchema):
-    flag = db.query(FlagModel).filter(FlagModel.id == flag_id).first()
+async def update_flag(db: Session, flag: UpdataFlagSchema):
+    flag = db.query(FlagModel).filter(FlagModel.id == flag.id).first()
     if flag:
         flag.update(**flag.model_dump())
         db.commit()
