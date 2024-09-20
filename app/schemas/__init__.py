@@ -20,7 +20,8 @@ from .app import (
 )
 from .flag import (
     Flag,
-    CreateFlag
+    CreateFlag,
+    UpdataFlag
 )
 from .client import (
     UserClient,
@@ -48,6 +49,7 @@ __all__ = [
     "CreateApp",
     "Flag",
     "CreateFlag",
+    "UpdateFlag",
     "UserClient",
     "UpdataMe",
     "AppClient",
