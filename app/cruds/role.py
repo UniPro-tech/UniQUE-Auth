@@ -1,6 +1,7 @@
 from ..schemas import (
     Role as RoleSchema,
-    CreateRole as CreateRoleSchema
+    CreateRole as CreateRoleSchema,
+    UpdateRole as UpdateRoleSchema
 )
 from sqlalchemy.orm import Session
 from ..models import (
@@ -27,8 +28,8 @@ async def create_role(db: Session, role: CreateRoleSchema):
     return RoleSchema.model_validate(role)
 
 
-async def update_role(db: Session, role_id: int, role: CreateRoleSchema):
-    role = db.query(RoleModel).filter(RoleModel.id == role_id).first()
+async def update_role(db: Session, role: UpdateRoleSchema):
+    role = db.query(RoleModel).filter(RoleModel.id == role.id).first()
     if role:
         role.update(**role.model_dump())
         db.commit()

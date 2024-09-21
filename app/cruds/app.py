@@ -29,14 +29,15 @@ async def create_app(db: Session, app: CreateAppSchema, user: MeSchema):
     return AppSchema.model_validate(app)
 
 
-async def update_app(db: Session, app_id: int, app: CreateAppSchema):
-    app = db.query(AppModel).filter(AppModel.id == app_id).first()
-    if app:
-        app.update(**app.model_dump())
-        db.commit()
-        db.refresh(app)
-        return AppSchema.model_validate(app)
-    return None
+async def update_app(
+            session: Session,
+            app: AppModel,
+            updates: CreateAppSchema
+        ):
+    update_data = updates.model_dump()
+    for key, value in update_data.items():
+        setattr(app, key, value)
+    session.commit()
 
 
 async def delete_app(db: Session, app_id: int):

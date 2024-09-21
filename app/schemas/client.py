@@ -4,41 +4,28 @@ from pydantic import BaseModel, Field
 class BaseClient(BaseModel):
     """
     Clientの基底クラス
-    Args:
-        <id> <int>:
-                クライアントID
-        <is_enable> <bool>:
-                有効かどうか
+    """
+    pass
+
+
+class Client(BaseClient):
+    """
+    Clientの詳細クラス
     """
     id: int
     is_enable: bool
-
-
-class UserClient(BaseClient):
-    """
-    UserClientのスキーマ
-    Args:
-        <id> <int>:
-                クライアントID
-        <is_enable> <bool>:
-                有効かどうか
-    """
-    user: int = Field(..., title="ユーザーID")
+    user: int
+    app: int
 
     class Config:
         model_validate = True
 
 
-class AppClient(BaseClient):
+class UpdataClient(BaseClient):
     """
-    AppClientのスキーマ
-    Args:
-        <id> <int>:
-                クライアントID
-        <is_enable> <bool>:
-                有効かどうか
+    Clientの更新クラス
     """
-    apps: int = Field(..., title="アプリID")
+    is_enable: bool
 
     class Config:
         model_validate = True

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from ..schemas import (
-    UserClient as UserClientSchema,
-    AppClient as AppClientSchema,
+    Client as ClientSchema,
+    UpdataClient as UpdataClientSchema,
 )
 from ..models import (
     Client as ClientModel,
@@ -10,14 +10,21 @@ from ..models import (
 )
 
 
-async def get_client_by_id(db: Session, client_id: int):
-    client = db.query(ClientModel).filter(ClientModel.id == client_id).first()
-    return UserClientSchema.model_validate(client) if client else None
+async def get_client_by_id(
+                session: Session, client_id: int
+            ) -> ClientSchema:
+    client = (
+        session.query(ClientModel)
+        .filter(ClientModel.id == client_id)
+        .first()
+    )
+    return ClientSchema.model_validate(client) if client else None
 
 
-async def create_user_client(
-        db: Session, client: AppClientSchema
-        ) -> UserClientSchema:
+async def create_client(
+        session: Session, client: ClientSchema,
+        user, app
+        ) -> ClientSchema:
     client = ClientModel(**client.model_dump())
     db.add(client)
     db.commit()
@@ -25,7 +32,10 @@ async def create_user_client(
     return UserClientSchema.model_validate(client)
 
 
-async def update_user_client(db: Session, client: UserClientSchema):
+async def update_user_client(
+            session: Session,
+            client: UserClientSchema,
+            updates: UserClientSchema):
     existing_client = (
         db.query(ClientModel)
         .filter(ClientModel.id == client.id)

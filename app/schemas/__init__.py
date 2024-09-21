@@ -24,8 +24,8 @@ from .flag import (
     UpdataFlag
 )
 from .client import (
-    UserClient,
-    AppClient
+    Client,
+    UpdataClient
 )
 from .log import (
     AppLog,
@@ -49,10 +49,10 @@ __all__ = [
     "CreateApp",
     "Flag",
     "CreateFlag",
-    "UpdateFlag",
-    "UserClient",
+    "UpdataFlag",
     "UpdataMe",
-    "AppClient",
+    "Client",
+    "UpdataClient",
     "AppLog",
     "UserLog",
     "RoleLog",
