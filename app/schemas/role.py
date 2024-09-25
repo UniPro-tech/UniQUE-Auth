@@ -27,8 +27,8 @@ class CreateRole(RoleBase):
 
 
 class UpdateRole(RoleBase):
-    id: int
     discription: str = Field(..., max_length=255)
+    parmission_bit: int = Field(default=0)
     sort: int = Field(default=0)
     is_enable: bool = Field(default=True)
 

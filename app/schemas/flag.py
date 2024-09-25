@@ -20,6 +20,7 @@ class Flag(BaseFlag):
     is_enabled: bool = Field(default=True)
     can_assign: bool = Field(default=True)
     users: List[int] = Field(default=[])
+    admin_users: List[int] = Field(default=[])
     logs: List[int] = Field(default=[])
 
     class Config:
@@ -40,7 +41,6 @@ class UpdataFlag(BaseFlag):
     """
     flagの更新クラス
     """
-    id: int
     description: str = Field(..., max_length=1024)
     image_url: str = Field(..., max_length=256)
     can_assign: bool = Field(default=True)

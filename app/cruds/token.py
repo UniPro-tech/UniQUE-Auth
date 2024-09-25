@@ -25,8 +25,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def create_access_token(
-        token: AccessTokenSchema
-        ) -> str:
+                token: AccessTokenSchema
+            ) -> str:
     uuid = uuid7str()
 
     access_token = jwt.encode(
@@ -48,10 +48,9 @@ def create_access_token(
 
 
 def create_refresh_token(
-        token: RefreshTokenSchema
-        ) -> str:
+                token: RefreshTokenSchema
+            ) -> str:
     uuid = uuid7str()
-    # TODO:トークンをDBに保存する処理を追加する
     refresh_token = jwt.encode(
         payload={
             'iss': token.iss,
@@ -67,52 +66,42 @@ def create_refresh_token(
 
 
 async def add_db_token(
-        db: Session, dbtoken: DBTokenSchema
+        session: Session, token: DBTokenSchema
         ):
-    token = Token(
-        **dbtoken.model_dump()
-        )
-    db.add(token)
-    db.commit()
-    db.refresh(token)
+    token = Token(**token.model_dump())
+    session.add(token)
+    session.commit()
     return token
 
 
 async def get_db_token_by_token(
-        db: Session, token_id: str, is_refresh: bool = True
-        ) -> DBTokenSchema | None:
+                session: Session, token_id: str, is_refresh: bool = True
+            ) -> DBTokenSchema | None:
     # リフレッシュトークンからトークンを取得する
     if is_refresh:
         token = (
-            db.query(Token)
+            session.query(Token)
             .filter(Token.refresh_token_id == token_id)
             .first()
-            )
+        )
     else:
         token = (
-            db.query(Token)
+            session.query(Token)
             .filter(Token.acsess_token_id == token_id)
             .first()
-            )
-    if token:
-        return None
-    return token
+        )
+    return token if token else None
 
 
 async def update_db_token(
-        db: Session, jti: str, is_enabled: bool, is_refresh: bool = True
-        ):
+                session: Session, token: Token,
+                is_enabled: bool = False
+            ) -> DBTokenSchema | None:
     # トークンを無効化する
-    if is_refresh:
-        token = db.query(Token).filter(Token.refresh_token_id == jti).first()
-    else:
-        token = db.query(Token).filter(Token.acsess_token_id == jti).first()
-    if token:
-        token.is_enabled = is_enabled
-        db.commit()
-        db.refresh(token)
-        return token
-    return None
+    token.is_enabled = is_enabled
+    session.commit()
+    session.refresh(token)
+    return token
 
 
 async def recrate_token(user_id: int, client_id: int, scope: int, db: Session):

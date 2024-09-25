@@ -13,11 +13,6 @@ class UserBase(BaseModel):
         <display_name> <str>:
                 表示名
     """
-    id: int
-    name: str = Field(...,
-                      min_length=3, max_length=16,
-                      pattern=r'^[a-zA-Z0-9_]+$'
-                      )
     display_name: str = Field(...,
                               min_length=1, max_length=32,
                               pattern=r'^[a-zA-Z0-9_]+$'
@@ -33,6 +28,10 @@ class CreateUser(UserBase):
         <password> <str>:
                 パスワード
     """
+    name: str = Field(...,
+                      min_length=3, max_length=16,
+                      pattern=r'^[a-zA-Z0-9_]+$'
+                      )
     email: str = Field(
             ..., min_length=1, max_length=256,
             pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
@@ -53,6 +52,11 @@ class User(UserBase):
         <description> <str>:
                 ユーザーの説明
     """
+    id: int
+    name: str = Field(...,
+                      min_length=3, max_length=16,
+                      pattern=r'^[a-zA-Z0-9_]+$'
+                      )
     description: str = Field(max_length=1024)
 
     class Config:
@@ -74,6 +78,11 @@ class Me(UserBase):
         <updated_at> <int>:
                 更新日時
     """
+    id: int
+    name: str = Field(...,
+                      min_length=3, max_length=16,
+                      pattern=r'^[a-zA-Z0-9_]+$'
+                      )
     email: str = Field(
             ..., min_length=1, max_length=256,
             pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
@@ -101,10 +110,6 @@ class UpdataMe(UserBase):
         <is_enable> <bool>:
                 アカウントが有効かどうか
     """
-    hash_password: str = Field(
-            ..., min_length=8, max_length=256,
-            pattern=r'^[a-zA-Z0-9_]+$'
-       )
     email: str = Field(
             ..., min_length=1, max_length=256,
             pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'

@@ -30,7 +30,7 @@ async def create_token(
     )
 
     if user:
-        user_client_data = schemas.UserClient(
+        user_client_data = schemas.UsrClient(
             user=user.id
         )
         user_client: schemas.UserClient = create_user_client(
