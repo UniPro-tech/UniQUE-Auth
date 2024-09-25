@@ -15,8 +15,8 @@ jobs:
       run: |
         apt update &&
         apt install git -y &&
-        chown -R ${USER} ./ &&
-        git config --system --add safe.directory "/__w/"
+        # chown -R ${USER} ./ &&
+        git config --system --add safe.directory "/__w/${GITHUB_REPOSITORY#${GITHUB_REPOSITORY_OWNER}/}/${GITHUB_REPOSITORY#${GITHUB_REPOSITORY_OWNER}/}"
     - uses: actions/checkout@v4
       name: Checkout the Repository
     - name: Set up Python ${{ matrix.python-version }}
