@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: k8s-runner
     container:
-      image: python:3.10-slim  # pythonベースのコンテナを使用
+      image: ubuntu:latest
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
@@ -15,7 +15,7 @@ jobs:
       run: |
         apt update &&
         apt install git -y &&
-        git config --global --add safe.directory "/__w/*"
+        git config --global --add safe.directory "/__w/"
     - uses: actions/checkout@v4
       name: Checkout the Repository
     - name: Set up Python ${{ matrix.python-version }}
@@ -24,9 +24,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        pip install --upgrade pip
+        python -m pip install --upgrade pip
         pip install pylint
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install -r requirements.txt
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')
