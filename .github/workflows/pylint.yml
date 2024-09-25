@@ -5,6 +5,8 @@ on: [push]
 jobs:
   build:
     runs-on: k8s-runner
+    container:
+      image: ubuntu:latest
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
