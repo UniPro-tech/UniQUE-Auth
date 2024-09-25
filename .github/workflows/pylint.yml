@@ -15,7 +15,7 @@ jobs:
       run: |
         apt update &&
         apt install git -y &&
-        git config --global --add safe.directory "/__w/"
+        git config --system --add safe.directory "/__w/"
     - uses: actions/checkout@v4
       name: Checkout the Repository
     - name: Set up Python ${{ matrix.python-version }}
