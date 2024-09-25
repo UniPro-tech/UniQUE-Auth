@@ -15,7 +15,7 @@ jobs:
       run: |
         apt update &&
         apt install git -y &&
-        chmod -R ${USER} ./ &&
+        chown -R ${USER} ./ &&
         git config --system --add safe.directory "/__w/"
     - uses: actions/checkout@v4
       name: Checkout the Repository
