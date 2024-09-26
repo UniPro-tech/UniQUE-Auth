@@ -1,28 +1,32 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from ... import schemas
-from ...cruds.user import (
-    create_user,
-    get_user_by_name,
-    get_user_by_email
+from ...cruds.user import get_user_by_name, get_user_by_email, create_user
+from ...schemas import (
+    User as UserSchema,
+    CreateUser as CreateUserSchema
 )
 from ...database import get_db
 
 router = APIRouter(
     prefix="/users",
+    tags=["users"],
+    responses={404: {"description": "Not found"}},
 )
 
 
-@router.post("/", response_model=schemas.User)
-async def user_create(user: schemas.CreateUser, db: Session = Depends(get_db)):
+@router.post("/", response_model=UserSchema)
+async def create_users(
+            new_user: CreateUserSchema,
+            session: Session = Depends(get_db)
+        ):
+    user_check = get_user_by_email(session, new_user.email)
+    if user_check:
+        raise HTTPException(status_code=400, detail="Email already registered")
 
-    serch_user = await get_user_by_name(db, user.name)
-    serch_user = await get_user_by_email(db, user.email)
-    if serch_user:
-        raise HTTPException(status_code=400, detail="User already registered")
-    if serch_user:
-        raise HTTPException(status_code=400, detail="User already registered")
+    user_check = get_user_by_name(session, new_user.name)
+    if user_check:
+        raise HTTPException(status_code=400, detail="Name already registered")
 
-    user = await create_user(db, user)
+    user = await create_user(new_user, session)
 
-    return user
+    return UserSchema(user)
