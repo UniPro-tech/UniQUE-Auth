@@ -31,6 +31,13 @@ async def get_flag_by_name(
     return role if role else None
 
 
+async def get_flags(
+                session: Session, skip: int = 0, limit: int = 100
+            ) -> list[FlagModel]:
+    flags = session.query(FlagModel).offset(skip).limit(limit).all()
+    return [FlagModel.model_validate(flag) for flag in flags]
+
+
 async def create_flag(
                 session: Session, flag: CreateFlagSchema
             ) -> FlagModel:
