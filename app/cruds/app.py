@@ -31,6 +31,13 @@ async def get_app_by_id(
     return AppSchema.model_validate(app) if app else None
 
 
+async def get_apps(
+                session: Session, skip: int = 0, limit: int = 100
+            ) -> list[AppModel]:
+    apps = session.query(AppModel).offset(skip).limit(limit).all()
+    return [AppSchema.model_validate(app) for app in apps]
+
+
 async def create_app(
             session: Session,
             app: CreateAppSchema, user: UserModel

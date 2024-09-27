@@ -1,6 +1,7 @@
 from ..schemas import (
     CreateRole as CreateRoleSchema,
-    UpdateRole as UpdateRoleSchema
+    UpdateRole as UpdateRoleSchema,
+    Role as RoleSchema
 )
 from sqlalchemy.orm import Session
 from ..models import (
@@ -29,6 +30,13 @@ async def get_role_by_id(
         .first()
     )
     return role if role else None
+
+
+async def get_roles(
+            session: Session, skip: int = 0, limit: int = 100
+            ) -> list[RoleModel]:
+    roles = session.query(RoleModel).offset(skip).limit(limit).all()
+    return [RoleSchema.model_validate(role) for role in roles]
 
 
 async def create_role(
