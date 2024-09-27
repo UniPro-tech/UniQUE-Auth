@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build:
-    runs-on: dependabot
+    runs-on: k8s-runner
     container:
       image: ubuntu:latest
     strategy:
