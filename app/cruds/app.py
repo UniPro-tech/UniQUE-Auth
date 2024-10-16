@@ -39,9 +39,9 @@ async def get_apps(
 
 
 async def create_app(
-            session: Session,
-            app: CreateAppSchema, user: UserModel
-        ) -> AppModel:
+                session: Session,
+                app: CreateAppSchema, user: UserModel
+            ) -> AppModel:
     app = AppModel(**app.model_dump())
 
     app.admin_users.append(user)
@@ -52,10 +52,10 @@ async def create_app(
 
 
 async def update_app(
-            session: Session,
-            app: AppModel,
-            updates: CreateAppSchema
-        ) -> AppModel:
+                session: Session,
+                app: AppModel,
+                updates: CreateAppSchema
+            ) -> AppModel:
     update_data = updates.model_dump()
     for key, value in update_data.items():
         setattr(app, key, value)
@@ -105,7 +105,8 @@ async def add_admin_user_to_app(
 
 async def remove_admin_user_from_app(
                 session: Session,
-                app: AppModel, user: UserModel):
+                app: AppModel, user: UserModel
+            ):
     if app and user:
         app.admin_users.remove(user)
         session.commit()

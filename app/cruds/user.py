@@ -66,9 +66,9 @@ async def create_user(
 
 
 async def update_user(
-            session: Session, user: UserModel,
-            updates: UpdataMeSchema
-        ) -> UserModel:
+                session: Session, user: UserModel,
+                updates: UpdataMeSchema
+            ) -> UserModel:
     update_data = updates.model_dump()
     for key, value in update_data.items():
         setattr(user, key, value)
@@ -85,8 +85,8 @@ async def delete_user(
 
 
 async def get_user_by_email_passwd(
-        session: Session, email: str, passwd: str
-        ) -> bool:
+                session: Session, email: str, passwd: str
+            ) -> bool:
     user: CreateUserSchema = (
         session.query(UserModel)
         .filter(UserModel.email == email)

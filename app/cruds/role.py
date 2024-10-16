@@ -33,7 +33,7 @@ async def get_role_by_id(
 
 
 async def get_roles(
-            session: Session, skip: int = 0, limit: int = 100
+                session: Session, skip: int = 0, limit: int = 100
             ) -> list[RoleModel]:
     roles = session.query(RoleModel).offset(skip).limit(limit).all()
     return [RoleSchema.model_validate(role) for role in roles]
