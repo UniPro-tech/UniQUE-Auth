@@ -13,16 +13,6 @@ class Permissions:
     SYSTEM = 1 << 8
     LOG_READ = 1 << 9
 
-
-class RolePermission():
-    def __init__(self, permission_bit=None, permisstions=None) -> None:
-        self.parmission_bit: int = permission_bit
-        self.permissions: List[Permissions] = permisstions
-        if permission_bit:
-            self.permissions = self.parse_permissionsbit()
-        elif permisstions:
-            self.parmission_bit = self.generate_permissionbit()
-
     # 権限をbit変換する関数
     def generate_permissionbit(self):
         mask = 0
@@ -41,3 +31,23 @@ class RolePermission():
             ):
                 self.permissions.append(perm)
         return self.permissions
+
+
+class RolePermission(Permissions):
+    def __init__(self, permission_bit=None, permisstions=None):
+        self.parmission_bit: int = permission_bit
+        self.permissions: List[Permissions] = permisstions
+        if permission_bit:
+            self.permissions = self.parse_permissionsbit()
+        elif permisstions:
+            self.parmission_bit = self.generate_permissionbit()
+
+
+class TokenPermissions(Permissions):
+    def __init__(self, permission_bit=None, permisstions=None):
+        self.parmission_bit: int = permission_bit
+        self.permissions: List[Permissions] = permisstions
+        if permission_bit:
+            self.permissions = self.parse_permissionsbit()
+        elif permisstions:
+            self.parmission_bit = self.generate_permissionbit()
