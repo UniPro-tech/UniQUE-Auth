@@ -1,15 +1,15 @@
 from time import time
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from ... import schemas
-from ...cruds.token import (
+from app import schemas
+from app.cruds.token import (
     recrate_token, decode_token,
     get_db_token_by_token, update_db_token
 )
-from ...cruds.client import create_user_client
-from ...cruds.user import get_user_by_email_passwd
-from ...database import get_db
-from ...utils.permission2bit import (
+from app.cruds.client import create_user_client
+from app.cruds.user import get_user_by_email_passwd
+from app.database import get_db
+from app.utils.permission2bit import (
     generate_permissionbit,
 )
 
@@ -38,9 +38,8 @@ async def create_token(
             db, user_client_data
         )
 
-        permissionsbit = generate_permissionbit(*scope)
         _, recrate_token_data = await recrate_token(
-            user.id, user_client.id, permissionsbit, db
+            user.id, user_client.id, scope, db
         )
         return {
                 "code": recrate_token_data[1],
