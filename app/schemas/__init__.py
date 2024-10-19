@@ -1,37 +1,40 @@
-from .user import (
+from app.schemas.user import (
     User,
     Me,
     CreateUser,
     UpdataMe
 )
-from .token import (
+from app.schemas.token import (
     AccessToken,
     RefreshToken,
     DBToken
 )
-from .role import (
+from app.schemas.role import (
     Role,
     CreateRole,
     UpdateRole
 )
-from .app import (
+from app.schemas.app import (
     App,
     CreateApp
 )
-from .flag import (
+from app.schemas.flag import (
     Flag,
     CreateFlag,
     UpdataFlag
 )
-from .client import (
+from app.schemas.client import (
     Client,
     UpdataClient
 )
-from .log import (
+from app.schemas.log import (
     AppLog,
     UserLog,
     RoleLog,
     FlagLog,
+)
+from app.schemas.permisstions import (
+    RolePermission
 )
 
 
@@ -57,4 +60,5 @@ __all__ = [
     "UserLog",
     "RoleLog",
     "FlagLog",
+    "RolePermission",
 ]
