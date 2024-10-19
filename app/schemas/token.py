@@ -38,7 +38,7 @@ class AccessToken(BaseToken):
     """
     sub: int = Field(..., description="ClientUserID")
     for_: int = Field(..., description="UserID")
-    scope: int = Field(..., description="permissions")
+    scope: int = Field(description="permissions")
     exp: int = Field(default=time.time() + 604800, description="有効期限")
     is_geted: bool = Field(default=False, description="取得済みかどうか")
 
