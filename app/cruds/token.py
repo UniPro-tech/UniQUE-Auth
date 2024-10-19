@@ -1,6 +1,7 @@
 import os
+from typing import List
 from sqlalchemy.orm import Session
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from uuid_extensions import uuid7str
 import jwt
@@ -104,7 +105,10 @@ async def update_db_token(
     return token
 
 
-async def recrate_token(user_id: int, client_id: int, scope: int, db: Session):
+async def recrate_token(
+                user_id: int, client_id: int,
+                scope: List[str], db: Session
+            ):
     access_token_data = AccessTokenSchema(
         sub=user_id,
         iss=client_id,
@@ -142,19 +146,12 @@ async def verify_token(
             token: str = Depends(oauth2_scheme),
             db: Session = Depends(get_db)
         ) -> MeSchema | None:
-    try:
-        token_data = DBTokenSchema.model_validate(
-            decode_token(token, is_acsess_token=False)
-        )
-        user = (
-            db.query(DBTokenSchema)
-            .filter(DBTokenSchema.user_id == token_data.user_id)
-            .first()
-        )
-        return MeSchema.model_validate(user) if user else None
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    token_data = DBTokenSchema.model_validate(
+        decode_token(token, is_acsess_token=False)
+    )
+    user = (
+        db.query(DBTokenSchema)
+        .filter(DBTokenSchema.user_id == token_data.user_id)
+        .first()
+    )
+    return MeSchema.model_validate(user) if user else None
