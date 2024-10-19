@@ -22,7 +22,8 @@ router = APIRouter(
 
 @router.post("/", response_model=schemas.Token)
 async def create_token(
-            email: str, passwd: str, scope: list[str],
+            email: str, passwd: str,
+            scope: list[str], app_id: str,
             db: Session = Depends(get_db)
         ):
     user: schemas.User | False = get_user_by_email_passwd(
