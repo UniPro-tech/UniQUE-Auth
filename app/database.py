@@ -1,19 +1,28 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import (
+    sessionmaker,
+    DeclarativeBase,
+)
 from dotenv import load_dotenv
 
 # .envファイルの内容を読み込見込む
-load_dotenv(dotenv_path='../.env')
-
+load_dotenv(dotenv_path='/home/sibainu/Project/UniQUE-API/.env')
 
 SQLALCHEMY_DATABASE_URI = os.environ['SQLALCHEMY_DATABASE_URI']
 
+
+class Base(DeclarativeBase):
+    pass
+
+
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URI, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URI, echo=True
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# DBマイグレーションを行う.
+Base.metadata.create_all(bind=engine)
 
 
 def get_db():
@@ -22,6 +31,3 @@ def get_db():
         yield db
     finally:
         db.close()
-
-
-Base = declarative_base()
