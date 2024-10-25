@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from ..schemas import (
+from app.schemas import (
     UpdataClient as UpdataClientSchema,
     User as UserSchema,
     App as AppSchema,
@@ -23,9 +23,10 @@ async def get_client_by_id(
 
 
 async def create_client(
-            session: Session, client: ClientModel,
-            user: UserSchema, app: AppSchema, user_client=True
+            session: Session, user: UserSchema,
+            app: AppSchema, user_client=True
         ) -> ClientModel:
+    client = ClientModel()
     if user_client:
         client.user = UserModel(**user.model_dump())
     else:
