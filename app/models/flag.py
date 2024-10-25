@@ -1,30 +1,43 @@
-from sqlalchemy import Column, Integer, String, Boolean
-from sqlalchemy.orm import relationship
-from ..database import Base
-from .middle_table import user_flags, flag_admin_users, flag_roles
+from sqlalchemy import String
+from sqlalchemy.orm import (
+    relationship,
+    Mapped,
+    mapped_column
+)
+from app.database import Base
+from app.models.middle_table import user_flags, flag_admin_users, flag_roles
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app.models import (
+        User,
+        Role,
+        Log
+        )
 
 
 class Flag(Base):
     __tablename__ = "flags"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    display_name = Column(String, index=True)
-    description = Column(String, index=True)
-    image_url = Column(String)
-    is_enabled = Column(Boolean, default=True)
-    can_assign = Column(Boolean, default=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(30), index=True, primary_key=True)
+    display_name: Mapped[str] = mapped_column(String(30), index=True)
+    description: Mapped[str] = mapped_column(String(500))
+    image_url: Mapped[str] = mapped_column(String(255))
+    is_enabled: Mapped[bool] = mapped_column(nullable=False)
+    can_assign: Mapped[bool] = mapped_column(nullable=False)
 
     # 多対多リレーション
-    users = relationship(
-        'User', secondary=user_flags, back_populates='flags'
-        )
-    admin_users = relationship(
-        'User', secondary=flag_admin_users, back_populates='admin_apps'
-        )
-    roles = relationship(
-        'Role', secondary=flag_roles, back_populates='flags'
+    users: Mapped[list["User"]] = relationship(
+        secondary=user_flags, back_populates='flags'
     )
-
+    admin_users: Mapped[list["User"]] = relationship(
+        secondary=flag_admin_users, back_populates='admin_flags'
+    )
+    roles: Mapped[list["Role"]] = relationship(
+        secondary=flag_roles, back_populates='flags'
+    )
     # 多対一リレーション
-    logs = relationship('Log', back_populates='app')
+    logs: Mapped[list["Log"]] = relationship(back_populates='flag')
+
+    def __repr__(self):
+        return f"<Flag(id={self.id}, name={self.name})>"

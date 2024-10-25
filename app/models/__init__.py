@@ -10,6 +10,7 @@ from .log import (
     RoleLog,
     FlagLog,
     ClientLog,
+    Log
 )
 
 
@@ -25,4 +26,5 @@ __all__ = [
     "RoleLog",
     "FlagLog",
     "ClientLog",
+    "Log"
 ]

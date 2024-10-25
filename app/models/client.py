@@ -1,14 +1,37 @@
-from sqlalchemy import Column, Integer, Boolean, ForeignKey
-from sqlalchemy.orm import relationship
-from ..database import Base
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import (
+    relationship,
+    Mapped,
+    mapped_column
+)
+from typing import TYPE_CHECKING
+from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models import (
+        User,
+        App,
+        Token
+        )
 
 
 class Client(Base):
-    __tablename__ = 'clients'
-    id = Column(Integer, primary_key=True)
-    is_enable = Column(Boolean, default=False)
-    user_id = Column(Integer, ForeignKey('users.id'))
-    app_id = Column(Integer, ForeignKey('apps.id'))
+    """clientテーブルのモデルクラス"""
 
-    user = relationship('User', back_populates='clients')
-    app = relationship('App', back_populates='clients')
+    __tablename__ = 'clients'
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    is_enable: Mapped[bool] = mapped_column(nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    app_id: Mapped[int] = mapped_column(ForeignKey('apps.id'))
+
+    user: Mapped['User'] = relationship(back_populates='clients')
+    app: Mapped['App'] = relationship(back_populates='clients')
+
+    # 1対1のリレーションシップ：Clientは1つのトークンしか持てない
+    token: Mapped['Token'] = relationship(
+            back_populates='client', cascade='all, delete-orphan'
+        )
+    
+    def __repr__(self):
+        return f"<Client(id={self.id}, user_id={self.user_id}, app_id={self.app_id})>"
