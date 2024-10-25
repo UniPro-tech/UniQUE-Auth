@@ -1,16 +1,19 @@
 from time import time
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app import schemas
+from app.schemas import (
+    User as UserSchema,
+    Client as ClientSchema,
+)
 from app.cruds.token import (
     recrate_token, decode_token,
     get_db_token_by_token, update_db_token
 )
-from app.cruds.client import create_user_client
+from app.cruds.client import create_client
 from app.cruds.user import get_user_by_email_passwd
 from app.database import get_db
-from app.utils.permission2bit import (
-    generate_permissionbit,
+from app.schemas.permisstions import (
+    TokenPermissions
 )
 
 router = APIRouter(
@@ -20,26 +23,26 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=schemas.Token)
+@router.post("/", response_model=str)
 async def create_token(
-            email: str, passwd: str,
-            scope: list[str], app_id: str,
-            db: Session = Depends(get_db)
+            email: str, passwd: str, scope: list[str],
+            app_id: str, redirect_uri: str,
+            session: Session = Depends(get_db)
         ):
-    user: schemas.User | False = get_user_by_email_passwd(
-        db, email, passwd
+    user: UserSchema | False = get_user_by_email_passwd(
+        session, email, passwd
     )
 
     if user:
-        user_client_data = schemas.UsrClient(
-            user=user.id
+        user_client: ClientSchema = create_client(
+            session, user=user
         )
-        user_client: schemas.UserClient = create_user_client(
-            db, user_client_data
+        token_permissions = TokenPermissions(
+            permisstions=scope
         )
 
         _, recrate_token_data = await recrate_token(
-            user.id, user_client.id, scope, db
+            user.id, user_client.id, token_permissions.parmission_bit, db
         )
         return {
                 "code": recrate_token_data[1],

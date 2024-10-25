@@ -44,9 +44,12 @@ class RolePermission(Permissions):
 
 
 class TokenPermissions(Permissions):
-    def __init__(self, permission_bit=None, permisstions=None):
-        self.parmission_bit: int = permission_bit
-        self.permissions: List[Permissions] = permisstions
+    def __init__(
+                self, permission_bit: int = None,
+                permisstions: List[Permissions] = None
+            ):
+        self.parmission_bit = permission_bit
+        self.permissions = permisstions
         if permission_bit:
             self.permissions = self.parse_permissionsbit()
         elif permisstions:
