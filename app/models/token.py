@@ -16,10 +16,10 @@ class Token(Base):
     __tablename__ = "token"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    acsess_token: Mapped[str] = mapped_column(String(100), index=True)
+    access_token: Mapped[str] = mapped_column(String(100), index=True)
     refresh_token: Mapped[str] = mapped_column(String(100), index=True)
     is_enabled: Mapped[bool] = mapped_column(default=True)
-    client_id: Mapped[int] = mapped_column(ForeignKey("client.id"))
+    client_id: Mapped[int] = mapped_column(ForeignKey("clients.id"))
 
     # Tokenは1つのクライアントにのみ紐付けられる
     client: Mapped["Client"] = relationship(back_populates="token")

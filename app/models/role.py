@@ -9,8 +9,7 @@ from .middle_table import user_roles
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models import (
-        User,
-        Log
+        User
         )
 
 
@@ -30,8 +29,6 @@ class Role(Base):
     users: Mapped[list["User"]] = relationship(
         secondary=user_roles, back_populates='roles'
     )
-    # 多対一リレーション
-    logs: Mapped[list["Log"]] = relationship(back_populates='role')
 
     def __repr__(self):
         return f"<Role(id={self.id}, name={self.name}, permission_bit={self.permission_bit})>"

@@ -31,17 +31,3 @@ app_admin_users = Table(
     Column("app_id", Integer, ForeignKey("apps.id"), primary_key=True),
     Column("user_id", Integer, ForeignKey("users.id"), primary_key=True)
 )
-
-flag_admin_users = Table(
-    "flag_admin_users",
-    Base.metadata,
-    Column("flag_id", Integer, ForeignKey("flags.id"), primary_key=True),
-    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True)
-)
-
-flag_roles = Table(
-    "flag_roles",
-    Base.metadata,
-    Column("flag_id", Integer, ForeignKey("flags.id"), primary_key=True),
-    Column("role_id", Integer, ForeignKey("roles.id"), primary_key=True)
-)

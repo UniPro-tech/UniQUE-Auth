@@ -11,7 +11,7 @@ from app.models.middle_table import (
     user_apps,
     app_admin_users
 )
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from app.models import (
@@ -36,23 +36,23 @@ class User(Base):
     email_verified: Mapped[bool] = mapped_column(default=False)
     is_enable: Mapped[bool] = mapped_column(default=True)
     # 多対多リレーション
-    roles: Mapped[list["Role"]] = relationship(
+    roles: Mapped[List["Role"] | None] = relationship(
         secondary=user_roles, back_populates="users"
     )
-    flags: Mapped[list["Flag"]] = relationship(
+    flags: Mapped[List["Flag"] | None] = relationship(
         secondary=user_flags, back_populates="users"
     )
-    apps: Mapped[list["App"]] = relationship(
+    apps: Mapped[List["App"] | None] = relationship(
         secondary=user_apps, back_populates="users"
     )
-    admin_apps: Mapped[list["App"]] = relationship(
+    admin_apps: Mapped[List["App"]] = relationship(
         secondary=app_admin_users, back_populates="admin_users"
     )
-    # 多対一リレーション
-    logs: Mapped[list["Log"]] = relationship(back_populates="user")
-    clients: Mapped[list["Client"]] = relationship(
-        backref="user", cascade="all, delete-orphan"
+    clients: Mapped[List["Client"] | None] = relationship(
+        back_populates='user', cascade="all, delete-orphan"
     )
+    # 多対一リレーション
+    logs: Mapped[List["Log"] | None] = relationship(back_populates="user")
 
     def __repr__(self):
         return f"<User(id={self.id}, name={self.name}, email={self.email})>"

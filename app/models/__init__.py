@@ -1,15 +1,10 @@
-from .app import App
-from .user import User
-from .role import Role
-from .flag import Flag
-from .client import Client
-from .token import Token
-from .log import (
-    AppLog,
-    UserLog,
-    RoleLog,
-    FlagLog,
-    ClientLog,
+from app.models.app import App
+from app.models.user import User
+from app.models.role import Role
+from app.models.flag import Flag
+from app.models.client import Client
+from app.models.token import Token
+from app.models.log import (
     Log
 )
 
@@ -21,10 +16,5 @@ __all__ = [
     "Flag",
     "Client",
     "Token",
-    "AppLog",
-    "UserLog",
-    "RoleLog",
-    "FlagLog",
-    "ClientLog",
     "Log"
 ]

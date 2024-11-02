@@ -21,9 +21,9 @@ class Client(Base):
     __tablename__ = 'clients'
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    is_enable: Mapped[bool] = mapped_column(nullable=False)
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
-    app_id: Mapped[int] = mapped_column(ForeignKey('apps.id'))
+    is_enable: Mapped[bool] = mapped_column(default=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=True)
+    app_id: Mapped[int] = mapped_column(ForeignKey('apps.id'), nullable=True)
 
     user: Mapped['User'] = relationship(back_populates='clients')
     app: Mapped['App'] = relationship(back_populates='clients')
@@ -32,6 +32,6 @@ class Client(Base):
     token: Mapped['Token'] = relationship(
             back_populates='client', cascade='all, delete-orphan'
         )
-    
+
     def __repr__(self):
         return f"<Client(id={self.id}, user_id={self.user_id}, app_id={self.app_id})>"
