@@ -19,11 +19,11 @@ class Role(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(30), index=True)
     display_name: Mapped[str] = mapped_column(String(30), index=True)
-    description: Mapped[str] = mapped_column(String(500))
-    permission_bit: Mapped[int] = mapped_column(nullable=False)
-    is_enabled: Mapped[bool] = mapped_column(nullable=False)
-    is_deactivated: Mapped[bool] = mapped_column(nullable=False)
-    sort: Mapped[int] = mapped_column(nullable=False)
+    description: Mapped[str] = mapped_column(String(500), default="")
+    permission_bit: Mapped[int] = mapped_column(nullable=False, default=0)
+    is_enabled: Mapped[bool] = mapped_column(nullable=False, default=True)
+    is_deactivated: Mapped[bool] = mapped_column(nullable=False, default=False)
+    sort: Mapped[int] = mapped_column(nullable=False, default=100)
 
     # 多対多リレーション
     users: Mapped[list["User"]] = relationship(

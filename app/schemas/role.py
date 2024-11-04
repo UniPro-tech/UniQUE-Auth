@@ -4,7 +4,6 @@ from typing import List
 
 class RoleBase(BaseModel):
     name: str = Field(..., max_length=100)
-    parmission_bit: int = Field(default=0)
 
 
 class Role(RoleBase):
@@ -21,12 +20,15 @@ class Role(RoleBase):
 
 
 class CreateRole(RoleBase):
+    parmission_bit: int = Field(default=0)
+    display_name: str = Field(..., min_length=3, max_length=30)
 
     class Config:
         model_validate = True
 
 
 class UpdateRole(RoleBase):
+    display_name: str = Field(..., min_length=3, max_length=30)
     discription: str = Field(..., max_length=255)
     parmission_bit: int = Field(default=0)
     sort: int = Field(default=0)

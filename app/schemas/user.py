@@ -28,10 +28,14 @@ class CreateUser(UserBase):
         <password> <str>:
                 パスワード
     """
-    name: str = Field(...,
-                      min_length=3, max_length=16,
-                      pattern=r'^[a-zA-Z0-9_]+$'
-                      )
+    name: str = Field(
+        ..., min_length=3, max_length=16,
+        pattern=r'^[a-zA-Z0-9_]+$'
+    )
+    display_name: str = Field(
+        ..., min_length=1, max_length=32,
+        pattern=r'^[a-zA-Z0-9_]+$'
+    )
     email: str = Field(
             ..., min_length=1, max_length=256,
             pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
@@ -110,6 +114,10 @@ class UpdataMe(UserBase):
         <is_enable> <bool>:
                 アカウントが有効かどうか
     """
+    display_name: str = Field(
+        ..., min_length=1, max_length=32,
+        pattern=r'^[a-zA-Z0-9_]+$'
+    )
     email: str = Field(
             ..., min_length=1, max_length=256,
             pattern=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'

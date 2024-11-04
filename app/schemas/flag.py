@@ -32,6 +32,7 @@ class CreateFlag(BaseFlag):
     flagの作成クラス
     """
     name: str = Field(..., min_length=1, max_length=32)
+    display_name: str = Field(..., min_length=1, max_length=32)
 
     class Config:
         model_validate = True
@@ -41,6 +42,7 @@ class UpdataFlag(BaseFlag):
     """
     flagの更新クラス
     """
+    display_name: str = Field(..., min_length=1, max_length=32)
     description: str = Field(..., max_length=1024)
     image_url: str = Field(..., max_length=256)
     can_assign: bool = Field(default=True)

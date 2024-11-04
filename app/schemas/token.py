@@ -37,7 +37,7 @@ class AccessToken(BaseToken):
                 有効期限(AccessTokenは7日間)
     """
     sub: int = Field(..., description="ClientUserID")
-    for_: int = Field(..., description="UserID")
+    for_: int = Field(..., description="UserID or AppID")
     scope: int = Field(description="permissions")
     exp: int = Field(default=time.time() + 604800, description="有効期限")
     is_geted: bool = Field(default=False, description="取得済みかどうか")
@@ -72,11 +72,9 @@ class DBToken(BaseModel):
         <refresh_token> <str>:
                 リフレッシュトークン
     """
-    acsess_token_id: str = Field(..., description="AccessToken")
-    refresh_token_id: str = Field(..., description="RefreshToken")
-    user_id: int = Field(..., description="ClientUserID")
+    access_token: str = Field(..., description="AccessToken")
+    refresh_token: str = Field(..., description="RefreshToken")
     client_id: int = Field(..., description="ClientID")
-    scope: int = Field(..., description="permissions")
     is_enabled: bool = Field(default=True, description="有効かどうか")
 
     class Config:
