@@ -1,18 +1,27 @@
 import os
+import time
 from typing import List
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from uuid_extensions import uuid7str
 import jwt
-from ..schemas import (
+from app.schemas import (
     DBToken as DBTokenSchema,
-    Me as MeSchema,
     AccessToken as AccessTokenSchema,
     RefreshToken as RefreshTokenSchema
 )
-from ..database import get_db
-from ..models import Token
+from app.cruds import (
+    app as AppCruds,
+    user as UserCruds
+    )
+from app.database import get_db
+from app.models import (
+    Token as TokenModel,
+    User as UserModel,
+    App as AppModel
+)
 from dotenv import load_dotenv
 
 
@@ -69,35 +78,37 @@ def create_refresh_token(
 async def add_db_token(
         session: Session, token: DBTokenSchema
         ):
-    token = Token(**token.model_dump())
+    token = TokenModel(**token.model_dump())
     session.add(token)
     session.commit()
     return token
 
 
 async def get_db_token_by_token(
-                session: Session, token_id: str, is_refresh: bool = True
-            ) -> DBTokenSchema | None:
+                session: Session, token: str, is_refresh: bool = True
+            ) -> TokenModel | None:
     # リフレッシュトークンからトークンを取得する
     if is_refresh:
         token = (
-            session.query(Token)
-            .filter(Token.refresh_token_id == token_id)
-            .first()
+            session.scalar(
+                select(TokenModel)
+                .where(TokenModel.refresh_token == token)
+            )
         )
     else:
         token = (
-            session.query(Token)
-            .filter(Token.acsess_token_id == token_id)
-            .first()
+            session.scalar(
+                select(TokenModel)
+                .where(TokenModel.access_token == token)
+            )
         )
-    return token if token else None
+    return token
 
 
 async def update_db_token(
-                session: Session, token: Token,
+                session: Session, token: TokenModel,
                 is_enabled: bool = False
-            ) -> DBTokenSchema | None:
+            ) -> TokenModel:
     # トークンを無効化する
     token.is_enabled = is_enabled
     session.commit()
@@ -107,7 +118,7 @@ async def update_db_token(
 
 async def recrate_token(
                 user_id: int, client_id: int,
-                scope: List[str], db: Session
+                scope: List[str], session: Session
             ):
     access_token_data = AccessTokenSchema(
         sub=user_id,
@@ -120,9 +131,9 @@ async def recrate_token(
     refresh_token = create_refresh_token(refresh_token_data)
 
     await add_db_token(
-        db, acsess_token_id=access_token[1],
-        refresh_token_id=refresh_token[1],
-        scope=scope, user_id=user_id, client_id=client_id
+        session, acsess_token=access_token[0],
+        refresh_token=refresh_token[0],
+        client_id=client_id
     )
 
     return access_token, refresh_token
@@ -144,14 +155,16 @@ def decode_token(
 
 async def verify_token(
             token: str = Depends(oauth2_scheme),
-            db: Session = Depends(get_db)
-        ) -> MeSchema | None:
-    token_data = DBTokenSchema.model_validate(
-        decode_token(token, is_acsess_token=False)
-    )
-    user = (
-        db.query(DBTokenSchema)
-        .filter(DBTokenSchema.user_id == token_data.user_id)
-        .first()
-    )
-    return MeSchema.model_validate(user) if user else None
+            session: Session = Depends(get_db)
+        ) -> AppModel | UserModel | None:
+    token_data = decode_token(token, is_acsess_token=False)
+    token_db_data = await get_db_token_by_token(
+                        session, token, is_refresh=False
+                    )
+    if token_data.exp < int(time.time()) and token_db_data.is_enabled:
+        return None
+    # Appの場合
+    if token_db_data.refresh_token is None:
+        return AppCruds.get_app_by_id(session, token_data.iss)
+    # Userの場合
+    return UserCruds.get_user_by_id(session, token_data.sub)

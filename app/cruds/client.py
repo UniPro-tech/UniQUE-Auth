@@ -1,8 +1,7 @@
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.schemas import (
     UpdataClient as UpdataClientSchema,
-    User as UserSchema,
-    App as AppSchema,
 )
 from ..models import (
     Client as ClientModel,
@@ -15,22 +14,23 @@ async def get_client_by_id(
                 session: Session, client_id: int
             ) -> ClientModel | None:
     client = (
-        session.query(ClientModel)
-        .filter(ClientModel.id == client_id)
-        .first()
+        session.scalar(
+            select(ClientModel)
+            .where(ClientModel.id == client_id)
+        )
     )
     return client if client else None
 
 
 async def create_client(
-            session: Session, user: UserSchema,
-            app: AppSchema, user_client=True
+            session: Session, user: UserModel,
+            app: AppModel, user_client=True
         ) -> ClientModel:
     client = ClientModel()
     if user_client:
-        client.user = UserModel(**user.model_dump())
+        client.user = user
     else:
-        client.app = AppModel(**app.model_dump())
+        client.app = app
     session.add(client)
     session.commit()
     session.refresh(client)

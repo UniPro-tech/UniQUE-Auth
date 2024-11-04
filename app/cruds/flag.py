@@ -1,9 +1,10 @@
+from sqlalchemy import select
 from sqlalchemy.orm import Session
-from ..schemas import (
+from app.schemas import (
     CreateFlag as CreateFlagSchema,
     UpdataFlag as UpdataFlagSchema
 )
-from ..models import (
+from app.models import (
     Flag as FlagModel,
     User as UserModel,
 )
@@ -13,9 +14,10 @@ async def get_flag_by_id(
                 session: Session, flag_id: int
             ) -> FlagModel | None:
     role = (
-        session.query(FlagModel)
-        .filter(FlagModel.id == flag_id)
-        .first()
+        session.scalar(
+            select(FlagModel)
+            .where(FlagModel.id == flag_id)
+        )
     )
     return role if role else None
 
@@ -24,9 +26,10 @@ async def get_flag_by_name(
                 session: Session, name: str
             ) -> FlagModel | None:
     role = (
-        session.query(FlagModel)
-        .filter(FlagModel.name == name)
-        .first()
+        session.scalar(
+            select(FlagModel)
+            .where(FlagModel.name == name)
+        )
     )
     return role if role else None
 
@@ -34,8 +37,12 @@ async def get_flag_by_name(
 async def get_flags(
                 session: Session, skip: int = 0, limit: int = 100
             ) -> list[FlagModel]:
-    flags = session.query(FlagModel).offset(skip).limit(limit).all()
-    return [FlagModel.model_validate(flag) for flag in flags]
+    flags = session.scalar(
+        select(FlagModel)
+        .offset(skip)
+        .limit(limit)
+    )
+    return flags
 
 
 async def create_flag(
@@ -82,26 +89,6 @@ async def remove_user_from_flag(
                 flag: FlagModel, user: UserModel
             ) -> FlagModel:
     flag.users.remove(user)
-    session.commit()
-    session.refresh(flag)
-    return flag
-
-
-async def add_admin_user_to_flag(
-                session: Session,
-                flag: FlagModel, user: UserModel
-            ) -> FlagModel:
-    flag.admin_users.append(user)
-    session.commit()
-    session.refresh(flag)
-    return flag
-
-
-async def remove_admin_user_from_flag(
-                session: Session,
-                flag: FlagModel, user: UserModel
-            ) -> FlagModel:
-    flag.admin_users.remove(user)
     session.commit()
     session.refresh(flag)
     return flag

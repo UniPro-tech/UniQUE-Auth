@@ -1,7 +1,7 @@
+from sqlalchemy import select
 from ..schemas import (
     CreateRole as CreateRoleSchema,
     UpdateRole as UpdateRoleSchema,
-    Role as RoleSchema
 )
 from sqlalchemy.orm import Session
 from ..models import (
@@ -14,9 +14,10 @@ async def get_role_by_name(
                 session: Session, name: str
             ) -> RoleModel | None:
     role = (
-        session.query(RoleModel)
-        .filter(RoleModel.name == name)
-        .first()
+        session.scalar(
+            select(RoleModel)
+            .where(RoleModel.name == name)
+        )
     )
     return role if role else None
 
@@ -25,9 +26,10 @@ async def get_role_by_id(
                 session: Session, role_id: int
             ) -> RoleModel | None:
     role = (
-        session.query(RoleModel)
-        .filter(RoleModel.id == role_id)
-        .first()
+        session.scalar(
+            select(RoleModel)
+            .where(RoleModel.id == role_id)
+        )
     )
     return role if role else None
 
@@ -35,8 +37,12 @@ async def get_role_by_id(
 async def get_roles(
                 session: Session, skip: int = 0, limit: int = 100
             ) -> list[RoleModel]:
-    roles = session.query(RoleModel).offset(skip).limit(limit).all()
-    return [RoleSchema.model_validate(role) for role in roles]
+    roles = session.scalar(
+        select(RoleModel)
+        .offset(skip)
+        .limit(limit)
+    )
+    return roles
 
 
 async def create_role(

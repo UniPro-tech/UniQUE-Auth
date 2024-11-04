@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from ..models import User as UserModel
 import hashlib
@@ -10,35 +11,38 @@ from ..schemas import (
 
 async def get_user_by_email(
                 session: Session, email: str
-            ) -> UserSchema | None:
+            ) -> UserModel | None:
     user = (
-        session.query(UserModel)
-        .filter(UserModel.email == email)
-        .first()
+        session.scalar(
+            select(UserModel)
+            .where(UserModel.email == email)
+        )
     )
-    return user if user else None
+    return user
 
 
 async def get_user_by_name(
                 session: Session, name: str
             ) -> UserModel | None:
     user = (
-        session.query(UserModel)
-        .filter(UserModel.name == name)
-        .first()
+        session.scalar(
+            select(UserModel)
+            .where(UserModel.name == name)
+        )
     )
-    return user if user else None
+    return user
 
 
 async def get_user_by_id(
                 session: Session, user_id: int
             ) -> UserSchema | None:
     user = (
-        session.query(UserModel)
-        .filter(UserModel.id == user_id)
-        .first()
+        session.scalar(
+            select(UserModel)
+            .where(UserModel.id == user_id)
+        )
     )
-    return user if user else None
+    return user
 
 
 async def get_users(
@@ -47,12 +51,13 @@ async def get_users(
             ) -> list[UserSchema]:
     # WARNING: この関数を使用するユーザーは制限すること。
     users = (
-        session.query(UserModel)
-        .offset(skip)
-        .limit(limit)
-        .all()
+        session.scalar(
+            select(UserModel)
+            .offset(skip)
+            .limit(limit)
+        )
     )
-    return [UserSchema.model_validate(user) for user in users]
+    return users
 
 
 async def create_user(
@@ -87,11 +92,7 @@ async def delete_user(
 async def get_user_by_email_passwd(
                 session: Session, email: str, passwd: str
             ) -> bool:
-    user: CreateUserSchema = (
-        session.query(UserModel)
-        .filter(UserModel.email == email)
-        .first()
-    )
+    user = await get_user_by_email(session, email)
     if not user:
         return None
     if user.hash_password == hashlib.sha256(passwd.encode()).hexdigest():
