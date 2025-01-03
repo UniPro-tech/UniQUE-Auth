@@ -25,6 +25,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base.metadata.create_all(bind=engine)
 
 
+# DBセッションを取得する.
 def get_db():
     db = SessionLocal()
     try:
