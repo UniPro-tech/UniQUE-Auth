@@ -11,8 +11,7 @@ from typing import TYPE_CHECKING, List
 if TYPE_CHECKING:
     from app.models import (
         User,
-        Client,
-        Log
+        Client
         )
 
 
@@ -21,21 +20,10 @@ class App(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(30), index=True)
-    image_url: Mapped[str] = mapped_column(String(255), default="")
-    description: Mapped[str] = mapped_column(String(500), default="")
-    verified: Mapped[bool] = mapped_column(default=False, nullable=False)
-    is_enabled: Mapped[bool] = mapped_column(default=True, nullable=False)
-
-    # 多対多リレーション
-    users: Mapped[List["User"]] = relationship(
-        secondary=user_apps, back_populates='apps'
-    )
-    admin_users: Mapped[List["User"]] = relationship(
-        secondary=app_admin_users, back_populates='admin_apps'
-    )
+    scope: Mapped[str] = mapped_column(String(255), index=True)
+    redirect_uri: Mapped[str] = mapped_column(String(255), index=True)
 
     # 多対一リレーション
-    logs: Mapped[List["Log"] | None] = relationship(back_populates="app")
     clients: Mapped[List["Client"] | None] = relationship(
         back_populates='app', cascade="all, delete-orphan"
     )
