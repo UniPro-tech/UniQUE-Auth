@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from app.models import (
     App as AppModel,
     User as UserModel,
-    Log as LogModel
 )
 from app.schemas import App as AppSchema
 
@@ -48,16 +47,9 @@ async def create_app(
                 app: AppModel,
                 admin_user: UserModel
             ) -> AppModel:
-    log = LogModel(
-        action_type="create",
-        action_entity="user",
-        description=f"Create app {app.name} by {admin_user.name}",
-        user=admin_user
-    )
     app = AppModel(
         name=app.name,
         admin_users=[admin_user],
-        logs=[log]
     )
     session.add(app)
     session.commit()
