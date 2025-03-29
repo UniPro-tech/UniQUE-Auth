@@ -1,26 +1,26 @@
 from fastapi import FastAPI
-from routers import apps, flags, users, token, roles
-from routers.apps import (
+from app.routers import apps, flags, users, token, roles
+from app.routers.apps import (
     users as apps_users,
     list as apps_list
     )
-from .routers.flags import (
+from app.routers.flags import (
     users as flags_users,
     list as flags_list,
     roles as flags_roles
     )
-from .routers.roles import (
+from app.routers.roles import (
     list as roles_list
     )
-from .routers.token import code
-from .routers.users import (
+from app.routers.token import code
+from app.routers.users import (
     me as users_me,
     invite as users_invite,
     list as users_list,
     flags as users_flags,
     link_apps as users_link_apps
 )
-from .database import engine, Base
+from app.database import engine, Base
 
 
 # Create the database tables
