@@ -6,9 +6,6 @@ from app.models.token import Token
 __all__ = [
     "App",
     "User",
-    "Role",
-    "Flag",
     "Client",
     "Token",
-    "Log"
 ]
