@@ -17,7 +17,9 @@ class App(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(30), index=True)
     scope: Mapped[str] = mapped_column(String(255), index=True)
-    redirect_uris: Mapped[List["Redirect_URI"]] = relationship(back_populates="app")
+    redirect_uris: Mapped[List["Redirect_URI"]] = relationship(
+        back_populates="app"
+    )
 
     # 多対一リレーション
     clients: Mapped[List["Client"]] = relationship(

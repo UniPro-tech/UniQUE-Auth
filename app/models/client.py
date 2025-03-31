@@ -36,4 +36,7 @@ class Client(Base):
         )
 
     def __repr__(self):
-        return f"<Client(id={self.id}, user_id={self.user_id}, app_id={self.app_id})>"
+        return (
+            f"<Client(id={self.id}, user_id={self.user_id}, "
+            f"app_id={self.app_id})>"
+        )
