@@ -5,17 +5,10 @@ from sqlalchemy.orm import (
     mapped_column
 )
 from app.database import Base
-from app.models.middle_table import (
-    user_roles,
-    user_flags,
-    user_apps,
-    app_admin_users
-)
 from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from app.models import (
-        App,
         Client
         )
 

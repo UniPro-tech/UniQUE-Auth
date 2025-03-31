@@ -21,7 +21,6 @@ class Client(Base):
     __tablename__ = 'clients'
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    is_enable: Mapped[bool] = mapped_column(default=True, nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=True)
     app_id: Mapped[int] = mapped_column(ForeignKey('apps.id'), nullable=True)
 
@@ -29,7 +28,10 @@ class Client(Base):
     app: Mapped['App'] = relationship(back_populates='clients')
 
     # 1対1のリレーションシップ：Clientは1つのトークンしか持てない
-    token: Mapped['Token'] = relationship(
+    acsess_token: Mapped['Token'] = relationship(
+            back_populates='client', cascade='all, delete-orphan'
+        )
+    refresh_token: Mapped['Token'] = relationship(
             back_populates='client', cascade='all, delete-orphan'
         )
 
