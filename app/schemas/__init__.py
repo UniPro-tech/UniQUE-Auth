@@ -9,29 +9,13 @@ from app.schemas.token import (
     RefreshToken,
     DBToken
 )
-from app.schemas.role import (
-    Role,
-    CreateRole,
-    UpdateRole
-)
 from app.schemas.app import (
     App,
     CreateApp
 )
-from app.schemas.flag import (
-    Flag,
-    CreateFlag,
-    UpdataFlag
-)
 from app.schemas.client import (
     Client,
     UpdataClient
-)
-from app.schemas.log import (
-    AppLog,
-    UserLog,
-    RoleLog,
-    FlagLog,
 )
 from app.schemas.permisstions import (
     RolePermission
