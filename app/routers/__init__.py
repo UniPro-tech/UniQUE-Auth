@@ -36,6 +36,13 @@ class AuthorizeRequest(BaseModel):
         for field in required_fields:
             if getattr(self, field) is None:
                 raise ValueError(f"The field '{field}' is required and cannot be None.")
+        
+        display_values = ["page", "popup", "touch", "wap"]
+        if self.display not in display_values:
+            raise ValueError(f"The field 'display' must be one of {display_values}.")
+        prompt_values = ["none", "login", "consent", "select_account"]
+        if self.prompt not in prompt_values:
+            raise ValueError(f"The field 'prompt' must be one of {prompt_values}.")
 
 
 @router.post("/authorize", response_model=schemas.User)
