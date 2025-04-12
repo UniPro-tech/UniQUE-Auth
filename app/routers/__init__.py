@@ -31,15 +31,22 @@ class AuthorizeRequest(BaseModel):
     acr_values: str  # OPTIONAL
 
     def validate_required_fields(self) -> None:
-        """Check if REQUIRED fields are not None"""
+        """AuthorizeRequestの必須フィールドを検証するメソッド"""
+        # 必須フィールドのリスト
+        # これらのフィールドはNoneであってはいけない
         required_fields = ["scope", "response_type", "client_id", "redirect_uri", "state"]
         for field in required_fields:
             if getattr(self, field) is None:
                 raise ValueError(f"The field '{field}' is required and cannot be None.")
         
+        # display変数の値を検証
+        # displayはpage, popup, touch, wapのいずれかである必要がある
         display_values = ["page", "popup", "touch", "wap"]
         if self.display not in display_values:
             raise ValueError(f"The field 'display' must be one of {display_values}.")
+        
+        # prompt変数の値を検証
+        # promptはnone, login, consent, select_accountのいずれかである必要がある
         prompt_values = ["none", "login", "consent", "select_account"]
         if self.prompt not in prompt_values:
             raise ValueError(f"The field 'prompt' must be one of {prompt_values}.")
