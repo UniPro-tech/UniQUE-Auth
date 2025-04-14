@@ -42,3 +42,9 @@ class BaseToken(BaseModel):
         description="認証時刻(auth_time)",
         example=int(time.time()),
     )
+    status: int = Field(
+        ...,
+        description="トークンの状態(有効:1、無効:0)",
+        example="active",
+        max_length=255,
+    )
