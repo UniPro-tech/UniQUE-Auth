@@ -14,8 +14,9 @@ from app.schemas.app import (
     CreateApp
 )
 from app.schemas.client import (
-    Client,
-    UpdataClient
+    ClientCreate,
+    ClientRead,
+    ClientUpdate
 )
 from app.schemas.permisstions import (
     RolePermission
@@ -29,20 +30,9 @@ __all__ = [
     "AccessToken",
     "RefreshToken",
     "DBToken",
-    "Role",
-    "CreateRole",
-    "UpdateRole",
     "App",
     "CreateApp",
-    "Flag",
-    "CreateFlag",
-    "UpdataFlag",
     "UpdataMe",
-    "Client",
-    "UpdataClient",
-    "AppLog",
-    "UserLog",
-    "RoleLog",
-    "FlagLog",
-    "RolePermission",
-]
+    "ClientCreate",
+    "ClientRead",
+    "ClientUpdate",
