@@ -41,7 +41,7 @@ class Client(Base):
     app: Mapped["App"] = relationship("App", back_populates="clients")  # Appとのリレーション
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))  # 外部キーとしてUserテーブルのIDを参照
-    user: Mapped["App"] = relationship("User", back_populates="clients")  # Userとのリレーション
+    user: Mapped["User"] = relationship("User", back_populates="clients")  # Userとのリレーション
 
     def __repr__(self):
         return f"<Client(id={self.id}, client_id={self.client_id}, client_type={self.client_type})>"
