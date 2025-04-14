@@ -65,9 +65,13 @@ async def authorize(
         request.validate_required_fields()
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    # ログインしているか確認
 
-    # ユーザーの認証
+    # ログインUIを表示する
 
+    # ユーザーがすでに認可されているか確認
+
+    # ユーザーが認可されていない場合は、認可画面を表示する
 
     # ユーザーの認可& トークンの発行
 
