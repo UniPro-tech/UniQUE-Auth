@@ -1,9 +1,11 @@
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import String, DateTime, ForeignKey
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
     relationship,
 )
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from app.database import Base
 from typing import TYPE_CHECKING, List
 
@@ -17,11 +19,26 @@ class App(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(30), index=True)
     scope: Mapped[str] = mapped_column(String(255), index=True)
+    
+    client_type: Mapped[str] = mapped_column(String(30), default="confidential")  # confidential or public
+    grant_types: Mapped[str] = mapped_column(String(255), default="authorization_code")
+    response_types: Mapped[str] = mapped_column(String(255), default="code")
+    token_endpoint_auth_method: Mapped[str] = mapped_column(String(50), default="client_secret_basic")
+
+    logo_uri: Mapped[str] = mapped_column(String(255), nullable=True)
+    client_uri: Mapped[str] = mapped_column(String(255), nullable=True)
+    tos_uri: Mapped[str] = mapped_column(String(255), nullable=True)
+    policy_uri: Mapped[str] = mapped_column(String(255), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(ZoneInfo("UTC")))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now(ZoneInfo("UTC")), onupdate=datetime.now(ZoneInfo("UTC"))
+    )
+
     redirect_uris: Mapped[List["Redirect_URI"]] = relationship(
         back_populates="app"
     )
 
-    # 多対一リレーション
     clients: Mapped[List["Client"]] = relationship(
         back_populates='app', cascade="all, delete-orphan"
     )

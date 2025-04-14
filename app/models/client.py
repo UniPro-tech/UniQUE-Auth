@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey
+from sqlalchemy import String, DateTime, ForeignKey
 from sqlalchemy.orm import (
     relationship,
     Mapped,
@@ -6,37 +6,42 @@ from sqlalchemy.orm import (
 )
 from typing import TYPE_CHECKING
 from app.database import Base
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 if TYPE_CHECKING:
     from app.models import (
         User,
-        App,
-        Token
+        App
         )
 
 
 class Client(Base):
-    """clientテーブルのモデルクラス"""
+    __tablename__ = "clients"
 
-    __tablename__ = 'clients'
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)  # クライアントID
+    client_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)  # ユニークなクライアントID
+    client_secret: Mapped[str] = mapped_column(String(255), nullable=False)  # クライアントシークレット（ハッシュ化推奨）
+    client_type: Mapped[str] = mapped_column(String(30), default="confidential")  # "confidential" or "public"
+    grant_types: Mapped[str] = mapped_column(String(255), default="authorization_code")  # 使用するgrantタイプ（スペース区切り）
+    response_types: Mapped[str] = mapped_column(String(255), default="code")  # 使用するレスポンスタイプ
+    token_endpoint_auth_method: Mapped[str] = mapped_column(String(50), default="client_secret_basic")  # 認証方式
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=True)
-    app_id: Mapped[int] = mapped_column(ForeignKey('apps.id'), nullable=True)
+    logo_uri: Mapped[str] = mapped_column(String(255), nullable=True)  # ロゴURI
+    client_uri: Mapped[str] = mapped_column(String(255), nullable=True)  # クライアント情報ページURI
+    tos_uri: Mapped[str] = mapped_column(String(255), nullable=True)  # 利用規約URI
+    policy_uri: Mapped[str] = mapped_column(String(255), nullable=True)  # プライバシーポリシーURI
 
-    user: Mapped['User'] = relationship(back_populates='clients')
-    app: Mapped['App'] = relationship(back_populates='clients')
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(ZoneInfo("UTC")))  # 作成日時
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now(ZoneInfo("UTC")), onupdate=datetime.now(ZoneInfo("UTC"))
+    )  # 更新日時
 
-    # 1対1のリレーションシップ：Clientは1つのトークンしか持てない
-    acsess_token: Mapped['Token'] = relationship(
-            back_populates='client', cascade='all, delete-orphan'
-        )
-    refresh_token: Mapped['Token'] = relationship(
-            back_populates='client', cascade='all, delete-orphan'
-        )
+    app_id: Mapped[int] = mapped_column(ForeignKey("apps.id"))  # 外部キーとしてAppテーブルのIDを参照
+    app: Mapped["App"] = relationship("App", back_populates="clients")  # Appとのリレーション
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))  # 外部キーとしてUserテーブルのIDを参照
+    user: Mapped["App"] = relationship("User", back_populates="clients")  # Userとのリレーション
 
     def __repr__(self):
-        return (
-            f"<Client(id={self.id}, user_id={self.user_id}, "
-            f"app_id={self.app_id})>"
-        )
+        return f"<Client(id={self.id}, client_id={self.client_id}, client_type={self.client_type})>"
