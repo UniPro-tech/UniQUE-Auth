@@ -2,6 +2,10 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from app.models import (
+    Client,
+)
+
 
 # 例：Clientテーブルへのレコード作成
 def create_client(
