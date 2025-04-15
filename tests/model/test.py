@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "/home/sibainu/Project/UniQUE-API")))
+
 from app.cruds.client import (
     create_client,
     get_client_by_client_id,
@@ -7,12 +11,17 @@ from app.models import App, User
 
 if __name__ == "__main__":
     from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
     # 例としてSQLiteのDBに接続（実際の環境に合わせてURLを変更してください）
     engine = create_engine("sqlite:///:memory:", echo=True)
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()
+
+    class Base(DeclarativeBase):
+        pass
+
+    Base.metadata.create_all(bind=engine)
 
     # ※事前にAppおよびUserテーブルに対応するレコードが存在していることが前提です
     # 例：app_objとuser_objを取得（または作成済みのオブジェクトを使用）
