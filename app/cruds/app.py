@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.app import App, Redirect_URI
-
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # 作成
 def create_app(session: Session, name: str, scope: str, **kwargs) -> App:
@@ -14,6 +15,25 @@ def create_app(session: Session, name: str, scope: str, **kwargs) -> App:
 # 検索（名前で）
 def get_app_by_name(session: Session, name: str) -> App | None:
     return session.query(App).filter(App.name == name).first()
+
+
+# 検索（IDで）
+def get_app_by_id(session: Session, id: str) -> App | None:
+    return session.query(App).filter(App.id == id).first()
+
+
+# 編集
+def update_app(session: Session, app_id, **kwargs):
+    app = get_app_by_id(session, app_id)
+    if not app:
+        return None
+    for key, value in kwargs.items():
+        if hasattr(app, key):
+            setattr(app, key, value)
+    app.updated_at = datetime.now(ZoneInfo("UTC"))
+    session.commit()
+    session.refresh(app)
+    return app
 
 
 # 削除（名前で）
