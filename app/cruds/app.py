@@ -1,119 +1,50 @@
-from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.models import (
-    App as AppModel,
-    User as UserModel,
-)
-from app.schemas import App as AppSchema
+from app.models.app import App, Redirect_URI
 
 
-async def get_app_by_name(
-                session: Session, name: str
-            ) -> AppModel | None:
-    app = (
-        session.scalar(
-            select(AppModel)
-            .where(AppModel.name == name)
-        )
-    )
-    return app
-
-
-async def get_app_by_id(
-                session: Session, app_id: int
-            ) -> AppModel | None:
-    app = (
-        session.scalar(
-            select(AppModel)
-            .where(AppModel.id == app_id)
-        )
-    )
-    return app
-
-
-async def get_apps(
-                session: Session, skip: int = 0, limit: int = 100
-            ) -> list[AppModel]:
-    apps = session.scalar(
-        select(AppModel)
-        .offset(skip)
-        .limit(limit)
-    )
-    return apps
-
-
-async def create_app(
-                session: Session,
-                app: AppModel,
-                admin_user: UserModel
-            ) -> AppModel:
-    app = AppModel(
-        name=app.name,
-        admin_users=[admin_user],
-    )
-    session.add(app)
+# 作成
+def create_app(session: Session, name: str, scope: str, **kwargs) -> App:
+    new_app = App(name=name, scope=scope, **kwargs)
+    session.add(new_app)
     session.commit()
-    session.refresh(app)
-    return app
+    session.refresh(new_app)
+    return new_app
 
 
-async def update_app(
-                session: Session,
-                app: AppModel,
-                updates: AppSchema
-            ) -> AppModel:
-    update_data = updates.model_dump()
-    for key, value in update_data.items():
-        setattr(app, key, value)
-    session.commit()
-    return app
+# 検索（名前で）
+def get_app_by_name(session: Session, name: str) -> App | None:
+    return session.query(App).filter(App.name == name).first()
 
 
-async def delete_app(
-                session: Session, app_id: int
-            ) -> AppModel | None:
-    app = session.query(AppModel).filter(AppModel.id == app_id).first()
+# 削除（名前で）
+def delete_app_by_name(session: Session, name: str) -> bool:
+    app = get_app_by_name(session, name)
     if app:
         session.delete(app)
         session.commit()
-        return app
-    return None
+        return True
+    return False
 
 
-async def add_user_to_app(
-                session: Session,
-                app: AppModel, user: UserModel
-            ) -> AppModel:
-    app.users.append(user)
+# 作成
+def create_redirect_uri(session: Session, app_id: int, uri: str) -> Redirect_URI:
+    new_uri = Redirect_URI(app_id=app_id, uri=uri)
+    session.add(new_uri)
     session.commit()
-    return app
+    session.refresh(new_uri)
+    return new_uri
 
 
-async def remove_user_from_app(
-                session: Session,
-                app: AppModel, user: UserModel
-            ) -> AppModel:
-    if app and user:
-        app.users.remove(user)
+# 検索（app_idごと）
+def get_redirect_uris_by_app_id(session: Session, app_id: int) -> list[Redirect_URI]:
+    return session.query(Redirect_URI).filter(Redirect_URI.app_id == app_id).all()
+
+
+# 削除（URIで）
+def delete_redirect_uri(session: Session, uri: str) -> bool:
+    target = session.query(Redirect_URI).filter(Redirect_URI.uri == uri).first()
+    if target:
+        session.delete(target)
         session.commit()
-    return app
-
-
-async def add_admin_user_to_app(
-                session: Session,
-                app: AppModel, user: UserModel
-            ) -> AppModel:
-    if app and user:
-        app.admin_users.append(user)
-        session.commit()
-    return app
-
-
-async def remove_admin_user_from_app(
-                session: Session,
-                app: AppModel, user: UserModel
-            ):
-    if app and user:
-        app.admin_users.remove(user)
-        session.commit()
-    return app
+        return True
+    return False
