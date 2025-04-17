@@ -1,100 +1,78 @@
-from sqlalchemy import select
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from app.models.user import User
 from sqlalchemy.orm import Session
-from ..models import User as UserModel
-import hashlib
-from ..schemas import (
-    User as UserSchema,
-    CreateUser as CreateUserSchema,
-    UpdataMe as UpdataMeSchema
-)
 
 
-async def get_user_by_email(
-                session: Session, email: str
-            ) -> UserModel | None:
-    user = (
-        session.scalar(
-            select(UserModel)
-            .where(UserModel.email == email)
-        )
+def create_user(session: Session, name: str, email: str, hash_password: str):
+    new_user = User(
+        name=name,
+        email=email,
+        hash_password=hash_password
     )
-    return user
+    session.add(new_user)
+    session.commit()
+    session.refresh(new_user)
+    return new_user
 
 
-async def get_user_by_name(
-                session: Session, name: str
-            ) -> UserModel | None:
-    user = (
-        session.scalar(
-            select(UserModel)
-            .where(UserModel.name == name)
-        )
-    )
-    return user
+def get_user_by_id(session: Session, user_id: int):
+    return session.get(User, user_id)
 
 
-async def get_user_by_id(
-                session: Session, user_id: int
-            ) -> UserSchema | None:
-    user = (
-        session.scalar(
-            select(UserModel)
-            .where(UserModel.id == user_id)
-        )
-    )
-    return user
+def get_user_by_email(session: Session, email: str):
+    return session.query(User).filter(User.email == email).first()
 
 
-async def get_users(
-                session: Session,
-                skip: int = 0, limit: int = 100
-            ) -> list[UserSchema]:
-    # WARNING: この関数を使用するユーザーは制限すること。
-    users = (
-        session.scalar(
-            select(UserModel)
-            .offset(skip)
-            .limit(limit)
-        )
-    )
-    return users
+def get_all_users(session: Session):
+    return session.query(User).all()
 
 
-async def create_user(
-                session: Session, user: CreateUserSchema
-            ) -> UserModel:
-    user = UserModel(**user.model_dump())
-    session.add(user)
+def update_user(session: Session, user_id: int, **kwargs):
+    user = get_user_by_id(session, user_id)
+    if not user:
+        return None
+    for key, value in kwargs.items():
+        if hasattr(user, key):
+            setattr(user, key, value)
     session.commit()
     session.refresh(user)
     return user
 
 
-async def update_user(
-                session: Session, user: UserModel,
-                updates: UpdataMeSchema
-            ) -> UserModel:
-    update_data = updates.model_dump()
-    for key, value in update_data.items():
-        setattr(user, key, value)
-    session.commit()
-    return user
-
-
-async def delete_user(
-                session: Session, user: UserModel
-            ) -> UserModel:
+def delete_user(session: Session, user_id: int):
+    user = get_user_by_id(session, user_id)
+    if not user:
+        return False
     session.delete(user)
     session.commit()
-    return user
+    return True
 
-
-async def get_user_by_email_passwd(
-                session: Session, email: str, passwd: str
-            ) -> bool:
-    user = await get_user_by_email(session, email)
-    if not user:
-        return None
-    if user.hash_password == hashlib.sha256(passwd.encode()).hexdigest():
-        return user
-    return None
+# 
+# from sqlalchemy import create_engine
+# from sqlalchemy.orm import sessionmaker
+# from app.models import User  # Userモデルのインポート
+# from app.database import Base  # Baseのインポート
+# 
+# # データベースエンジンの作成
+# engine = create_engine("sqlite:///example.db", echo=True)
+# SessionLocal = sessionmaker(bind=engine)
+# session = SessionLocal()
+# 
+# # テーブルの作成
+# Base.metadata.create_all(bind=engine)
+# 
+# # ユーザーの作成
+# user = create_user(session, name="Alice", email="alice@example.com", hash_password="hashed_pw")
+# 
+# # ユーザーの取得
+# retrieved_user = get_user_by_id(session, user.id)
+# 
+# # ユーザーの更新
+# updated_user = update_user(session, user.id, name="Alice Smith")
+# 
+# # ユーザーの削除
+# delete_success = delete_user(session, user.id)
+# 
+# # セッションのクローズ
+# session.close()
