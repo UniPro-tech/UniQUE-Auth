@@ -11,12 +11,16 @@ from app.cruds.app import (
     create_app,
     get_app_by_name,
     get_app_by_id,
-    delete_client_by_client_id,
     create_redirect_uri,
     get_redirect_uris_by_app_id,
     delete_redirect_uri,
 )
+from app.cruds.user import (
+    create_user,
+    get_user_by_id,
+)
 from app.models import App, User
+from app.database import Base
 
 if __name__ == "__main__":
     from sqlalchemy import create_engine
@@ -27,12 +31,24 @@ if __name__ == "__main__":
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()
 
-    class Base(DeclarativeBase):
-        pass
-
     Base.metadata.create_all(bind=engine)
 
-    # ※事前にAppおよびUserテーブルに対応するレコードが存在していることが前提です
+    # UserとAppのテーブルを作成
+    new_app = create_app(
+        session,
+        name="Test App",
+        scope="openid profile email",
+        client_type="confidential",
+        grant_types="authorization_code",
+        response_types="code",
+        token_endpoint_auth_method="client_secret_basic",
+    )
+    new_user = create_user(
+        session,
+        name="Test User",
+        email="test@test.test",
+        password="testhash_password",
+    )
     # 例：app_objとuser_objを取得（または作成済みのオブジェクトを使用）
     app_obj = session.query(App).first()  # 例として最初のAppを取得
     user_obj = session.query(User).first()  # 例として最初のUserを取得
