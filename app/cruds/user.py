@@ -1,5 +1,3 @@
-from datetime import datetime
-from zoneinfo import ZoneInfo
 from app.models.user import User
 from sqlalchemy.orm import Session
 

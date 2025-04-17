@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, List
 if TYPE_CHECKING:
     from app.models import (
         Client
-        )
+    )
 
 
 class User(Base):

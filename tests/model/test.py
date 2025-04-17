@@ -27,7 +27,7 @@ if __name__ == "__main__":
     from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
     # 例としてSQLiteのDBに接続（実際の環境に合わせてURLを変更してください）
-    engine = create_engine("sqlite:///:memory:", echo=True)
+    engine = create_engine("sqlite:///:memory:", echo=False)
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()
 
@@ -47,7 +47,7 @@ if __name__ == "__main__":
         session,
         name="Test User",
         email="test@test.test",
-        password="testhash_password",
+        hash_password="testhash_password",
     )
     # 例：app_objとuser_objを取得（または作成済みのオブジェクトを使用）
     app_obj = session.query(App).first()  # 例として最初のAppを取得

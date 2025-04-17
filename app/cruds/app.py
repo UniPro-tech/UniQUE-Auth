@@ -3,6 +3,7 @@ from app.models.app import App, Redirect_URI
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+
 # 作成
 def create_app(session: Session, name: str, scope: str, **kwargs) -> App:
     new_app = App(name=name, scope=scope, **kwargs)

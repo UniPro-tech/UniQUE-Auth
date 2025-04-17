@@ -19,7 +19,7 @@ class App(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(30), index=True)
     scope: Mapped[str] = mapped_column(String(255), index=True)
-    
+
     client_type: Mapped[str] = mapped_column(String(30), default="confidential")  # confidential or public
     grant_types: Mapped[str] = mapped_column(String(255), default="authorization_code")
     response_types: Mapped[str] = mapped_column(String(255), default="code")
