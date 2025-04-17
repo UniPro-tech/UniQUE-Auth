@@ -1,7 +1,6 @@
 from app.schemas.user import (
     User,
     Me,
-    CreateUser,
     UpdataMe
 )
 

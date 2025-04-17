@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from app.models import (
         User,
         App
-        )
+    )
 
 
 class Client(Base):
