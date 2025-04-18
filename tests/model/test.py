@@ -24,7 +24,7 @@ from app.database import Base
 
 if __name__ == "__main__":
     from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker, DeclarativeBase
+    from sqlalchemy.orm import sessionmaker
 
     # 例としてSQLiteのDBに接続（実際の環境に合わせてURLを変更してください）
     engine = create_engine("sqlite:///:memory:", echo=False)
