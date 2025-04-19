@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from starlette.middleware import Middleware
 from pydantic import BaseModel
@@ -67,8 +68,25 @@ async def authorize(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     # 未ログインの場合は/loginに302リダイレクト
-    # リダイレクトする前にセッションストアに必要なデータを保存
-    
+    if not request.session.get("authenticated"):
+        # セッションストレージにリクエストパラメータを保存
+        request.session["client_id"] = request.client_id
+        request.session["redirect_uri"] = request.redirect_uri
+        request.session["scope"] = request.scope
+        request.session["state"] = request.state
+        request.session["response_type"] = request.response_type
+        request.session["nonce"] = request.nonce
+        request.session["display"] = request.display
+        request.session["prompt"] = request.prompt
+        request.session["max_age"] = request.max_age
+        request.session["ui_locales"] = request.ui_locales
+        request.session["id_token_hint"] = request.id_token_hint
+        request.session["login_hint"] = request.login_hint
+        request.session["acr_values"] = request.acr_values
+        # 追加のリクエストパラメータもセッションに保存する場合はここに追加
+
+        # ログイン画面にリダイレクト
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
     # セッションクッキーを使用し判断する
 
@@ -82,7 +100,7 @@ async def authorize(
     # ユーザーの認可& トークンの発行
 
 
-@app.get("/login", response_class=HTMLResponse)
+@app.get("/login")
 async def login_get(request: Request):
     """
     OIDC 認可フロー開始時、外部クライアントから
