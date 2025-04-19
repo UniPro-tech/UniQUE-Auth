@@ -17,4 +17,9 @@ app = FastAPI(
     root_path="/api/v1"
 )
 
+app.add_middleware(
+    SessionMiddleware,
+    secret_key="your-secret-key",
+)
+
 app.include_router(routers)
