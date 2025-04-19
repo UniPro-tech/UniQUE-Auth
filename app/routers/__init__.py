@@ -1,4 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import (
+    APIRouter, Depends,
+    HTTPException, Request,
+    status
+)
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from starlette.middleware import Middleware
@@ -15,7 +19,7 @@ router = APIRouter(
 )
 
 
-class AuthorizeRequest(BaseModel):
+class AuthorizeRequest(BaseModel, Request):
     """ユーザー登録リクエスト"""
     scope: str  # REQUIRED
     response_type: str  # REQUIRED
@@ -100,7 +104,7 @@ async def authorize(
     # ユーザーの認可& トークンの発行
 
 
-@app.get("/login")
+@router.get("/login")
 async def login_get(request: Request):
     """
     OIDC 認可フロー開始時、外部クライアントから
@@ -111,7 +115,7 @@ async def login_get(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 
-@app.post("/login")
+@router.post("/login")
 async def login_post(
     request: Request,
     username: str = Form(...),
