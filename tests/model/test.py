@@ -18,19 +18,24 @@ from app.cruds.app import (
 from app.cruds.user import (
     create_user,
     get_user_by_id,
+    get_user_by_email
 )
 from app.models import App, User
-from app.database import Base
+from app.database import Base, engine, SessionLocal, get_db
+import hashlib
+
+
+def hash_password(password: str) -> str:
+    # パスワードをUTF-8でエンコードし、SHA-256でハッシュ化
+    hashed = hashlib.sha256(password.encode('utf-8')).hexdigest()
+    return hashed
+
 
 if __name__ == "__main__":
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
-    # 例としてSQLiteのDBに接続（実際の環境に合わせてURLを変更してください）
-    engine = create_engine("sqlite:///:memory:", echo=False)
-    SessionLocal = sessionmaker(bind=engine)
-    session = SessionLocal()
-
+    session = next(get_db())
     Base.metadata.create_all(bind=engine)
 
     # UserとAppのテーブルを作成
@@ -45,10 +50,15 @@ if __name__ == "__main__":
     )
     new_user = create_user(
         session,
-        name="Test User",
-        email="test@test.test",
-        hash_password="testhash_password",
+        name="test",
+        email="test",
+        hash_password=hash_password("test"),
     )
+    test_user = get_user_by_email(session, "test")
+    if test_user:
+        print("User found:", test_user)
+    else:
+        print("User not found.")
     # 例：app_objとuser_objを取得（または作成済みのオブジェクトを使用）
     app_obj = session.query(App).first()  # 例として最初のAppを取得
     user_obj = session.query(User).first()  # 例として最初のUserを取得

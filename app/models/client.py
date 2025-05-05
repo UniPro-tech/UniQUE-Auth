@@ -27,11 +27,6 @@ class Client(Base):
     response_types: Mapped[str] = mapped_column(String(255), default="code")  # 使用するレスポンスタイプ
     token_endpoint_auth_method: Mapped[str] = mapped_column(String(50), default="client_secret_basic")  # 認証方式
 
-    logo_uri: Mapped[str] = mapped_column(String(255), nullable=True)  # ロゴURI
-    client_uri: Mapped[str] = mapped_column(String(255), nullable=True)  # クライアント情報ページURI
-    tos_uri: Mapped[str] = mapped_column(String(255), nullable=True)  # 利用規約URI
-    policy_uri: Mapped[str] = mapped_column(String(255), nullable=True)  # プライバシーポリシーURI
-
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(ZoneInfo("UTC")))  # 作成日時
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now(ZoneInfo("UTC")), onupdate=datetime.now(ZoneInfo("UTC"))
