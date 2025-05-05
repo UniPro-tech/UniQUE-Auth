@@ -52,6 +52,3 @@ class ClientRead(ClientBase):
     updated_at: datetime = Field(..., description="更新日時")
 
     model_config = ConfigDict(from_attributes=True)
-
-    class Config:
-        model_validate = True

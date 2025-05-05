@@ -14,12 +14,13 @@ def create_user(session: Session, name: str, email: str, hash_password: str):
     return new_user
 
 
-def get_user_by_id(session: Session, user_id: int):
+def get_user_by_id(session: Session, user_id: int) -> User | None:
     return session.get(User, user_id)
 
 
-def get_user_by_email(session: Session, email: str):
-    return session.query(User).filter(User.email == email).first()
+def get_user_by_email(session: Session, email: str) -> User | None:
+    user = session.query(User).filter(User.email == email).first()
+    return user
 
 
 def get_all_users(session: Session):

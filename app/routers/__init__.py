@@ -1,40 +1,49 @@
 from fastapi import (
     APIRouter, Depends,
     HTTPException, Request,
-    status
+    Query, Form
 )
 from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from starlette.middleware import Middleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
-from ..cruds.user import get_user_by_name, get_user_by_email, create_user
-from .. import schemas
+from urllib.parse import urlencode
+import json
+from ..cruds.user import (
+    get_user_by_email,
+    get_user_by_id,
+    create_user,
+)
+from ..cruds.app import get_app_by_id
+from ..models.client import Client
 from ..database import get_db
 
+templates = Jinja2Templates(directory="../app/pages")
+
 router = APIRouter(
-    prefix="/",
     tags=["users"],
     responses={404: {"description": "Not found"}},
 )
 
 
-class AuthorizeRequest(BaseModel, Request):
-    """ユーザー登録リクエスト"""
-    scope: str  # REQUIRED
-    response_type: str  # REQUIRED
-    client_id: int  # REQUIRED
-    redirect_uri: str  # REQUIRED
-    state: str  # REQUIRED
-    response_mode: Optional[str]  # OPTIONAL
-    nonce: str  # OPTIONAL
-    display: str  # OPTIONAL
-    prompt: str  # OPTIONAL
-    max_age: int  # OPTIONAL
-    ui_locales: str  # OPTIONAL
-    id_token_hint: str  # OPTIONAL
-    login_hint: str  # OPTIONAL
-    acr_values: str  # OPTIONAL
+class AuthorizeRequest(BaseModel):
+    """ユーザー認可リクエスト"""
+    scope: str
+    response_type: str
+    client_id: str
+    redirect_uri: str
+    state: str
+    response_mode: Optional[str] = Field(default=None)
+    nonce: Optional[str] = Field(default=None)
+    display: Optional[str] = Field(default=None)
+    prompt: Optional[str] = Field(default=None)
+    max_age: Optional[int] = Field(default=None)
+    ui_locales: Optional[str] = Field(default=None)
+    id_token_hint: Optional[str] = Field(default=None)
+    login_hint: Optional[str] = Field(default=None)
+    acr_values: Optional[str] = Field(default=None)
 
     def validate_required_fields(self) -> None:
         """AuthorizeRequestの必須フィールドを検証するメソッド"""
@@ -43,12 +52,14 @@ class AuthorizeRequest(BaseModel, Request):
         required_fields = ["scope", "response_type", "client_id", "redirect_uri", "state"]
         for field in required_fields:
             if getattr(self, field) is None:
+                print(f"Field: {field}, Value: {getattr(self, field)}")
                 raise ValueError(f"The field '{field}' is required and cannot be None.")
         
         # display変数の値を検証
         # displayはpage, popup, touch, wapのいずれかである必要がある
         display_values = ["page", "popup", "touch", "wap"]
         if self.display not in display_values:
+            print(f"Field: display, Value: {self.display}")
             raise ValueError(f"The field 'display' must be one of {display_values}.")
         
         # prompt変数の値を検証
@@ -58,50 +69,123 @@ class AuthorizeRequest(BaseModel, Request):
             raise ValueError(f"The field 'prompt' must be one of {prompt_values}.")
 
 
-@router.post("/authorize", response_model=schemas.User)
+@router.get("/authorize")
 async def authorize(
-            request: AuthorizeRequest,
-            session: Session = Depends(get_db)
+            request: Request,
+            scope: str = Query(...),
+            response_type: str = Query(...),
+            client_id: str = Query(...),
+            redirect_uri: str = Query(...),
+            state: str = Query(...),
+            response_mode: Optional[str] = Query(None),
+            nonce: Optional[str] = Query(None),
+            display: Optional[str] = Query("page"),
+            prompt: Optional[str] = Query("login"),
+            max_age: Optional[int] = Query(None),
+            ui_locales: Optional[str] = Query(None),
+            id_token_hint: Optional[str] = Query(None),
+            login_hint: Optional[str] = Query(None),
+            acr_values: Optional[str] = Query(None),
+            db: Session = Depends(get_db)
         ):
     """
     OIDC認証・認可リクエストエンドポイント
     """
-    # リクエストパラメータの検証
     try:
-        request.validate_required_fields()
+        auth_request = AuthorizeRequest(
+            scope=scope,
+            response_type=response_type,
+            client_id=client_id,
+            redirect_uri=redirect_uri,
+            state=state,
+            response_mode=response_mode,
+            nonce=nonce,
+            display=display,
+            prompt=prompt,
+            max_age=max_age,
+            ui_locales=ui_locales,
+            id_token_hint=id_token_hint,
+            login_hint=login_hint,
+            acr_values=acr_values,
+        )
+        auth_request.validate_required_fields()
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
     # 未ログインの場合は/loginに302リダイレクト
-    if not request.session.get("authenticated"):
-        # セッションストレージにリクエストパラメータを保存
-        request.session["client_id"] = request.client_id
-        request.session["redirect_uri"] = request.redirect_uri
-        request.session["scope"] = request.scope
-        request.session["state"] = request.state
-        request.session["response_type"] = request.response_type
-        request.session["nonce"] = request.nonce
-        request.session["display"] = request.display
-        request.session["prompt"] = request.prompt
-        request.session["max_age"] = request.max_age
-        request.session["ui_locales"] = request.ui_locales
-        request.session["id_token_hint"] = request.id_token_hint
-        request.session["login_hint"] = request.login_hint
-        request.session["acr_values"] = request.acr_values
-        # 追加のリクエストパラメータもセッションに保存する場合はここに追加
-
-        # ログイン画面にリダイレクト
-        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
-
-    # セッションクッキーを使用し判断する
-
-    # ログインUIを表示する
-
-
+    if not request.cookies.get("user"):
+            response = RedirectResponse(url="/login", status_code=302)
+            response.set_cookie(key="auth_request", value=json.dumps(auth_request.model_dump()), httponly=True, max_age=300)
+            return response
+    
     # ユーザーがすでに認可されているか確認
-
+    print("user_id", json.loads(request.cookies.get("user"))["id"])
+    user = get_user_by_id(db, json.loads(request.cookies.get("user"))["id"])
+    if any(client.app_id == client_id for client in user.clients):
+        pass # TODO: 認可済みのクライアントにリダイレクト
+    app = get_app_by_id(db, client_id)
     # ユーザーが認可されていない場合は、認可画面を表示する
+    # クッキーに認可に必要なリクエストパラメータを保存
+    # クッキーに保存するため、辞書に変換してエンコード
+    try:
+        raw_params = auth_request.model_dump()
+        # None の値を除外
+        filtered_params = {k: v for k, v in raw_params.items() if v is not None}
+        query_string = urlencode(filtered_params)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid auth request cookie")
+    # 認可画面にリダイレクト（302）
+    redirect_url = f"/authorize?{query_string}"
+    response = RedirectResponse(url=redirect_url, status_code=302)
+    response.set_cookie(key="auth_request", value=json.dumps(auth_request.model_dump()), httponly=True, max_age=300)
 
     # ユーザーの認可& トークンの発行
+
+@router.post("/authorize")
+async def authorize_post(
+    request: Request,
+    action: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """
+    ユーザーの認可を受けて、トークンを発行するエンドポイント
+    このあとの認証に用いる情報はクッキーより取得する
+    """
+    # クッキーから認可リクエストを取得
+    auth_cookie = request.cookies.get("auth_request")
+    if not auth_cookie:
+        raise HTTPException(status_code=400, detail="Missing auth request")
+
+    # ユーザーの認可を確認
+    if action != "allow":
+        # ユーザーが認可しなかった場合は、エラーレスポンスを返す
+        error_response = {
+            "error": "access_denied",
+            "error_description": "User denied the request",
+            "state": filtered_params.get("state"),
+        }
+        return RedirectResponse(url=f"/error?{urlencode(error_response)}", status_code=302)
+    
+    # クエリ文字列として使うため、辞書に変換してエンコード
+    try:
+        raw_params: dict = json.loads(auth_cookie)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid auth request cookie")
+    
+    #  認証認可成功
+    # ユーザークライアントの作成’
+    user = get_user_by_id(db, json.loads(request.cookies.get("user"))["id"])
+    app = get_app_by_id(db, raw_params["client_id"])
+    user_client = Client(
+        user=user,
+        app=app,
+    )
+    query_string = urlencode(filtered_params)
+    # 認可された場合は、/tokenにリダイレクト（302）
+    redirect_url = f"/token?{query_string}"
+    response = RedirectResponse(url=redirect_url, status_code=302)
+    response.delete_cookie("auth_request")
+    return response
 
 
 @router.get("/login")
@@ -110,45 +194,45 @@ async def login_get(request: Request):
     OIDC 認可フロー開始時、外部クライアントから
     リクエストパラメータを検証して request.session に保存した上で
     このエンドポイントにリダイレクトさせる想定です。
-    GET では単にログインフォームを表示。
+    GET では単にログインフォームを表示。e
     """
     return templates.TemplateResponse("login.html", {"request": request})
 
 
 @router.post("/login")
 async def login_post(
-    request: Request,
-    username: str = Form(...),
-    password: str = Form(...),
-    remember_me: bool = Form(False),
-):
-    # 1) 認証
-    user = authenticate(username, password)
+        request: Request,
+        email: str = Form(...),
+        password: str = Form(...),
+        db: Session = Depends(get_db)
+    ):
+    # ユーザー名とパスワードを検証
+    user = get_user_by_email(db, email)
     if not user:
-        # 認証失敗時は画面にエラーメッセージを渡す
-        return templates.TemplateResponse(
-            "login.html",
-            {"request": request, "error": "ユーザー名またはパスワードが正しくありません。"},
-            status_code=status.HTTP_401_UNAUTHORIZED,
-        )
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+    if not user.verify_password(password):
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+    # 認証に成功した場合、セッションにユーザー情報を保存
 
-    # 2) 認証成功 → セッションに情報を保存
-    session = request.session
+    # クッキーから認可リクエストを取得
+    auth_cookie = request.cookies.get("auth_request")
+    if not auth_cookie:
+        # 通常のログインの可能性あり
+        raise HTTPException(status_code=400, detail="Missing auth request")
+    # クエリ文字列として使うため、辞書に変換してエンコード
+    try:
+        raw_params = json.loads(auth_cookie)
+        # None の値を除外
+        filtered_params = {k: v for k, v in raw_params.items() if v is not None}
+        query_string = urlencode(filtered_params)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid auth request cookie")
 
-    # --- すでにある OIDC リクエストパラメータ (例) ---
-    # session["client_id"]
-    # session["redirect_uri"]
-    # session["scope"]
-    # session["state"]
-    # session["response_type"]
-    # session["code_challenge"], session["code_challenge_method"]
-    # session["prompt"], session["nonce"], session["login_hint"]
-
-    # --- ここから追加で保存する認証情報 ---
-    session["user_id"]       = user["id"]
-    session["auth_time"]     = int(time.time())         # UNIXタイムスタンプ
-    session["remember_me"]   = remember_me              # boolean
-    session["authenticated"] = True
-
-    # 3) /authorize にリダイレクト
-    return RedirectResponse(url="/authorize", status_code=status.HTTP_302_FOUND)
+    # /authorize にリダイレクト（302）
+    redirect_url = f"/authorize?{query_string}"
+    response = RedirectResponse(url=redirect_url, status_code=302)
+    response.delete_cookie("auth_request")
+    # 認証済みのユーザー情報をクッキーに保存
+    # ユーザー名、メールアドレス、スコープなどを含める
+    response.set_cookie(key="user", value=json.dumps({"id": user.id}), httponly=False, max_age=300) # TODO: 本番環境ではhttponly=Trueにする
+    return response

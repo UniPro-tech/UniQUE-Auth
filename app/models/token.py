@@ -4,9 +4,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column
 import enum
-
-Base = declarative_base()
-
+from app.database import Base
 
 class TokenStatus(enum.Enum):
     ACTIVE = "active"
