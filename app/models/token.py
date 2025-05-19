@@ -6,6 +6,7 @@ from sqlalchemy.orm import declarative_base, Mapped, mapped_column
 import enum
 from app.database import Base
 
+
 class TokenStatus(enum.Enum):
     ACTIVE = "active"
     REVOKED = "revoked"
@@ -13,8 +14,6 @@ class TokenStatus(enum.Enum):
 
 
 # アクセストークン及び、リフレッシュトークンにはtoken_hashを保存しセキュリティを考慮する
-
-
 class AccessToken(Base):
     __tablename__ = "access_tokens"
 
