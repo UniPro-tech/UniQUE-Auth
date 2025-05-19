@@ -1,3 +1,4 @@
+from sqlalchemy.orm import Session
 from app.models import (
     AccessToken,
     RefreshToken,
@@ -5,7 +6,16 @@ from app.models import (
 )
 
 
-def create_access_token(session, token_hash, sub, iss, client_id, scope, iat, exp, status):
+def create_access_token(
+        session: Session,
+        token_hash: str,
+        sub: str, iss: str,
+        client_id: str,
+        scope: str,
+        iat: int,
+        exp: int,
+        status: str
+):
     token = AccessToken(
         token_hash=token_hash,
         sub=sub,
@@ -21,11 +31,11 @@ def create_access_token(session, token_hash, sub, iss, client_id, scope, iat, ex
     return token
 
 
-def get_access_token_by_hash(session, token_hash):
+def get_access_token_by_hash(session: Session, token_hash: str):
     return session.query(AccessToken).filter_by(token_hash=token_hash).first()
 
 
-def delete_access_token(session, token_hash):
+def delete_access_token(session: Session, token_hash: str):
     token = session.query(AccessToken).filter_by(token_hash=token_hash).first()
     if token:
         session.delete(token)
@@ -34,7 +44,16 @@ def delete_access_token(session, token_hash):
     return False
 
 
-def create_id_token(session, sub, iss, aud, iat, exp, auth_time=None, nonce=None):
+def create_id_token(
+        session: Session,
+        sub: str,
+        iss: str,
+        aud: str,
+        iat: int,
+        exp: int,
+        auth_time: int = None,
+        nonce: str = None
+):
     token = IDToken(
         sub=sub,
         iss=iss,
@@ -49,11 +68,11 @@ def create_id_token(session, sub, iss, aud, iat, exp, auth_time=None, nonce=None
     return token
 
 
-def get_id_token_by_sub(session, sub):
+def get_id_token_by_sub(session: Session, sub: str):
     return session.query(IDToken).filter_by(sub=sub).all()
 
 
-def delete_id_token(session, token_id):
+def delete_id_token(session: Session, token_id: str):
     token = session.query(IDToken).filter_by(id=token_id).first()
     if token:
         session.delete(token)
@@ -62,7 +81,18 @@ def delete_id_token(session, token_id):
     return False
 
 
-def create_refresh_token(session, token_hash, sub, client_id, iss, scope, iat, exp, status, rotated_from_id=None):
+def create_refresh_token(
+    session: Session,
+    token_hash: str,
+    sub: str,
+    client_id: str,
+    iss: str,
+    scope: str,
+    iat: int,
+    exp: int,
+    status: str,
+    rotated_from_id: str = None
+):
     token = RefreshToken(
         token_hash=token_hash,
         sub=sub,
@@ -79,40 +109,14 @@ def create_refresh_token(session, token_hash, sub, client_id, iss, scope, iat, e
     return token
 
 
-def get_refresh_token_by_hash(session, token_hash):
+def get_refresh_token_by_hash(session: Session, token_hash: str):
     return session.query(RefreshToken).filter_by(token_hash=token_hash).first()
 
 
-def delete_refresh_token(session, token_hash):
+def delete_refresh_token(session: Session, token_hash: str):
     token = session.query(RefreshToken).filter_by(token_hash=token_hash).first()
     if token:
         session.delete(token)
         session.commit()
         return True
     return False
-
-
-"""
-使用例
-with Session() as session:
-    # アクセストークンの作成
-    new_access_token = create_access_token(
-        session=session,
-        token_hash="hashed_token_value",
-        sub="user123",
-        iss="auth_server",
-        client_id="client_app",
-        scope="read write",
-        iat=datetime.utcnow(),
-        exp=datetime.utcnow() + timedelta(hours=1),
-        status=TokenStatus.ACTIVE
-    )
-
-    # アクセストークンの検索
-    token = get_access_token_by_hash(session, "hashed_token_value")
-    print(token)
-
-    # アクセストークンの削除
-    delete_success = delete_access_token(session, "hashed_token_value")
-    print("Deleted:", delete_success)
-"""
