@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import (
     String, DateTime, Enum, Integer, ForeignKey
 )
-from sqlalchemy.orm import declarative_base, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 import enum
 from app.database import Base
 
