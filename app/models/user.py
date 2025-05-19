@@ -6,7 +6,6 @@ from sqlalchemy.orm import (
 )
 from app.database import Base
 from typing import TYPE_CHECKING, List
-from passlib.context import CryptContext
 import hashlib
 
 if TYPE_CHECKING:
