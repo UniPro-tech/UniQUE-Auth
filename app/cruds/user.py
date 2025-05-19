@@ -46,32 +46,3 @@ def delete_user(session: Session, user_id: int):
     session.delete(user)
     session.commit()
     return True
-
-# 
-# from sqlalchemy import create_engine
-# from sqlalchemy.orm import sessionmaker
-# from app.models import User  # Userモデルのインポート
-# from app.database import Base  # Baseのインポート
-# 
-# # データベースエンジンの作成
-# engine = create_engine("sqlite:///example.db", echo=True)
-# SessionLocal = sessionmaker(bind=engine)
-# session = SessionLocal()
-# 
-# # テーブルの作成
-# Base.metadata.create_all(bind=engine)
-# 
-# # ユーザーの作成
-# user = create_user(session, name="Alice", email="alice@example.com", hash_password="hashed_pw")
-# 
-# # ユーザーの取得
-# retrieved_user = get_user_by_id(session, user.id)
-# 
-# # ユーザーの更新
-# updated_user = update_user(session, user.id, name="Alice Smith")
-# 
-# # ユーザーの削除
-# delete_success = delete_user(session, user.id)
-# 
-# # セッションのクローズ
-# session.close()
