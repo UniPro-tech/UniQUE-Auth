@@ -70,7 +70,7 @@ if __name__ == "__main__":
         client_secret="super_secret_value",
         app_obj=app_obj,
         user_obj=user_obj,
-        logo_uri="https://example.com/logo.png",
+#        logo_uri="https://example.com/logo.png",
         client_uri="https://example.com",
     )
     print("Created Client:", client)

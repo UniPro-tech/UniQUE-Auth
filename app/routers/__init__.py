@@ -17,7 +17,7 @@ from ..cruds.user import (
     create_user,
 )
 from ..cruds.app import get_app_by_id
-from ..models.client import Client
+from ..models.session import Client
 from ..database import get_db
 
 templates = Jinja2Templates(directory="../app/pages")
