@@ -9,7 +9,8 @@ from models import (
 def create_access_token(
         session: Session,
         token_hash: str,
-        sub: str, iss: str,
+        sub: str,
+        iss: str,
         client_id: str,
         scope: str,
         iat: int,
