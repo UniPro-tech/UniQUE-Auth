@@ -6,17 +6,20 @@ from sqlalchemy.orm import (
 )
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from app.database import Base
 from typing import TYPE_CHECKING, List
 
+from database import Base
+
+
 if TYPE_CHECKING:
-    from app.models import Session
+    from models import Session
 
 
 class Client(Base):
     __tablename__ = "clients"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(255), index=True)
     client_id: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     client_type: Mapped[str] = mapped_column(String(255), index=True)
 

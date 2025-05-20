@@ -25,7 +25,7 @@ engine = create_engine(
 SessionLocal = sessionmaker(bind=engine)
 
 # DBマイグレーションを行う.
-#Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 
 # DBセッションを取得する.

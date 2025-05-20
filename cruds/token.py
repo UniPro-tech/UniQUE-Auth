@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models import (
+from models import (
     AccessToken,
     RefreshToken,
     IDToken

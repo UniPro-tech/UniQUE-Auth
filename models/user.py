@@ -4,14 +4,12 @@ from sqlalchemy.orm import (
     Mapped,
     mapped_column
 )
-from app.database import Base
 from typing import TYPE_CHECKING, List
 import hashlib
 
+from database import Base
 if TYPE_CHECKING:
-    from app.models import (
-        Client
-    )
+    from models import Session
 
 
 class User(Base):
@@ -25,7 +23,7 @@ class User(Base):
     hash_password: Mapped[str] = mapped_column(String(255))
 
     # 多対多リレーション
-    clients: Mapped[List["Client"] | None] = relationship(
+    sessions: Mapped[List["Session"] | None] = relationship(
         back_populates='user', cascade="all, delete-orphan"
     )
 
