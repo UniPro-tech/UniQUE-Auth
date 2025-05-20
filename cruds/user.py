@@ -39,8 +39,8 @@ def update_user(session: Session, user_id: int, **kwargs):
     return user
 
 
-def delete_user(session: Session, user_id: int):
-    user = get_user_by_id(session, user_id)
+def delete_user_by_id(session: Session, id: int):
+    user = get_user_by_id(session, id)
     if not user:
         return False
     session.delete(user)
