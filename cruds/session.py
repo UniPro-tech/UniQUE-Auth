@@ -2,9 +2,9 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from app.models.session import Session as SessionModel
-from app.models.client import Client
-from app.models.user import User
+from models.session import Session as SessionModel
+from models.client import Client
+from models.user import User
 
 
 # 例：Clientテーブルへのレコード作成
@@ -29,13 +29,13 @@ def create_session(
 
 
 # 例：session_idをキーに検索する
-def get_session_by_session_id(session: Session, session_id: str):
-    return session.query(SessionModel).filter(SessionModel.session_id == session_id).first()
+def get_session_by_id(session: Session, id: str):
+    return session.query(SessionModel).filter(SessionModel.id == id).first()
 
 
 # 例：session_idをキーにレコードを削除する
-def delete_session_by_session_id(session: Session, session_id: str):
-    get_session = get_session_by_session_id(session, session_id)
+def delete_session_by_id(session: Session, id: str):
+    get_session = get_session_by_id(session, id)
     if get_session:
         session.delete(get_session)
         session.commit()

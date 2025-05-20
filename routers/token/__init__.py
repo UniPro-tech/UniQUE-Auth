@@ -9,7 +9,7 @@ from app.cruds.token import (
     recrate_token, decode_token,
     get_db_token_by_token, update_db_token
 )
-from app.cruds.client import create_client
+from app.cruds.session import create_client
 from app.cruds.user import get_user_by_email_passwd
 from app.database import get_db
 from app.schemas.permisstions import (

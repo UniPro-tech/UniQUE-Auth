@@ -1,7 +1,7 @@
-from app.models.client import Client
-from app.models.user import User
-from app.models.session import Session
-from app.models.token import (
+from models.client import Client
+from models.user import User
+from models.session import Session
+from models.token import (
     AccessToken,
     RefreshToken,
     IDToken

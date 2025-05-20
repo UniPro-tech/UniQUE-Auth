@@ -5,12 +5,12 @@ from sqlalchemy.orm import (
     mapped_column
 )
 from typing import TYPE_CHECKING
-from app.database import Base
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from database import Base
 
 if TYPE_CHECKING:
-    from app.models import (
+    from models import (
         User,
         Client
     )

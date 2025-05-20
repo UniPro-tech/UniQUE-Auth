@@ -1,12 +1,19 @@
 from sqlalchemy.orm import Session
-from app.models.client import Client, Redirect_URI
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from models.session import Session as SessionModel
+from models.client import Client, Redirect_URI
 
 
 # 作成
-def create_client(session: Session, user_id: int, client_id: int) -> Client:
-    new_client = Client(user_id=user_id, client_id=client_id)
+def create_client(session: Session, client_id: int, name: str) -> Client:
+    new_client = Client(
+        client_id=client_id,
+        name=name,
+        client_type="public",
+        created_at=datetime.now(ZoneInfo("UTC")),
+        updated_at=datetime.now(ZoneInfo("UTC")),
+    )
     session.add(new_client)
     session.commit()
     session.refresh(new_client)

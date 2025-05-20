@@ -16,7 +16,7 @@ from ..cruds.user import (
     get_user_by_id,
     create_user,
 )
-from ..cruds.app import get_app_by_id
+from ..cruds.client import get_app_by_id
 from ..models.session import Client
 from ..database import get_db
 

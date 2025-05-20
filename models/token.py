@@ -4,7 +4,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 import enum
-from app.database import Base
+from database import Base
 
 
 class TokenStatus(enum.Enum):
