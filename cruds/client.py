@@ -6,11 +6,11 @@ from models.client import Client, Redirect_URI
 
 
 # 作成
-def create_client(session: Session, client_id: int, name: str) -> Client:
+def create_client(session: Session, client_id: int, name: str, client_type: str) -> Client:
     new_client = Client(
         client_id=client_id,
         name=name,
-        client_type="public",
+        client_type=client_type,
         created_at=datetime.now(ZoneInfo("UTC")),
         updated_at=datetime.now(ZoneInfo("UTC")),
     )
