@@ -36,7 +36,7 @@ def get_access_token_by_hash(session: Session, token_hash: str):
     return session.query(AccessToken).filter_by(token_hash=token_hash).first()
 
 
-def delete_access_token(session: Session, token_hash: str):
+def delete_access_token_by_hash(session: Session, token_hash: str):
     token = session.query(AccessToken).filter_by(token_hash=token_hash).first()
     if token:
         session.delete(token)
@@ -53,7 +53,10 @@ def create_id_token(
         iat: int,
         exp: int,
         auth_time: int = None,
-        nonce: str = None
+        nonce: str = None,
+        acr: str = None,
+        amr: str = None,
+        azp: str = None
 ):
     token = IDToken(
         sub=sub,
@@ -62,7 +65,10 @@ def create_id_token(
         iat=iat,
         exp=exp,
         auth_time=auth_time,
-        nonce=nonce
+        nonce=nonce,
+        acr=acr,
+        amr=amr,
+        azp=azp
     )
     session.add(token)
     session.commit()
