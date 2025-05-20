@@ -5,8 +5,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 
 from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
-from app.database import engine, Base
-from app.routers import router
+from database import engine, Base
+from routers import router
 
 # Create the database tables
 Base.metadata.create_all(bind=engine)
