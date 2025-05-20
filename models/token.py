@@ -17,8 +17,6 @@ class TokenStatus(enum.Enum):
 class AccessToken(Base):
     """
     アクセストークンのモデルクラス
-    id: int
-        アクセストークンのID
     token_hash: str
         アクセストークンのハッシュ値
     sub: str
