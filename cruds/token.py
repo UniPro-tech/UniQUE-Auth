@@ -36,6 +36,15 @@ def get_access_token_by_hash(session: Session, token_hash: str):
     return session.query(AccessToken).filter_by(token_hash=token_hash).first()
 
 
+def update_access_token_status(session: Session, token_hash: str, status: str):
+    token = get_access_token_by_hash(session, token_hash)
+    if token:
+        token.status = status
+        session.commit()
+        return token
+    return None
+
+
 def delete_access_token_by_hash(session: Session, token_hash: str):
     token = session.query(AccessToken).filter_by(token_hash=token_hash).first()
     if token:
@@ -79,8 +88,8 @@ def get_id_token_by_sub(session: Session, sub: str):
     return session.query(IDToken).filter_by(sub=sub).all()
 
 
-def delete_id_token(session: Session, token_id: str):
-    token = session.query(IDToken).filter_by(id=token_id).first()
+def delete_id_token_by_hash(session: Session, id: str):
+    token = session.query(IDToken).filter_by(id=id).first()
     if token:
         session.delete(token)
         session.commit()
@@ -120,7 +129,16 @@ def get_refresh_token_by_hash(session: Session, token_hash: str):
     return session.query(RefreshToken).filter_by(token_hash=token_hash).first()
 
 
-def delete_refresh_token(session: Session, token_hash: str):
+def update_refresh_token_status(session: Session, token_hash: str, status: str):
+    token = get_refresh_token_by_hash(session, token_hash)
+    if token:
+        token.status = status
+        session.commit()
+        return token
+    return None
+
+
+def delete_refresh_token_by_hash(session: Session, token_hash: str):
     token = session.query(RefreshToken).filter_by(token_hash=token_hash).first()
     if token:
         session.delete(token)
