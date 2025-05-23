@@ -46,7 +46,7 @@ class AuthorizeRequest(BaseModel):
     ui_locales: Optional[str] = Field(default=None)
     id_token_hint: Optional[str] = Field(default=None)
     login_hint: Optional[str] = Field(default=None)
-    acr_values: Optional[str] = Field(default=None)
+    acr_values: Optional[str] = Field(default=None)# "acr": {"values": ["urn:mace:incommon:iap:silver"] 
 
     def validate_required_fields(self) -> None:
         """AuthorizeRequestの必須フィールドを検証するメソッド"""
@@ -83,6 +83,12 @@ async def authorize(
     # クエリパラメータを取得
     query_params = dict(request.query_params)
 
+    # 未ログインの場合は/loginに302リダイレクト
+    if not request.cookies.get("session"):
+        url_params = urlencode(query_params)
+        response = RedirectResponse(url=f"/login?{url_params}", status_code=302)
+        return response
+
     # リダイレクトURIの検証
     # リダイレクトURIはクライアントのリダイレクトURIのいずれかである必要がある
     redirect_uri = query_params["redirect_uri"]
@@ -94,6 +100,7 @@ async def authorize(
             error_description="Invalid redirect_uri",
             status_code=302
         )
+
     # 必須フィールドのリスト
     # これらのフィールドはNoneであってはいけない
     required_fields = ["scope", "response_type", "client_id", "redirect_uri", "state"]
@@ -110,30 +117,53 @@ async def authorize(
             status_code=302
         )
 
-    # display変数の値を検証
-    # displayはpage, popup, touch, wapのいずれかである必要がある
-    display_values = ["page", "popup", "touch", "wap"]
-    if self.display not in display_values:
-        print(f"Field: display, Value: {self.display}")
-        raise ValueError(f"The field 'display' must be one of {display_values}.")
-    
     # prompt変数の値を検証
     # promptはnone, login, consent, select_accountのいずれかである必要がある
     prompt_values = ["none", "login", "consent", "select_account"]
-    if self.prompt not in prompt_values:
+    if query_params.get("prompt") not in prompt_values:
         raise ValueError(f"The field 'prompt' must be one of {prompt_values}.")
-    
-    # 未ログインの場合は/loginに302リダイレクト
-    if not request.cookies.get("user"):
-            response = RedirectResponse(url="/login", status_code=302)
-            response.set_cookie(key="auth_request", value=json.dumps(auth_request.model_dump()), httponly=True, max_age=300)
-            return response
-    
+    if query_params.get("prompt") == "none" and query_params.get("display"):
+        # promptがnoneかつdisplayが指定されている場合はエラー
+        error_response = {
+            "error": "consent_required",
+            "error_description": "prompt=none and display cannot be used together",
+            "state": query_params.get("state"),
+        }
+        return RedirectResponse(
+            url=f"{query_params.get('redirect_uri')}?{urlencode(error_response)}",
+            status_code=302
+        )
+
+    # display変数の値を検証
+    # displayはpage, popup, touch, wapのいずれかである必要がある
+    # displayがNoneの場合は、pageにする
+    if query_params.get("display") is None:
+        query_params["display"] = "page"
+    display_values = ["page", "popup", "touch", "wap"]
+    if query_params.get("display") not in display_values:
+        print(f"e: {query_params.get('display')}")
+        error_response = {
+            "error": "invalid_request",
+            "error_description": f"Invalid display value: {query_params.get('display')}",
+            "state": query_params.get("state"),
+        }
+        return RedirectResponse(
+            url=f"{query_params.get('redirect_uri')}?{urlencode(error_response)}",
+            status_code=302
+        )
+
     # ユーザーがすでに認可されているか確認
-    print("user_id", json.loads(request.cookies.get("user"))["id"])
-    user = get_user_by_id(db, json.loads(request.cookies.get("user"))["id"])
-    if any(client.app_id == client_id for client in user.clients):
-        pass # TODO: 認可済みのクライアントにリダイレクト
+    print("user_id", json.loads(request.cookies.get("session"))["id"])
+    user = get_user_by_id(db, json.loads(request.cookies.get("session"))["id"])
+    auth_client_ids = [client.client_id for client in user.sessions]
+    if query_params["client_id"] in auth_client_ids:
+        # ユーザーが認可済みのクライアントにリダイレクト
+        # TODO: ここで認可コードを発行する
+        return RedirectResponse(
+            url=f"{query_params.get('redirect_uri')}?{urlencode({'code': user.get_auth_code()})}",
+            status_code=302
+        )
+
     app = get_app_by_id(db, client_id)
     # ユーザーが認可されていない場合は、認可画面を表示する
     # クッキーに認可に必要なリクエストパラメータを保存
@@ -186,7 +216,7 @@ async def authorize_post(
     
     #  認証認可成功
     # ユーザークライアントの作成’
-    user = get_user_by_id(db, json.loads(request.cookies.get("user"))["id"])
+    user = get_user_by_id(db, json.loads(request.cookies.get("session"))["id"])
     app = get_app_by_id(db, raw_params["client_id"])
     user_client = Client(
         user=user,
@@ -247,7 +277,7 @@ async def login_post(
     response = RedirectResponse(url=redirect_url, status_code=302)
     # TODO: 本番環境ではhttponly=Trueにする
     response.set_cookie(
-        key="user",
+        key="session",
         value=json.dumps({"id": user.id}),
         httponly=False,
         max_age=300
