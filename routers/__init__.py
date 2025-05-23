@@ -11,16 +11,19 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from urllib.parse import urlencode
 import json
-from ..cruds.user import (
+from cruds.user import (
     get_user_by_email,
     get_user_by_id,
     create_user,
 )
-from ..cruds.client import get_app_by_id
-from ..models.session import Client
-from ..database import get_db
+from cruds.client import (
+    get_client_by_id,
+    get_client_by_id,
+)
+from models.session import Client
+from database import get_db
 
-templates = Jinja2Templates(directory="../app/pages")
+templates = Jinja2Templates(directory="../pages")
 
 router = APIRouter(
     tags=["users"],
@@ -54,7 +57,7 @@ class AuthorizeRequest(BaseModel):
             if getattr(self, field) is None:
                 print(f"Field: {field}, Value: {getattr(self, field)}")
                 raise ValueError(f"The field '{field}' is required and cannot be None.")
-        
+
         # display変数の値を検証
         # displayはpage, popup, touch, wapのいずれかである必要がある
         display_values = ["page", "popup", "touch", "wap"]
@@ -71,46 +74,54 @@ class AuthorizeRequest(BaseModel):
 
 @router.get("/authorize")
 async def authorize(
-            request: Request,
-            scope: str = Query(...),
-            response_type: str = Query(...),
-            client_id: str = Query(...),
-            redirect_uri: str = Query(...),
-            state: str = Query(...),
-            response_mode: Optional[str] = Query(None),
-            nonce: Optional[str] = Query(None),
-            display: Optional[str] = Query("page"),
-            prompt: Optional[str] = Query("login"),
-            max_age: Optional[int] = Query(None),
-            ui_locales: Optional[str] = Query(None),
-            id_token_hint: Optional[str] = Query(None),
-            login_hint: Optional[str] = Query(None),
-            acr_values: Optional[str] = Query(None),
-            db: Session = Depends(get_db)
-        ):
+        request: Request,
+        db: Session = Depends(get_db)
+):
     """
     OIDC認証・認可リクエストエンドポイント
     """
-    try:
-        auth_request = AuthorizeRequest(
-            scope=scope,
-            response_type=response_type,
-            client_id=client_id,
-            redirect_uri=redirect_uri,
-            state=state,
-            response_mode=response_mode,
-            nonce=nonce,
-            display=display,
-            prompt=prompt,
-            max_age=max_age,
-            ui_locales=ui_locales,
-            id_token_hint=id_token_hint,
-            login_hint=login_hint,
-            acr_values=acr_values,
+    # クエリパラメータを取得
+    query_params = dict(request.query_params)
+
+    # リダイレクトURIの検証
+    # リダイレクトURIはクライアントのリダイレクトURIのいずれかである必要がある
+    redirect_uri = query_params["redirect_uri"]
+    client: Client = get_client_by_id(db, query_params["client_id"])
+    if redirect_uri not in client.redirect_uris:
+        # リダイレクトURLが無効
+        return RedirectResponse(
+            url="/error?error=Invalid redirect_uri",
+            error_description="Invalid redirect_uri",
+            status_code=302
         )
-        auth_request.validate_required_fields()
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    # 必須フィールドのリスト
+    # これらのフィールドはNoneであってはいけない
+    required_fields = ["scope", "response_type", "client_id", "redirect_uri", "state"]
+    missing_fields = [field for field in required_fields if field not in query_params]
+    if missing_fields:
+        # 必須フィールドが不足している場合は、エラーレスポンスを返す
+        error_response = {
+            "error": "invalid_request",
+            "error_description": f"Missing required fields: {', '.join(missing_fields)}",
+            "state": query_params.get("state"),
+        }
+        return RedirectResponse(
+            url=f"{query_params.get('redirect_uri')}?{urlencode(error_response)}",
+            status_code=302
+        )
+
+    # display変数の値を検証
+    # displayはpage, popup, touch, wapのいずれかである必要がある
+    display_values = ["page", "popup", "touch", "wap"]
+    if self.display not in display_values:
+        print(f"Field: display, Value: {self.display}")
+        raise ValueError(f"The field 'display' must be one of {display_values}.")
+    
+    # prompt変数の値を検証
+    # promptはnone, login, consent, select_accountのいずれかである必要がある
+    prompt_values = ["none", "login", "consent", "select_account"]
+    if self.prompt not in prompt_values:
+        raise ValueError(f"The field 'prompt' must be one of {prompt_values}.")
     
     # 未ログインの場合は/loginに302リダイレクト
     if not request.cookies.get("user"):
@@ -140,6 +151,7 @@ async def authorize(
     response.set_cookie(key="auth_request", value=json.dumps(auth_request.model_dump()), httponly=True, max_age=300)
 
     # ユーザーの認可& トークンの発行
+
 
 @router.post("/authorize")
 async def authorize_post(
@@ -188,24 +200,32 @@ async def authorize_post(
     return response
 
 
+# ログインフォームの流れ
 @router.get("/login")
 async def login_get(request: Request):
     """
     OIDC 認可フロー開始時、外部クライアントから
     リクエストパラメータを検証して request.session に保存した上で
     このエンドポイントにリダイレクトさせる想定です。
-    GET では単にログインフォームを表示。e
+    GET では単にログインフォームを表示。
     """
-    return templates.TemplateResponse("login.html", {"request": request})
+    query_params = dict(request.query_params)
+    query_string = urlencode(query_params)
+    action_url = "/login"
+    if query_string:
+        action_url += f"?{query_string}"
+    return templates.TemplateResponse("login.html", {"request": request, "action_url": action_url})
 
 
+# リダイレクトされた際に存在したクエリパラメータをそのままauthorizeに渡す
+# ログインセッションを作成する
 @router.post("/login")
 async def login_post(
-        request: Request,
-        email: str = Form(...),
-        password: str = Form(...),
-        db: Session = Depends(get_db)
-    ):
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
     # ユーザー名とパスワードを検証
     user = get_user_by_email(db, email)
     if not user:
@@ -214,25 +234,23 @@ async def login_post(
         raise HTTPException(status_code=400, detail="Invalid credentials")
     # 認証に成功した場合、セッションにユーザー情報を保存
 
-    # クッキーから認可リクエストを取得
-    auth_cookie = request.cookies.get("auth_request")
-    if not auth_cookie:
-        # 通常のログインの可能性あり
-        raise HTTPException(status_code=400, detail="Missing auth request")
-    # クエリ文字列として使うため、辞書に変換してエンコード
-    try:
-        raw_params = json.loads(auth_cookie)
-        # None の値を除外
-        filtered_params = {k: v for k, v in raw_params.items() if v is not None}
-        query_string = urlencode(filtered_params)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid auth request cookie")
+    # クエリパラメータをauthorizeに渡す
+    query_params = dict(request.query_params)
+    query_string = urlencode(query_params)
 
-    # /authorize にリダイレクト（302）
-    redirect_url = f"/authorize?{query_string}"
+    # クエリパラメータが存在する場合は、/authorizeにリダイレクト
+    if query_string:
+        redirect_url = f"/authorize?{query_string}"
+    else:
+        redirect_url = "/home"
+
     response = RedirectResponse(url=redirect_url, status_code=302)
-    response.delete_cookie("auth_request")
-    # 認証済みのユーザー情報をクッキーに保存
-    # ユーザー名、メールアドレス、スコープなどを含める
-    response.set_cookie(key="user", value=json.dumps({"id": user.id}), httponly=False, max_age=300) # TODO: 本番環境ではhttponly=Trueにする
+    # TODO: 本番環境ではhttponly=Trueにする
+    response.set_cookie(
+        key="user",
+        value=json.dumps({"id": user.id}),
+        httponly=False,
+        max_age=300
+    )
+
     return response
