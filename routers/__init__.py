@@ -31,47 +31,6 @@ router = APIRouter(
 )
 
 
-class AuthorizeRequest(BaseModel):
-    """ユーザー認可リクエスト"""
-    scope: str
-    response_type: str
-    client_id: str
-    redirect_uri: str
-    state: str
-    response_mode: Optional[str] = Field(default=None)
-    nonce: Optional[str] = Field(default=None)
-    display: Optional[str] = Field(default=None)
-    prompt: Optional[str] = Field(default=None)
-    max_age: Optional[int] = Field(default=None)
-    ui_locales: Optional[str] = Field(default=None)
-    id_token_hint: Optional[str] = Field(default=None)
-    login_hint: Optional[str] = Field(default=None)
-    acr_values: Optional[str] = Field(default=None)# "acr": {"values": ["urn:mace:incommon:iap:silver"] 
-
-    def validate_required_fields(self) -> None:
-        """AuthorizeRequestの必須フィールドを検証するメソッド"""
-        # 必須フィールドのリスト
-        # これらのフィールドはNoneであってはいけない
-        required_fields = ["scope", "response_type", "client_id", "redirect_uri", "state"]
-        for field in required_fields:
-            if getattr(self, field) is None:
-                print(f"Field: {field}, Value: {getattr(self, field)}")
-                raise ValueError(f"The field '{field}' is required and cannot be None.")
-
-        # display変数の値を検証
-        # displayはpage, popup, touch, wapのいずれかである必要がある
-        display_values = ["page", "popup", "touch", "wap"]
-        if self.display not in display_values:
-            print(f"Field: display, Value: {self.display}")
-            raise ValueError(f"The field 'display' must be one of {display_values}.")
-        
-        # prompt変数の値を検証
-        # promptはnone, login, consent, select_accountのいずれかである必要がある
-        prompt_values = ["none", "login", "consent", "select_account"]
-        if self.prompt not in prompt_values:
-            raise ValueError(f"The field 'prompt' must be one of {prompt_values}.")
-
-
 @router.get("/authorize")
 async def authorize(
         request: Request,
