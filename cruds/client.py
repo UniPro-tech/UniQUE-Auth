@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from models.session import Session as SessionModel
+# from models.session import Session as SessionModel
 from models.client import Client, Redirect_URI
 
 
