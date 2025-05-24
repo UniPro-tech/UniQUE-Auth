@@ -20,7 +20,11 @@ from cruds.client import (
     get_client_by_id,
     get_client_by_id,
 )
-from models.session import Client
+from models import (
+    Client,
+    Session as SessionModel,
+    User,
+)
 from database import get_db
 
 templates = Jinja2Templates(directory="../pages")
@@ -49,9 +53,20 @@ async def authorize(
         return response
 
     # リダイレクトURIの検証
-    # リダイレクトURIはクライアントのリダイレクトURIのいずれかである必要がある
     redirect_uri = query_params["redirect_uri"]
     client: Client = get_client_by_id(db, query_params["client_id"])
+    if not client:
+        # クライアントが存在しない場合は、エラーレスポンスを返す
+        error_response = {
+            "error": "invalid_client",
+            "error_description": "Client not found",
+            "state": query_params.get("state"),
+        }
+        return RedirectResponse(
+            url=f"{query_params.get('redirect_uri')}?{urlencode(error_response)}",
+            status_code=302
+        )
+    # クライアントのリダイレクトURIのいずれかである必要がある
     if redirect_uri not in client.redirect_uris:
         # リダイレクトURLが無効
         return RedirectResponse(
@@ -112,7 +127,6 @@ async def authorize(
         )
 
     # ユーザーがすでに認可されているか確認
-    print("user_id", json.loads(request.cookies.get("session"))["id"])
     user = get_user_by_id(db, json.loads(request.cookies.get("session"))["id"])
     auth_client_ids = [client.client_id for client in user.sessions]
     if query_params["client_id"] in auth_client_ids:
@@ -122,24 +136,34 @@ async def authorize(
             url=f"{query_params.get('redirect_uri')}?{urlencode({'code': user.get_auth_code()})}",
             status_code=302
         )
+    
+    # 認可画面の表示
+    response = templates.TemplateResponse(
+        "auth.htlm",
+        {
+            "request": request,
+            "client": {
+                "client_id": client.client_id,
+                "client_name": client.name,
+            },
+            "scope": query_params["scope"],
+            "state": query_params["state"],
+            "user": {
+                "email": user.email,
+                "username": user.name,
+            }
+        }
+    )
+    # 認可リクエストをクッキーに保存
+    # クエリパラメータをJSONに変換してクッキーに保存
+    response.set_cookie(
+        key="auth_request",
+        value=json.dumps(query_params),
+        httponly=False,  # 本番環境ではTrueにする
+        max_age=300  # 5分間有効
+    )
 
-    app = get_app_by_id(db, client_id)
-    # ユーザーが認可されていない場合は、認可画面を表示する
-    # クッキーに認可に必要なリクエストパラメータを保存
-    # クッキーに保存するため、辞書に変換してエンコード
-    try:
-        raw_params = auth_request.model_dump()
-        # None の値を除外
-        filtered_params = {k: v for k, v in raw_params.items() if v is not None}
-        query_string = urlencode(filtered_params)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid auth request cookie")
-    # 認可画面にリダイレクト（302）
-    redirect_url = f"/authorize?{query_string}"
-    response = RedirectResponse(url=redirect_url, status_code=302)
-    response.set_cookie(key="auth_request", value=json.dumps(auth_request.model_dump()), httponly=True, max_age=300)
-
-    # ユーザーの認可& トークンの発行
+    return response
 
 
 @router.post("/authorize")
@@ -166,13 +190,13 @@ async def authorize_post(
             "state": filtered_params.get("state"),
         }
         return RedirectResponse(url=f"/error?{urlencode(error_response)}", status_code=302)
-    
+
     # クエリ文字列として使うため、辞書に変換してエンコード
     try:
         raw_params: dict = json.loads(auth_cookie)
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid auth request cookie")
-    
+
     #  認証認可成功
     # ユーザークライアントの作成’
     user = get_user_by_id(db, json.loads(request.cookies.get("session"))["id"])
