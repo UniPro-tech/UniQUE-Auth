@@ -12,7 +12,8 @@ from database import Base
 if TYPE_CHECKING:
     from models import (
         User,
-        Client
+        Client,
+        AuthorizationCode
     )
 
 
@@ -42,6 +43,8 @@ class Session(Base):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))  # 外部キーとしてUserテーブルのIDを参照
     user: Mapped["User"] = relationship("User", back_populates="sessions")  # Userとのリレーション
+
+    authorization_codes: Mapped["AuthorizationCode"] = relationship("AuthorizationCode", back_populates="session", uselist=False)
 
     def __repr__(self):
         return f"<Session(id={self.id}, session_id={self.session_id}, client_id={self.client_id}, user_id={self.user_id})>"

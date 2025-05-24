@@ -6,6 +6,7 @@ from models.token import (
     RefreshToken,
     IDToken
 )
+from models.code import AuthorizationCode
 
 __all__ = [
     "Client",
@@ -14,4 +15,5 @@ __all__ = [
     "AccessToken",
     "RefreshToken",
     "IDToken",
+    "AuthorizationCode"
 ]
