@@ -11,6 +11,9 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from urllib.parse import urlencode
 import json
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from uuid_extensions import uuid7
 from cruds.user import (
     get_user_by_email,
     get_user_by_id,
@@ -19,6 +22,11 @@ from cruds.user import (
 from cruds.client import (
     get_client_by_id,
     get_client_by_id,
+)
+from cruds.session import (
+    create_session,
+    get_session_by_id,
+    delete_session_by_id,
 )
 from models import (
     Client,
@@ -180,6 +188,10 @@ async def authorize_post(
     auth_cookie = request.cookies.get("auth_request")
     if not auth_cookie:
         raise HTTPException(status_code=400, detail="Missing auth request")
+    try:
+        filtered_params: dict = json.loads(auth_cookie)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid auth request cookie")
 
     # ユーザーの認可を確認
     if action != "allow":
@@ -191,25 +203,70 @@ async def authorize_post(
         }
         return RedirectResponse(url=f"/error?{urlencode(error_response)}", status_code=302)
 
-    # クエリ文字列として使うため、辞書に変換してエンコード
+    #  認証認可成功
+    # セッションの作成
+    new_session = create_session(
+        db,
+        session_id=uuid7(),
+        auth_time=datetime.now(ZoneInfo("UTC")),
+        scope=filtered_params["scope"],
+        client_obj=get_client_by_id(db, filtered_params["client_id"]),
+        user_obj=get_user_by_id(db, json.loads(request.cookies.get("session"))["id"]),
+        acr=filtered_params.get("acr"),
+        amr=filtered_params.get("amr"),
+        nonce=filtered_params.get("nonce"),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("User-Agent", ""),
+        revoked=False,
+        created_at=datetime.now(ZoneInfo("UTC")),
+        updated_at=datetime.now(ZoneInfo("UTC"))
+    )
+    if not new_session:
+        raise HTTPException(status_code=500, detail="Failed to create session")
+
+    # 認可された場合は、/codeにリダイレクト（302）
+    # codeを発行してリダイレクトURIにリダイレクトする
+    # 認可コードの発行
+    
+    redirect_url = f"/code"
+    response = RedirectResponse(url=redirect_url, status_code=302)
+    response.delete_cookie("auth_request")
+    return response
+
+
+@router.get("/code")
+async def code_get(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    認可コードを発行するエンドポイント
+    認可リクエストのクッキーから情報を取得し、認可コードを生成してリダイレクトURIにリダイレクトする
+    """
+    # クッキーから認可リクエストを取得
+    auth_cookie = request.cookies.get("auth_request")
+    if not auth_cookie:
+        raise HTTPException(status_code=400, detail="Missing auth request")
+
     try:
-        raw_params: dict = json.loads(auth_cookie)
+        filtered_params: dict = json.loads(auth_cookie)
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid auth request cookie")
 
-    #  認証認可成功
-    # ユーザークライアントの作成’
+    # 認可コードの生成
     user = get_user_by_id(db, json.loads(request.cookies.get("session"))["id"])
-    app = get_app_by_id(db, raw_params["client_id"])
-    user_client = Client(
-        user=user,
-        app=app,
+    auth_code = user.get_auth_code()
+
+    # リダイレクトURIに認可コードを付与してリダイレクト
+    redirect_uri = filtered_params["redirect_uri"]
+    response = RedirectResponse(
+        url=f"{redirect_uri}?code={auth_code}&state={filtered_params.get('state')}",
+        status_code=302
     )
-    query_string = urlencode(filtered_params)
-    # 認可された場合は、/tokenにリダイレクト（302）
-    redirect_url = f"/token?{query_string}"
-    response = RedirectResponse(url=redirect_url, status_code=302)
+
+    # 認可リクエストのクッキーを削除
     response.delete_cookie("auth_request")
+
     return response
 
 
