@@ -17,6 +17,9 @@ def create_access_token(
         exp: int,
         status: str
 ):
+    """
+    DBにアクセストークンを登録及びトークンを作成する
+    """
     token = AccessToken(
         token_hash=token_hash,
         sub=sub,
@@ -29,6 +32,7 @@ def create_access_token(
     )
     session.add(token)
     session.commit()
+    
     return token
 
 
