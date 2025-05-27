@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from urllib.parse import urlencode
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from uuid_extensions import uuid7
 from cruds.user import (
@@ -28,10 +28,16 @@ from cruds.session import (
     get_session_by_id,
     delete_session_by_id,
 )
+from cruds.code import (
+    create_code,
+    get_code_by_code,
+    delete_code_by_code,
+)
 from models import (
     Client,
     Session as SessionModel,
     User,
+    AuthorizationCode
 )
 from database import get_db
 
@@ -144,7 +150,7 @@ async def authorize(
             url=f"{query_params.get('redirect_uri')}?{urlencode({'code': user.get_auth_code()})}",
             status_code=302
         )
-    
+
     # 認可画面の表示
     response = templates.TemplateResponse(
         "auth.htlm",
@@ -205,7 +211,7 @@ async def authorize_post(
 
     #  認証認可成功
     # セッションの作成
-    new_session = create_session(
+    new_session: SessionModel = create_session(
         db,
         session_id=uuid7(),
         auth_time=datetime.now(ZoneInfo("UTC")),
@@ -227,9 +233,23 @@ async def authorize_post(
     # 認可された場合は、/codeにリダイレクト（302）
     # codeを発行してリダイレクトURIにリダイレクトする
     # 認可コードの発行
-    
-    redirect_url = f"/code"
-    response = RedirectResponse(url=redirect_url, status_code=302)
+    new_code = create_code(
+        db,
+        code=uuid7(),
+        session_id=new_session.session_id,
+        client_id=filtered_params["client_id"],
+        redirect_uri=filtered_params["redirect_uri"],
+        scope=filtered_params["scope"],
+        auth_time=datetime.now(ZoneInfo("UTC")),
+        nonce=filtered_params.get("nonce"),
+        created_at=datetime.now(ZoneInfo("UTC")),
+        expires_at=datetime.now(ZoneInfo("UTC")) + timedelta(minutes=10)  # 10分間有効
+    )
+    code_response = {
+        "code": new_code.code,
+        "state": filtered_params["state"],
+    }
+    response = RedirectResponse(url=f"/code?{urlencode(code_response)}", status_code=302)
     response.delete_cookie("auth_request")
     return response
 
@@ -243,8 +263,11 @@ async def code_get(
     認可コードを発行するエンドポイント
     認可リクエストのクッキーから情報を取得し、認可コードを生成してリダイレクトURIにリダイレクトする
     """
-    # クッキーから認可リクエストを取得
+    # クッキーから認可リクエストを取得get("state")
     auth_cookie = request.cookies.get("auth_request")
+    login_session_cookie = request.cookies.get("session")
+    if not login_session_cookie:
+        raise HTTPException(status_code=400, detail="Missing login session cookie")
     if not auth_cookie:
         raise HTTPException(status_code=400, detail="Missing auth request")
 
@@ -253,14 +276,22 @@ async def code_get(
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid auth request cookie")
 
+    # クエリパラメータを取得
+    query_params = dict(request.query_params)
+
     # 認可コードの生成
-    user = get_user_by_id(db, json.loads(request.cookies.get("session"))["id"])
-    auth_code = user.get_auth_code()
+    code = query_params.get("code")
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing code parameter")
+
+    code: AuthorizationCode = get_code_by_code(db, code)
+    if not code:
+        raise HTTPException(status_code=400, detail="Invalid code")
+    # tokenの作成
 
     # リダイレクトURIに認可コードを付与してリダイレクト
-    redirect_uri = filtered_params["redirect_uri"]
     response = RedirectResponse(
-        url=f"{redirect_uri}?code={auth_code}&state={filtered_params.get('state')}",
+        url=f"{code.redirect_uri}?",
         status_code=302
     )
 
