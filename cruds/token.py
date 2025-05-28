@@ -100,7 +100,7 @@ def create_id_token(
             "amr": amr,
             "azp": azp
         },
-        key="your_secret_key",  # Replace with your actual secret key
+        key="your_secret_key",
         algorithm="HS256"
     )
     token = IDToken(
