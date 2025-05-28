@@ -32,6 +32,8 @@ from cruds.code import (
     create_code,
     get_code_by_code,
     delete_code_by_code,
+    create_access_token,
+    create_refresh_token
 )
 from models import (
     Client,
@@ -287,7 +289,20 @@ async def code_get(
     code: AuthorizationCode = get_code_by_code(db, code)
     if not code:
         raise HTTPException(status_code=400, detail="Invalid code")
+
     # tokenの作成
+    
+    new_token = create_access_token(
+        db,
+        token=uuid7(),
+        session_id=code.session_id,
+        client_id=code.client_id,
+        user_id=code.user_id,
+        created_at=datetime.now(ZoneInfo("UTC")),
+        expires_at=datetime.now(ZoneInfo("UTC")) + timedelta(minutes=10)  # 10分間有効
+    )
+    if not new_token:
+        raise HTTPException(status_code=500, detail="Failed to create token")
 
     # リダイレクトURIに認可コードを付与してリダイレクト
     response = RedirectResponse(
