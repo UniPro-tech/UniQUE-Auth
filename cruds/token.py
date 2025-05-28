@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+import jwt
 from models import (
     AccessToken,
     RefreshToken,
@@ -20,8 +21,23 @@ def create_access_token(
     """
     DBにアクセストークンを登録及びトークンを作成する
     """
+    token_str = jwt.encode(
+        {
+            "iss": iss,
+            "sub": sub,
+            "aud": client_id,
+            "iat": iat,
+            "exp": exp,
+            "scope": scope,
+            "jti": token_hash
+        },
+        key="your_secret_key",  # Replace with your actual secret key
+        algorithm="HS256",
+        headers={"typ": "JWT", "alg": "HS256"}
+    )
+
     token = AccessToken(
-        token_hash=token_hash,
+        token_hash=token_str,
         sub=sub,
         iss=iss,
         client_id=client_id,
@@ -32,7 +48,7 @@ def create_access_token(
     )
     session.add(token)
     session.commit()
-    
+
     return token
 
 
@@ -71,6 +87,22 @@ def create_id_token(
         amr: str = None,
         azp: str = None
 ):
+    token_str = jwt.encode(
+        {
+            "iss": iss,
+            "sub": sub,
+            "aud": aud,
+            "nance": nonce,
+            "exp": exp,
+            "iat": iat,
+            "auth_time": auth_time,
+            "acr": acr,
+            "amr": amr,
+            "azp": azp
+        },
+        key="your_secret_key",  # Replace with your actual secret key
+        algorithm="HS256"
+    )
     token = IDToken(
         sub=sub,
         iss=iss,
@@ -113,8 +145,22 @@ def create_refresh_token(
     status: str,
     rotated_from_id: str = None
 ):
+    token_str = jwt.encode(
+        {
+            "iss": iss,
+            "sub": sub,
+            "aud": client_id,
+            "iat": iat,
+            "exp": exp,
+            "scope": scope,
+            "jti": token_hash
+        },
+        key="your_secret_key",  # Replace with your actual secret key
+        algorithm="HS256",
+        headers={"typ": "JWT", "alg": "HS256"}
+    )
     token = RefreshToken(
-        token_hash=token_hash,
+        token_hash=token_str,
         sub=sub,
         client_id=client_id,
         iss=iss,

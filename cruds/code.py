@@ -5,68 +5,6 @@ from zoneinfo import ZoneInfo
 from models import AuthorizationCode
 
 
-def create_token(
-    payload: str,
-    secret: str,
-    header: dict = {"typ": "JWT", "alg": "HS256"},
-    algorithm: str = "HS256"
-):
-    """
-    ヘッダーとペイロードはbase64でエンコードする
-    """
-    import jwt
-
-    token = jwt.encode(
-        payload=payload,
-        key=secret,
-        algorithm=algorithm,
-        headers=header,
-    )
-    return token
-
-
-def create_access_token(
-        iss: str,
-        sub: str,
-        aud: str,
-        exp: int,
-        iat: int,
-        jti: str = None,
-        scope: str = None,
-) -> str:
-    return create_token(
-        payload={
-            "iss": iss,
-            "sub": sub,
-            "aud": aud,
-            "exp": exp,
-            "iat": iat,
-            "jti": jti,
-            "scope": scope,
-        },
-        secret="your_secret_key",  # Replace with your actual secret key
-    )
-
-
-def create_refresh_token(
-        iss: str,
-        sub: str,
-        aud: str,
-        iat: int,
-        exp: int,
-) -> str:
-    return create_token(
-        payload={
-            "iss": iss,
-            "sub": sub,
-            "aud": aud,
-            "iat": iat,
-            "exp": exp
-        },
-        secret="your_secret_key",  # Replace with your actual secret key
-    )
-
-
 def create_code(
     session: Session,
     code: str,
