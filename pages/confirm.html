@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>認可</title>
+    <link rel="stylesheet" href="https://matcha.mizu.sh/matcha.css">
+</head>
+<body>
+    <h2>認可</h2>
+
+    <p>アプリケーション名: {{ auth_data.app.name }}</p>
+    <p>スコープ: {{ auth_data.app.scope }}</p>
+    <p>ログイン中のユーザー: {{ auth_data.user.name }}</p>
+
+    <form action="{{ action_url }}" method="post">
+        <button type="submit">認可</button>
+    </form>
+</body>
+</html>

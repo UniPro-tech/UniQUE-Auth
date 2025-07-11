@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-sqlalchemy
-pydantic
-PyJWT
-python-dotenv
-nanoid
-uuid7
