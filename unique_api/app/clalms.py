@@ -1,5 +1,3 @@
-from model import User, App, Auth, Consent, OIDCTokens, Token
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 
