@@ -140,7 +140,7 @@ class Consent(Base):
 class Code(Base):
     __tablename__ = "codes"
 
-    id: Mapped[Integer] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     token: Mapped[str] = mapped_column(String, unique=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime)
     exp: Mapped[datetime] = mapped_column(DateTime)
