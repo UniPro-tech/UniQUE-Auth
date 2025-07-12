@@ -270,9 +270,12 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
         db.flush()
 
     # consentテーブルを作成
-    consent = Consent(scope=auth_request["scope"], invalid=False)
+    consent = Consent(
+        scope=auth_request["scope"],
+        invalid=False
+    )
     code = Code(
-        token=uuid4(),
+        token=str(uuid4()),
         created_at=datetime.now(timezone.utc),
         exp=datetime.now(timezone.utc) + timedelta(minutes=10),
         invalid=False,
@@ -296,6 +299,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     OIDC 認可コードを取得するエンドポイント。
     """
     print("Get code request received:", request.query_params._dict)
+    auth_request = request.session.get("auth_request")
     user_info = request.cookies.get("user_id")
     if not user_info:
         raise RedirectResponse(url="/login", status_code=302)
@@ -308,12 +312,12 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     if not qp_code:
         raise HTTPException(status_code=400, detail="Code not found")
 
-    code: Code = db.query(Code).filter_by(token=qp_code)
+    code: Code = db.query(Code).filter_by(token=qp_code).first()
     if not code:
         raise HTTPException(status_code=400, detail="Code not found")
 
     oidc_auth: OIDCAuthorization = (
-        db.query(OIDCAuthorization).filter_by(code=code.id).first()
+        db.query(OIDCAuthorization).filter_by(code_id=code.id).first()
     )
     auth = db.query(Auth).filter_by(id=oidc_auth.auth_id).first()
     consent = oidc_auth.consent
@@ -360,8 +364,13 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     db.commit()
 
     # リダイレクト先の URI を取得
-    redirect_uri = request.query_params.get("redirect_uri")
+    redirect_uri = auth_request["redirect_uri"]
     if not redirect_uri:
         raise HTTPException(status_code=400, detail="Redirect URI not provided")
     # リダイレクト URI に認可コードを付与してリダイレクト
-    return
+    response = RedirectResponse(
+        url=redirect_uri,
+        status_code=302
+    )
+
+    return response
