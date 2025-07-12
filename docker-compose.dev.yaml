@@ -1,0 +1,12 @@
+services:
+  unique_api:
+    image: ghcr.io/astral-sh/uv:python3.13-alpine
+    container_name: unique_api_container
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+    environment:
+      - ENV=development
+    working_dir: /app
+    command: /bin/sh -c "uv sync && uv run unique_api/app/main.py"
