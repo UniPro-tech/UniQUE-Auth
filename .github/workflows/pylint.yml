@@ -9,16 +9,10 @@ jobs:
       matrix:
         python-version: ["3.13"]
     steps:
-      - name: Git Init
-        run: |
-          apt update &&
-          apt install git -y &&
-          # chown -R ${USER} ./ &&
-          git config --system --add safe.directory "/__w/${GITHUB_REPOSITORY#${GITHUB_REPOSITORY_OWNER}/}/${GITHUB_REPOSITORY#${GITHUB_REPOSITORY_OWNER}/}"
       - uses: actions/checkout@v4
         name: Checkout the Repository
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
