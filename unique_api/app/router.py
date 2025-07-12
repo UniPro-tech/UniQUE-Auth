@@ -287,7 +287,7 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     request.session.clear()
 
     return RedirectResponse(
-        url=f"{auth_request["redirect_uri"]}?code={code.token}",
+        url=f"{auth_request['redirect_uri']}?code={code.token}",
         status_code=302,
     )
 
@@ -364,12 +364,9 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     db.add(oidc_token)
     db.commit()
 
-
     token_response = {
         "access_token": access_token.hash,
         "token_type": "Bearer",
         "refresh_token": refresh_token.hash,
     }
-    return JSONResponse(
-        token_response
-    )
+    return JSONResponse(token_response)
