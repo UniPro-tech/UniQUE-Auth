@@ -4,20 +4,21 @@ from fastapi.responses import RedirectResponse
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from urllib.parse import urlencode
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from db import get_db
 import hashlib
 import jwt
 from uuid import uuid4
-import base64
 from unique_api.app.model import (
     User,
     Session as UserSession,
     App,
     Auth,
     Consent,
+    OIDCAuthorization,
     OIDCTokens,
     Token,
+    Code
 )
 import os
 
@@ -268,11 +269,30 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
         db.add(existing_auth)
         db.flush()
 
-    # リダイレクト先の URI を取得
-    redirect_uri = request.query_params.get("redirect_uri")
+    # consentテーブルを作成
+    consent = Consent(
+        scope=auth_request["scope"],
+        invalid=False
+    )
+    code = Code(
+        token=uuid4(),
+        created_at=datetime.now(timezone.utc),
+        exp=datetime.now(timezone.utc) + timedelta(minutes=10),
+        invalid=False
+    )
+    db.add_all([consent, code])
+    db.flush()
+
+    oidc_auth = OIDCAuthorization(
+        auth_id=existing_auth.id,
+        code=code,
+        consent=consent
+    )
+    db.add(oidc_auth)
+    db.commit()
 
     return RedirectResponse(
-        url=f"/code?code={oidc_tokens.code}&redirect_uri={redirect_uri}",
+        url=f"/code?code={code.token}",
         status_code=302,
     )
 
