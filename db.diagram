@@ -35,6 +35,7 @@ Table auths {
 }
 
 Table oidc_tokens{
+  id integer [primary key]
   auths_id integer
   access_token_id integer
   refresh_token_id integer
@@ -42,7 +43,7 @@ Table oidc_tokens{
 }
 
 Table code{
-  auths_id integer
+  oidc_token_id integer
   token varchar
   invalid bool
 }
@@ -94,9 +95,13 @@ Ref: "users"."id" - "emails"."user_id"
 Ref: "auths"."id" < "oidc_tokens"."auths_id"
 
 Ref: "oidc_tokens"."access_token_id" - "tokens"."id"
-
+ 
 Ref: "oidc_tokens"."refresh_token_id" - "tokens"."id"
 
 Ref: "apps"."id" - "auths"."app_id"
 
 Ref: "auths"."id" - "consents"."auth_id"
+
+Ref: "users"."id" - "Profile"."user_id"
+
+Ref: "oidc_tokens"."id" - "code"."oidc_token_id"
