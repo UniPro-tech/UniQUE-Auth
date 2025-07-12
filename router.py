@@ -253,8 +253,6 @@ async def auth_confirm(
         db.add(existing_auth)
         db.flush()
 
-    
-
     # リダイレクト先の URI を取得
     redirect_uri = request.query_params.get("redirect_uri")
 
