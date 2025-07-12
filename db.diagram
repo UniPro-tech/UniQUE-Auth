@@ -53,6 +53,8 @@ Table oidc_tokens{
 Table code{
   oidc_token_id integer
   token varchar
+  create_at integer
+  exp integer
   invalid bool
 }
 
@@ -70,9 +72,8 @@ Table tokens {
 
 Table consents {
   id integer [primary key]
-  auth_id integer
-  oidc_token_id integer
   scope varchar
+  invalid bool
 }
 
 Table sessions {
