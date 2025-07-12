@@ -2,8 +2,6 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from starlette.middleware.sessions import SessionMiddleware
 from db import engine, Base, get_db
-from sqlalchemy.orm import Session
-from fastapi import Depends
 from router import router
 from data import create_test_data
 
