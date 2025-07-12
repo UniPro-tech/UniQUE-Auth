@@ -19,10 +19,13 @@ from unique_api.app.model import (
     OIDCTokens,
     Token,
 )
+import os
 
 
 router = APIRouter()
-templates = Jinja2Templates(directory="pages")
+templates = Jinja2Templates(
+    directory=os.path.join(os.path.dirname(__file__), "../pages")
+)
 
 
 @router.get("/login")
