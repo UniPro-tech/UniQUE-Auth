@@ -27,7 +27,7 @@ app.add_middleware(
     secret_key="your-secret-key",
 )
 
-app.include_router(router)
+app.include_router(router, prefix="/v1", tags=["v1"])
 
 if __name__ == "__main__":
     uvicorn.run("unique_api.app.main:app", reload=True, host="0.0.0.0")
