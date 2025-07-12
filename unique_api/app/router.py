@@ -324,8 +324,15 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     consent = oidc_auth.consent
 
     # アプリケーションの認証情報を取得
+    issued_at = datetime.now(timezone.utc)
     access_token_hash = jwt.encode(
-        {"user_id": user.id, "app_id": auth.app_id, "scope": consent.scope},
+        {
+            "user_id": user.id,
+            "app_id": auth.app_id,
+            "scope": consent.scope,
+            "issued_at": str(issued_at),
+            "exp": str(issued_at + timedelta(minutes=60))
+        },
         "your-secret-key",
         algorithm="HS256",
     )
@@ -333,13 +340,19 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
         hash=access_token_hash,
         type="access",
         scope=consent.scope,
-        issued_at=datetime.now(),
-        exp=datetime.now() + timedelta(minutes=60),  # 1時間有効
+        issued_at=issued_at,
+        exp=issued_at + timedelta(minutes=60),  # 1時間有効
         client_id=auth.app_id,
         user_id=user.id,
     )
     refresh_token_hash = jwt.encode(
-        {"user_id": user.id, "app_id": auth.app_id, "scope": consent.scope},
+        {
+            "user_id": user.id,
+            "app_id": auth.app_id,
+            "scope": consent.scope,
+            "issued_at": str(issued_at),
+            "exp": str(issued_at + timedelta(days=30))
+        },
         "your-secret-key",
         algorithm="HS256",
     )
@@ -347,8 +360,8 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
         hash=refresh_token_hash,
         type="refresh",
         scope=consent.scope,
-        issued_at=datetime.now(),
-        exp=datetime.now() + timedelta(days=30),  # 30日有効
+        issued_at=issued_at,
+        exp=issued_at + timedelta(days=30),  # 30日有効
         client_id=auth.app_id,
         user_id=user.id,
     )
@@ -368,5 +381,6 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
         "access_token": access_token.hash,
         "token_type": "Bearer",
         "refresh_token": refresh_token.hash,
+        # id_tokenをつける
     }
     return JSONResponse(token_response)
