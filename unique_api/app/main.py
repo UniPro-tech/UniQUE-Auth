@@ -30,4 +30,4 @@ app.add_middleware(
 app.include_router(router)
 
 if __name__ == "__main__":
-    uvicorn.run("unique_api.app.main:app", reload=True)
+    uvicorn.run("unique_api.app.main:app", reload=True, host="0.0.0.0")
