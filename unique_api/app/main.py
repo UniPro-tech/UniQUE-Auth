@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+import uvicorn
 from contextlib import asynccontextmanager
 from starlette.middleware.sessions import SessionMiddleware
 from db import engine, Base, get_db
@@ -27,3 +28,6 @@ app.add_middleware(
 )
 
 app.include_router(router)
+
+if __name__ == '__main__':
+    uvicorn.run(app, reload=True)
