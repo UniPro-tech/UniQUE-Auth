@@ -86,17 +86,20 @@ class OIDCAuthorization(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     auth_id: Mapped[int] = mapped_column(ForeignKey("auths.id"))
+    code_id: Mapped[int] = mapped_column(ForeignKey("codes.id"))
+    consent_id: Mapped[int] = mapped_column(ForeignKey("consents.id"))
 
     code: Mapped["Code"] = relationship(back_populates="oidc_authorization")
     consent: Mapped["Consent"] = relationship(back_populates="oidc_authorization")
     auth: Mapped["Auth"] = relationship(back_populates="oidc_authorizations")
+    oidc_token: Mapped["OIDCTokens"] = relationship(back_populates="oidc_authorization")
 
 
 class OIDCTokens(Base):
     __tablename__ = "oidc_tokens"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    oidc_authorization_id: Mapped[int] = mapped_column(Integer)
+    oidc_authorization_id: Mapped[int] = mapped_column(ForeignKey("oidc_authorizations.id"))
     access_token_id: Mapped[int] = mapped_column(ForeignKey("tokens.id"))
     refresh_token_id: Mapped[int] = mapped_column(ForeignKey("tokens.id"))
     invalid: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -145,6 +148,7 @@ class Code(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime)
     exp: Mapped[datetime] = mapped_column(DateTime)
     invalid: Mapped[bool] = mapped_column(Boolean, default=False)
+
     oidc_authorization: Mapped["OIDCAuthorization"] = relationship(
         back_populates="code"
     )
