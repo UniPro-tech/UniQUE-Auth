@@ -2,7 +2,6 @@
 from sqlalchemy.orm import Session
 from model import User, App, Email, RedirectURI, Auth, Consent, OIDCTokens, Token, Session as UserSession
 from datetime import datetime
-from uuid import uuid4
 import hashlib
 
 
@@ -44,3 +43,7 @@ def create_test_data(db: Session):
     )
     db.add(email)
     db.commit()  # リダイレクトURIを保存
+    # テストユーザーで認可する際のテストURLを生成
+    print(
+        f"http://localhost:8000/login?response_type=code&scope=openid+profile+email&client_id={app.client_id}&state=af0ifjsldkj&redirect_uri={redirect_uri.uri}"
+    )
