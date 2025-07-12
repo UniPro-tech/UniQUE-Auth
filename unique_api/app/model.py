@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy import Boolean, ForeignKey, String, Integer, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from db import Base
 
@@ -76,27 +76,32 @@ class Auth(Base):
 
     user: Mapped["User"] = relationship(back_populates="auths")
     app: Mapped["App"] = relationship(back_populates="auths")
-    oidc_tokens: Mapped[list["OIDCTokens"]] = relationship(back_populates="auth")
-    consents: Mapped[list["Consent"]] = relationship(back_populates="auth")
+    oidc_authorizations: Mapped[list["OIDCAuthorization"]] = relationship(back_populates="auth")
+
+
+class OIDCAuthorization(Base):
+    __tablename__ = "oidc_authorizations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    auth_id: Mapped[int] = mapped_column(ForeignKey("auths.id"))
+
+    code: Mapped["Code"] = relationship(back_populates="oidc_authorization")
+    consent: Mapped["Consent"] = relationship(back_populates="oidc_authorization")
+    auth: Mapped["Auth"] = relationship(back_populates="oidc_authorizations")
 
 
 class OIDCTokens(Base):
     __tablename__ = "oidc_tokens"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    auths_id: Mapped[int] = mapped_column(ForeignKey("auths.id"), primary_key=True)
-    code: Mapped[str] = mapped_column(String, unique=True)
+    oidc_authorization_id: Mapped[int] = mapped_column(Integer)
     access_token_id: Mapped[int] = mapped_column(ForeignKey("tokens.id"))
     refresh_token_id: Mapped[int] = mapped_column(ForeignKey("tokens.id"))
     invalid: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    auth: Mapped["Auth"] = relationship(back_populates="oidc_tokens")
     access_token: Mapped["Token"] = relationship(foreign_keys=[access_token_id])
     refresh_token: Mapped["Token"] = relationship(foreign_keys=[refresh_token_id])
-    code: Mapped["Code"] = relationship(back_populates="oidc_token")
-    consent: Mapped["Consent"] = relationship(
-        back_populates="oidc_token", uselist=False
-    )
+    oidc_authorization: Mapped["OIDCAuthorization"] = relationship(back_populates="oidc_token")
 
 
 class Token(Base):
@@ -120,12 +125,21 @@ class Consent(Base):
     __tablename__ = "consents"
 
     id: Mapped[int] = mapped_column(primary_key=True, unique=True)
-    auth_id: Mapped[int] = mapped_column(ForeignKey("auths.id"))
-    oidc_token_id: Mapped[int] = mapped_column(ForeignKey("oidc_tokens.id"))
     scope: Mapped[str] = mapped_column(String)
+    invali: Mapped[Boolean] = mapped_column(bool)
 
-    auth: Mapped["Auth"] = relationship(back_populates="consents")
-    oidc_token: Mapped["OIDCTokens"] = relationship(back_populates="consent")
+    oidc_authorization: Mapped["OIDCAuthorization"] = relationship(back_populates="consent")
+
+
+class Code(Base):
+    __tablename__ = "codes"
+
+    id: Mapped[Integer] = mapped_column(primary_key=True)
+    token: Mapped[str] = mapped_column(String, unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    exp: Mapped[datetime] = mapped_column(DateTime)
+    invalid: Mapped[bool] = mapped_column(Boolean, default=False)
+    oidc_authorization: Mapped["OIDCAuthorization"] = relationship(back_populates="code")
 
 
 class Session(Base):
@@ -139,16 +153,3 @@ class Session(Base):
     invalid: Mapped[bool] = mapped_column(Boolean, default=False)
 
     user: Mapped["User"] = relationship(back_populates="sessions")
-
-
-class Code(Base):
-    __tablename__ = "codes"
-
-    oidc_token_id: Mapped[int] = mapped_column(
-        ForeignKey("oidc_tokens.id"), primary_key=True
-    )
-    code: Mapped[str] = mapped_column(String, unique=True)
-    created_at: Mapped[datetime]
-    exp: Mapped[datetime]
-    used: Mapped[bool] = mapped_column(Boolean, default=False)
-    oidc_token: Mapped["OIDCTokens"] = relationship(back_populates="code")
