@@ -28,6 +28,3 @@ app.add_middleware(
 )
 
 app.include_router(router)
-
-
-#http://localhost:8000/login?response_type=code&scope=openid+profile+email&client_id=test_client_id_091ba65c-a91b-4717-b44d-bb4882b21e1f&state=af0ifjsldkj&redirect_uri=https://example.com/callback
