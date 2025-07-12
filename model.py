@@ -11,7 +11,6 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String)
-    nickname: Mapped[str] = mapped_column(String, nullable=True)
     passwd_hash: Mapped[str] = mapped_column(String)
     icon_uri: Mapped[str] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime]
