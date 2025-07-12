@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, Form
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from urllib.parse import urlencode
@@ -284,8 +284,10 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     db.add(oidc_auth)
     db.commit()
 
+    request.session.clear()
+
     return RedirectResponse(
-        url=f"/code?code={code.token}",
+        url=f"{auth_request["redirect_uri"]}?code={code.token}",
         status_code=302,
     )
 
@@ -296,7 +298,6 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     OIDC 認可コードを取得するエンドポイント。
     """
     print("Get code request received:", request.query_params._dict)
-    auth_request = request.session.get("auth_request")
     user_info = request.cookies.get("user_id")
     if not user_info:
         raise RedirectResponse(url="/login", status_code=302)
@@ -312,6 +313,9 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     code: Code = db.query(Code).filter_by(token=qp_code).first()
     if not code:
         raise HTTPException(status_code=400, detail="Code not found")
+    code.invalid = True
+    db.add(code)
+    db.commit()
 
     oidc_auth: OIDCAuthorization = (
         db.query(OIDCAuthorization).filter_by(code_id=code.id).first()
@@ -360,11 +364,12 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     db.add(oidc_token)
     db.commit()
 
-    # リダイレクト先の URI を取得
-    redirect_uri = auth_request["redirect_uri"]
-    if not redirect_uri:
-        raise HTTPException(status_code=400, detail="Redirect URI not provided")
-    # リダイレクト URI に認可コードを付与してリダイレクト
-    response = RedirectResponse(url=redirect_uri, status_code=302)
 
-    return response
+    token_response = {
+        "access_token": access_token.hash,
+        "token_type": "Bearer",
+        "refresh_token": refresh_token.hash,
+    }
+    return JSONResponse(
+        token_response
+    )
