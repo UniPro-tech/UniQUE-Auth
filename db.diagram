@@ -1,0 +1,102 @@
+Table users {
+  id integer [primary key]
+  name varchar
+  created_at timestamp
+  invalid bool
+}
+
+Table emails {
+  user_id integer
+  email varchar [unique]
+  verified bool
+}
+
+Table apps {
+  id integer [primary key]
+  client_id varchar [unique]
+  client_secret varchar
+  name varchar
+  created_at timestamp
+  invalid bool
+}
+
+Table redirect_uris {
+  app_id integer
+  uri varchar
+  created_at timestamp
+}
+
+Table auths {
+  id integer [primary key]
+  auth_user_id integer
+  app_id integer
+  created_at timestamp
+  invalid bool
+}
+
+Table oidc_tokens{
+  auths_id integer
+  access_token_id integer
+  refresh_token_id integer
+  invalid bool
+}
+
+Table code{
+  auths_id integer
+  token varchar
+  invalid bool
+}
+
+Table tokens {
+  id integer [primary key]
+  hash varchar
+  type varchar // access, refresh, etc.
+  scope varchar // "openid profile email" etc.
+  issued_at timestamp  // 発行時刻
+  exp timestamp  // 有効期限
+  client_id integer  // apps.id（どのアプリに対して発行したか）
+  user_id integer  // users.id（誰のトークンか）
+  revoked bool
+}
+
+Table consents {
+  id integer [primary key]
+  auth_id integer
+  scope varchar
+}
+
+Table sessions {
+  id integer [primary key]
+  user_id integer
+  ip_address varchar
+  user_agent varchar
+  created_at timestamp
+  invalid bool
+}
+
+Table Profile {
+  user_id integer
+  nickname varchar
+  icon_uri varchar
+
+}
+
+
+
+Ref: "users"."id" - "auths"."auth_user_id"
+
+Ref: "users"."id" < "sessions"."user_id"
+
+Ref: "apps"."id" < "redirect_uris"."app_id"
+
+Ref: "users"."id" - "emails"."user_id"
+
+Ref: "auths"."id" < "oidc_tokens"."auths_id"
+
+Ref: "oidc_tokens"."access_token_id" - "tokens"."id"
+
+Ref: "oidc_tokens"."refresh_token_id" - "tokens"."id"
+
+Ref: "apps"."id" - "auths"."app_id"
+
+Ref: "auths"."id" - "consents"."auth_id"
