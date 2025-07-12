@@ -18,7 +18,7 @@ from unique_api.app.model import (
     OIDCAuthorization,
     OIDCTokens,
     Token,
-    Code
+    Code,
 )
 import os
 
@@ -270,24 +270,17 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
         db.flush()
 
     # consentテーブルを作成
-    consent = Consent(
-        scope=auth_request["scope"],
-        invalid=False
-    )
+    consent = Consent(scope=auth_request["scope"], invalid=False)
     code = Code(
         token=uuid4(),
         created_at=datetime.now(timezone.utc),
         exp=datetime.now(timezone.utc) + timedelta(minutes=10),
-        invalid=False
+        invalid=False,
     )
     db.add_all([consent, code])
     db.flush()
 
-    oidc_auth = OIDCAuthorization(
-        auth_id=existing_auth.id,
-        code=code,
-        consent=consent
-    )
+    oidc_auth = OIDCAuthorization(auth_id=existing_auth.id, code=code, consent=consent)
     db.add(oidc_auth)
     db.commit()
 
@@ -319,7 +312,9 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     if not code:
         raise HTTPException(status_code=400, detail="Code not found")
 
-    oidc_auth: OIDCAuthorization = db.query(OIDCAuthorization).filter_by(code=code.id).first()
+    oidc_auth: OIDCAuthorization = (
+        db.query(OIDCAuthorization).filter_by(code=code.id).first()
+    )
     auth = db.query(Auth).filter_by(id=oidc_auth.auth_id).first()
     consent = oidc_auth.consent
 
