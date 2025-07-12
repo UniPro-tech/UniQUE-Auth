@@ -79,6 +79,7 @@ class Auth(Base):
     user: Mapped["User"] = relationship(back_populates="auths")
     app: Mapped["App"] = relationship(back_populates="auths")
     oidc_tokens: Mapped[list["OIDCTokens"]] = relationship(back_populates="auth")
+    consents: Mapped[list["Consent"]] = relationship(back_populates="auth")
 
 
 class OIDCTokens(Base):
@@ -119,9 +120,11 @@ class Consent(Base):
     __tablename__ = "consents"
 
     id: Mapped[int] = mapped_column(primary_key=True, unique=True)
+    auth_id: Mapped[int] = mapped_column(ForeignKey("auths.id"))
     oidc_token_id: Mapped[int] = mapped_column(ForeignKey("oidc_tokens.id"))
     scope: Mapped[str] = mapped_column(String)
 
+    auth: Mapped["Auth"] = relationship(back_populates="consents")
     oidc_token: Mapped["OIDCTokens"] = relationship(back_populates="consent")
 
 

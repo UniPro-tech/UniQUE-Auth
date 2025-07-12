@@ -62,6 +62,7 @@ Table tokens {
 
 Table consents {
   id integer [primary key]
+  auth_id integer
   oidc_token_id integer
   scope varchar
 }
@@ -105,3 +106,5 @@ Ref: "users"."id" - "Profile"."user_id"
 Ref: "oidc_tokens"."id" - "code"."oidc_token_id"
 
 Ref: "oidc_tokens"."id" - "consents"."oidc_token_id"
+
+Ref: "auths"."id" < "consents"."auth_id"
