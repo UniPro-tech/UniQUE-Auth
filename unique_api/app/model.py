@@ -135,7 +135,7 @@ class Consent(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, unique=True)
     scope: Mapped[str] = mapped_column(String)
-    invali: Mapped[bool] = mapped_column(Boolean)
+    invalid: Mapped[bool] = mapped_column(Boolean)
 
     oidc_authorization: Mapped["OIDCAuthorization"] = relationship(
         back_populates="consent"
