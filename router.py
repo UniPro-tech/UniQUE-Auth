@@ -180,17 +180,26 @@ async def auth(
     # すでに認可されているか確認
     existing_auth = db.query(Auth).filter_by(auth_user_id=user.id, app_id=app.id).first()
     if existing_auth:
-        if set(request_query_params["scope"].split(" ")) <= set(existing_auth.consent.scope.split(" ")):
-            redirect_uris = [uri.uri for uri in app.redirect_uris]
-            print("Existing auth found:", existing_auth.id, "Redirect URIs:", redirect_uris)
+        # すでに認可されている場合は、scopeの権限を確認
+        scopes = [oidc_token.consent.scope.split(" ") for oidc_token in existing_auth.oidc_tokens]
+        if set(request_query_params["scope"].split(" ")) <= set(scopes):
+            print("Existing auth found:", existing_auth.id)
             # TODO: codeを生成してリダイレクト
-            if request_query_params["redirect_uri"] not in redirect_uris:
-                raise HTTPException(status_code=400, detail="Redirect URI not allowed")
-        return RedirectResponse(url=request_query_params["redirect_uri"], status_code=302)
+            pass
 
     # 認可されていない場合は認可画面を表示
-    action_url = f"/auth/confirm?{urlencode(request.query_params)}"
-
+    #action_url = f"/auth/confirm?{urlencode(request.query_params)}"
+    action_url = "/auth/confirm"
+    # リクエストパラメータをセッションストレージに署名付きで保存する
+    request.session["auth_request"] = {
+        "client_id": app.client_id,
+        "redirect_uri": redirect_uri,
+        "scope": request_query_params.get("scope", "default"),
+        "state": request_query_params.get("state", str(uuid4())),
+        "response_type": request_query_params.get("response_type", "code")
+    }
+    # 認可画面に必要な情報をテンプレートに渡す
+    # ここでは、アプリケーションの情報とユーザ情報を渡す
     auth_data = {
         "app": {
             "name": app.name,
@@ -217,6 +226,10 @@ async def auth_confirm(
     OIDC 認可フローの確認画面での POST 送信を受けて、認可処理を行う。
     """
     print("Auth confirm request received:", request.query_params._dict)
+    # セッションからリクエスト情報を取得
+    auth_request = request.session.get("auth_request")
+    if not auth_request:
+        raise HTTPException(status_code=400, detail="No auth request found in session")
     user_info = request.cookies.get("user_id")
     if not user_info:
         raise RedirectResponse(url="/login", status_code=302)
@@ -225,8 +238,7 @@ async def auth_confirm(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    client_id = request.query_params.get("client_id")
-    app = db.query(App).filter_by(client_id=client_id).first()
+    app = db.query(App).filter_by(client_id=auth_request["client_id"]).first()
     if not app:
         raise HTTPException(status_code=404, detail="Client not found")
 
@@ -242,6 +254,7 @@ async def auth_confirm(
         db.add(existing_auth)
         db.flush()
 
+    
 
     # リダイレクト先の URI を取得
     redirect_uri = request.query_params.get("redirect_uri")
