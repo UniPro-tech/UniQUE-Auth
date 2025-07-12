@@ -270,10 +270,7 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
         db.flush()
 
     # consentテーブルを作成
-    consent = Consent(
-        scope=auth_request["scope"],
-        invalid=False
-    )
+    consent = Consent(scope=auth_request["scope"], invalid=False)
     code = Code(
         token=str(uuid4()),
         created_at=datetime.now(timezone.utc),
@@ -368,9 +365,6 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     if not redirect_uri:
         raise HTTPException(status_code=400, detail="Redirect URI not provided")
     # リダイレクト URI に認可コードを付与してリダイレクト
-    response = RedirectResponse(
-        url=redirect_uri,
-        status_code=302
-    )
+    response = RedirectResponse(url=redirect_uri, status_code=302)
 
     return response
