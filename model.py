@@ -79,13 +79,13 @@ class Auth(Base):
 
     user: Mapped["User"] = relationship(back_populates="auths")
     app: Mapped["App"] = relationship(back_populates="auths")
-    oidc_tokens: Mapped["OIDCTokens"] = relationship(back_populates="auth", uselist=False)
-    consent: Mapped["Consent"] = relationship(back_populates="auth", uselist=False)
+    oidc_tokens: Mapped[list["OIDCTokens"]] = relationship(back_populates="auth")
 
 
 class OIDCTokens(Base):
     __tablename__ = "oidc_tokens"
 
+    id: Mapped[int] = mapped_column(primary_key=True)
     auths_id: Mapped[int] = mapped_column(ForeignKey("auths.id"), primary_key=True)
     code: Mapped[str] = mapped_column(String, unique=True)
     access_token_id: Mapped[int] = mapped_column(ForeignKey("tokens.id"))
@@ -95,6 +95,8 @@ class OIDCTokens(Base):
     auth: Mapped["Auth"] = relationship(back_populates="oidc_tokens")
     access_token: Mapped["Token"] = relationship(foreign_keys=[access_token_id])
     refresh_token: Mapped["Token"] = relationship(foreign_keys=[refresh_token_id])
+    code: Mapped["Code"] = relationship(back_populates="oidc_token")
+    consent: Mapped["Consent"] = relationship(back_populates="oidc_token", uselist=False)
 
 
 class Token(Base):
@@ -118,10 +120,10 @@ class Consent(Base):
     __tablename__ = "consents"
 
     id: Mapped[int] = mapped_column(primary_key=True, unique=True)
-    auth_id: Mapped[int] = mapped_column(ForeignKey("auths.id"))
+    oidc_token_id: Mapped[int] = mapped_column(ForeignKey("oidc_tokens.id"))
     scope: Mapped[str] = mapped_column(String)
 
-    auth: Mapped["Auth"] = relationship(back_populates="consent")
+    oidc_token: Mapped["OIDCTokens"] = relationship(back_populates="consent")
 
 
 class Session(Base):
@@ -135,3 +137,14 @@ class Session(Base):
     invalid: Mapped[bool] = mapped_column(Boolean, default=False)
 
     user: Mapped["User"] = relationship(back_populates="sessions")
+
+
+class Code(Base):
+    __tablename__ = "codes"
+
+    oidc_token_id: Mapped[int] = mapped_column(ForeignKey("oidc_tokens.id"), primary_key=True)
+    code: Mapped[str] = mapped_column(String, unique=True)
+    created_at: Mapped[datetime]
+    exp: Mapped[datetime]
+    used: Mapped[bool] = mapped_column(Boolean, default=False)
+    oidc_token: Mapped["OIDCTokens"] = relationship(back_populates="code")
