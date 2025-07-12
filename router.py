@@ -188,8 +188,6 @@ async def auth(
             pass
 
     # 認可されていない場合は認可画面を表示
-    #action_url = f"/auth/confirm?{urlencode(request.query_params)}"
-    action_url = "/auth/confirm"
     # リクエストパラメータをセッションストレージに署名付きで保存する
     request.session["auth_request"] = {
         "client_id": app.client_id,
@@ -198,6 +196,7 @@ async def auth(
         "state": request_query_params.get("state", str(uuid4())),
         "response_type": request_query_params.get("response_type", "code")
     }
+    action_url = "/auth/confirm"
     # 認可画面に必要な情報をテンプレートに渡す
     # ここでは、アプリケーションの情報とユーザ情報を渡す
     auth_data = {
