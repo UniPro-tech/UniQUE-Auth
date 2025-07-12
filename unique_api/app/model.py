@@ -1,7 +1,5 @@
 from datetime import datetime
-from sqlalchemy import (
-    Boolean, ForeignKey, String
-)
+from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from db import Base
 
@@ -96,7 +94,9 @@ class OIDCTokens(Base):
     access_token: Mapped["Token"] = relationship(foreign_keys=[access_token_id])
     refresh_token: Mapped["Token"] = relationship(foreign_keys=[refresh_token_id])
     code: Mapped["Code"] = relationship(back_populates="oidc_token")
-    consent: Mapped["Consent"] = relationship(back_populates="oidc_token", uselist=False)
+    consent: Mapped["Consent"] = relationship(
+        back_populates="oidc_token", uselist=False
+    )
 
 
 class Token(Base):
@@ -144,7 +144,9 @@ class Session(Base):
 class Code(Base):
     __tablename__ = "codes"
 
-    oidc_token_id: Mapped[int] = mapped_column(ForeignKey("oidc_tokens.id"), primary_key=True)
+    oidc_token_id: Mapped[int] = mapped_column(
+        ForeignKey("oidc_tokens.id"), primary_key=True
+    )
     code: Mapped[str] = mapped_column(String, unique=True)
     created_at: Mapped[datetime]
     exp: Mapped[datetime]

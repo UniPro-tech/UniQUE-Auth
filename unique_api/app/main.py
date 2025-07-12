@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from starlette.middleware.sessions import SessionMiddleware
 from db import engine, Base, get_db
-from router import router
+from unique_api.app.router import router
 from data import create_test_data
 
 # データベースをリセット
@@ -17,6 +17,7 @@ async def lifespan(app: FastAPI):
     create_test_data(db)
     yield
     db.close()
+
 
 app = FastAPI(lifespan=lifespan)
 

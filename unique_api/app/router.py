@@ -10,7 +10,15 @@ import hashlib
 import jwt
 from uuid import uuid4
 import base64
-from model import User, Session as UserSession, App, Auth, Consent, OIDCTokens, Token
+from unique_api.app.model import (
+    User,
+    Session as UserSession,
+    App,
+    Auth,
+    Consent,
+    OIDCTokens,
+    Token,
+)
 
 
 router = APIRouter()
@@ -18,9 +26,7 @@ templates = Jinja2Templates(directory="pages")
 
 
 @router.get("/login")
-async def login(
-    request: Request
-):
+async def login(request: Request):
     """
     OIDC 認可フロー開始時、外部クライアントから
     リクエストパラメータを検証して request.session に保存した上で
@@ -30,7 +36,9 @@ async def login(
     action_url = "/login"
     if request.query_params:
         action_url += f"?{urlencode(request.query_params)}"
-    return templates.TemplateResponse("login.html", {"request": request, "action_url": action_url})
+    return templates.TemplateResponse(
+        "login.html", {"request": request, "action_url": action_url}
+    )
 
 
 @router.post("/login")
@@ -38,7 +46,7 @@ async def login_post(
     request: Request,
     name: str = Form(...),
     password: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     ログインフォームの POST 送信を受けて、認証処理を行う。
@@ -48,23 +56,28 @@ async def login_post(
     # ここでユーザ認証を行う
     # 例えば、email と password を使ってユーザを検索し、認証が成功したら
     # セッションにユーザ情報を保存する
-    validated_user = db.query(User).filter_by(name=name, passwd_hash=hashlib.sha256(password.encode()).hexdigest()).first()
+    validated_user = (
+        db.query(User)
+        .filter_by(name=name, passwd_hash=hashlib.sha256(password.encode()).hexdigest())
+        .first()
+    )
 
     if validated_user is None:
         # 認証失敗
-        response = HTTPException(
-            status_code=401,
-            detail="Invalid username or password"
-        )
+        response = HTTPException(status_code=401, detail="Invalid username or password")
         return response
 
     # 認証成功
-    request.session["user"] = f"{{'id': {validated_user.id}, 'name': {validated_user.name}}}"
+    request.session["user"] = (
+        f"{{'id': {validated_user.id}, 'name': {validated_user.name}}}"
+    )
 
     if request.query_params._dict == {}:
         redirect_url = "/"
     # OIDC 認可フローの場合、リダイレクト先の URL に
-    elif request.query_params._dict.get("redirect_uri"):  # TODO:リダイレクト先の URI が指定されている場合
+    elif request.query_params._dict.get(
+        "redirect_uri"
+    ):  # TODO:リダイレクト先の URI が指定されている場合
         # リダイレクト先の URL にクエリパラメータを追加
         redirect_url = "/auth?" + urlencode(request.query_params._dict)
 
@@ -73,7 +86,7 @@ async def login_post(
         user_id=validated_user.id,
         ip_address=request.client.host,
         user_agent=request.headers.get("User-Agent", ""),
-        created_at=datetime.now()
+        created_at=datetime.now(),
     )
     db.add(session)
     db.commit()
@@ -84,9 +97,7 @@ async def login_post(
 
 
 @router.get("/logout")
-async def logout(
-    request: Request
-):
+async def logout(request: Request):
     """
     ログアウト処理を行うエンドポイント。
     """
@@ -97,16 +108,16 @@ async def logout(
 
 
 @router.get("/signup")
-async def signup(
-    request: Request
-):
+async def signup(request: Request):
     """
     サインアップ処理を行うエンドポイント。
     """
     action_url = "/signup"
     if request.query_params:
         action_url += f"?{urlencode(request.query_params)}"
-    return templates.TemplateResponse("signup.html", {"request": request, "action_url": action_url})
+    return templates.TemplateResponse(
+        "signup.html", {"request": request, "action_url": action_url}
+    )
 
 
 @router.post("/signup")
@@ -114,7 +125,7 @@ async def signup_post(
     request: Request,
     name: str = Form(...),
     password: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     サインアップフォームの POST 送信を受けて、ユーザ登録処理を行う。
@@ -125,13 +136,15 @@ async def signup_post(
     # ユーザ名の重複チェック
     existing_user = db.query(User).filter_by(name=name).first()
     if existing_user:
-        return templates.TemplateResponse("signup.html", {"request": request, "error": "User already exists"})
+        return templates.TemplateResponse(
+            "signup.html", {"request": request, "error": "User already exists"}
+        )
 
     # 新規ユーザの作成
     new_user = User(
         name=name,
         passwd_hash=hashlib.sha256(password.encode()).hexdigest(),
-        created_at=datetime.now()
+        created_at=datetime.now(),
     )
     db.add(new_user)
     db.commit()
@@ -141,10 +154,7 @@ async def signup_post(
 
 
 @router.get("/auth")
-async def auth(
-    request: Request,
-    db: Session = Depends(get_db)
-):
+async def auth(request: Request, db: Session = Depends(get_db)):
     """
     OIDC 認可フローのためのエンドポイント。
     """
@@ -178,10 +188,15 @@ async def auth(
         raise HTTPException(status_code=400, detail="Redirect URI not provided")
 
     # すでに認可されているか確認
-    existing_auth = db.query(Auth).filter_by(auth_user_id=user.id, app_id=app.id).first()
+    existing_auth = (
+        db.query(Auth).filter_by(auth_user_id=user.id, app_id=app.id).first()
+    )
     if existing_auth:
         # すでに認可されている場合は、scopeの権限を確認
-        scopes = [oidc_token.consent.scope.split(" ") for oidc_token in existing_auth.oidc_tokens]
+        scopes = [
+            oidc_token.consent.scope.split(" ")
+            for oidc_token in existing_auth.oidc_tokens
+        ]
         if set(request_query_params["scope"].split(" ")) <= set(scopes):
             print("Existing auth found:", existing_auth.id)
             # TODO: codeを生成してリダイレクト
@@ -194,7 +209,7 @@ async def auth(
         "redirect_uri": redirect_uri,
         "scope": request_query_params.get("scope", "default"),
         "state": request_query_params.get("state", str(uuid4())),
-        "response_type": request_query_params.get("response_type", "code")
+        "response_type": request_query_params.get("response_type", "code"),
     }
     action_url = "/auth/confirm"
     # 認可画面に必要な情報をテンプレートに渡す
@@ -204,23 +219,20 @@ async def auth(
             "name": app.name,
             "client_id": app.client_id,
             "redirect_uris": [uri.uri for uri in app.redirect_uris],
-            "scope": request_query_params.get("scope", "default")
+            "scope": request_query_params.get("scope", "default"),
         },
-        "user": {
-            "name": user.name,
-            "id": user.id
-        },
+        "user": {"name": user.name, "id": user.id},
     }
 
-    response = templates.TemplateResponse("confirm.html", {"request": request, "action_url": action_url, "auth_data": auth_data})
+    response = templates.TemplateResponse(
+        "confirm.html",
+        {"request": request, "action_url": action_url, "auth_data": auth_data},
+    )
     return response
 
 
 @router.post("/auth/confirm")
-async def auth_confirm(
-    request: Request,
-    db: Session = Depends(get_db)
-):
+async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     """
     OIDC 認可フローの確認画面での POST 送信を受けて、認可処理を行う。
     """
@@ -242,13 +254,13 @@ async def auth_confirm(
         raise HTTPException(status_code=404, detail="Client not found")
 
     # すでに認可されているか確認
-    existing_auth = db.query(Auth).filter_by(auth_user_id=user.id, app_id=app.id).first()
+    existing_auth = (
+        db.query(Auth).filter_by(auth_user_id=user.id, app_id=app.id).first()
+    )
     if existing_auth is None:
         # 新規認可を作成
         existing_auth = Auth(
-            auth_user_id=user.id,
-            app_id=app.id,
-            created_at=datetime.now()
+            auth_user_id=user.id, app_id=app.id, created_at=datetime.now()
         )
         db.add(existing_auth)
         db.flush()
@@ -258,15 +270,12 @@ async def auth_confirm(
 
     return RedirectResponse(
         url=f"/code?code={oidc_tokens.code}&redirect_uri={redirect_uri}",
-        status_code=302
+        status_code=302,
     )
 
 
 @router.get("/code")
-async def get_code(
-    request: Request,
-    db: Session = Depends(get_db)
-):
+async def get_code(request: Request, db: Session = Depends(get_db)):
     """
     OIDC 認可コードを取得するエンドポイント。
     """
@@ -294,7 +303,7 @@ async def get_code(
     access_token_hash = jwt.encode(
         {"user_id": user.id, "app_id": auth.app_id, "scope": consent.scope},
         "your-secret-key",
-        algorithm="HS256"
+        algorithm="HS256",
     )
     access_token = Token(
         hash=access_token_hash,
@@ -303,12 +312,12 @@ async def get_code(
         issued_at=datetime.now(),
         exp=datetime.now() + timedelta(minutes=60),  # 1時間有効
         client_id=auth.app_id,
-        user_id=user.id
+        user_id=user.id,
     )
     refresh_token_hash = jwt.encode(
         {"user_id": user.id, "app_id": auth.app_id, "scope": consent.scope},
         "your-secret-key",
-        algorithm="HS256"
+        algorithm="HS256",
     )
     refresh_token = Token(
         hash=refresh_token_hash,
@@ -317,7 +326,7 @@ async def get_code(
         issued_at=datetime.now(),
         exp=datetime.now() + timedelta(days=30),  # 30日有効
         client_id=auth.app_id,
-        user_id=user.id
+        user_id=user.id,
     )
     db.add_all([access_token, refresh_token])
     db.flush()
@@ -332,4 +341,4 @@ async def get_code(
     if not redirect_uri:
         raise HTTPException(status_code=400, detail="Redirect URI not provided")
     # リダイレクト URI に認可コードを付与してリダイレクト
-    return 
+    return
