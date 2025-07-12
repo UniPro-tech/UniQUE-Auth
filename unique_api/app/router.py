@@ -311,16 +311,17 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    code = request.query_params.get("code")
+    qp_code = request.query_params.get("code")
+    if not qp_code:
+        raise HTTPException(status_code=400, detail="Code not found")
+
+    code: Code = db.query(Code).filter_by(token=qp_code)
     if not code:
         raise HTTPException(status_code=400, detail="Code not found")
 
-    oidc_tokens = db.query(OIDCTokens).filter_by(code=code).first()
-    if not oidc_tokens:
-        raise HTTPException(status_code=404, detail="OIDC Tokens not found")
-
-    auth = db.query(Auth).filter_by(id=oidc_tokens.auths_id).first()
-    consent = db.query(Consent).filter_by(auth_id=auth.id).first()
+    oidc_auth: OIDCAuthorization = db.query(OIDCAuthorization).filter_by(code=code.id).first()
+    auth = db.query(Auth).filter_by(id=oidc_auth.auth_id).first()
+    consent = oidc_auth.consent
 
     # アプリケーションの認証情報を取得
     access_token_hash = jwt.encode(
@@ -355,8 +356,12 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     db.flush()
 
     # OIDC トークンを更新
-    oidc_tokens.access_token_id = access_token.id
-    oidc_tokens.refresh_token_id = refresh_token.id
+    oidc_token = OIDCTokens(
+        oidc_authorization_id=oidc_auth.id,
+        access_token_id=access_token.id,
+        refresh_token_id=refresh_token.id,
+    )
+    db.add(oidc_token)
     db.commit()
 
     # リダイレクト先の URI を取得
