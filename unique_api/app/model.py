@@ -99,7 +99,9 @@ class OIDCTokens(Base):
     __tablename__ = "oidc_tokens"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    oidc_authorization_id: Mapped[int] = mapped_column(ForeignKey("oidc_authorizations.id"))
+    oidc_authorization_id: Mapped[int] = mapped_column(
+        ForeignKey("oidc_authorizations.id")
+    )
     access_token_id: Mapped[int] = mapped_column(ForeignKey("tokens.id"))
     refresh_token_id: Mapped[int] = mapped_column(ForeignKey("tokens.id"))
     invalid: Mapped[bool] = mapped_column(Boolean, default=False)
