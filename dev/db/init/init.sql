@@ -56,8 +56,8 @@ CREATE TABLE `code` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
   `oidc_authorization_id` int,
   `token` varchar(255),
-  `created_at` int,
-  `exp` int,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  `exp` timestamp,
   `is_enable` bool
 );
 
