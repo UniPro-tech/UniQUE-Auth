@@ -1,21 +1,26 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>サインアップ</title>
-    <link rel="stylesheet" href="https://matcha.mizu.sh/matcha.css">
-</head>
-<body>
+    <link rel="stylesheet" href="https://matcha.mizu.sh/matcha.css" />
+  </head>
+  <body>
     <h2>サインアップ</h2>
 
     <form action="{{ action_url }}" method="post">
-        <label for="name">名前:</label><br>
-        <input type="text" id="name" name="name" required><br><br>
+      <label for="name">名前:</label><br />
+      <input type="text" id="name" name="name" required /><br /><br />
 
-        <label for="password">パスワード:</label><br>
-        <input type="password" id="password" name="password" required><br><br>
+      <label for="password">パスワード:</label><br />
+      <input
+        type="password"
+        id="password"
+        name="password"
+        required
+      /><br /><br />
 
-        <button type="submit">サインアップ</button>
+      <button type="submit">サインアップ</button>
     </form>
-</body>
+  </body>
 </html>
