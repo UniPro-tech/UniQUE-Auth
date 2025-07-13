@@ -37,7 +37,7 @@ async def login(request: Request):
     このエンドポイントにリダイレクトさせる想定です。
     GET では単にログインフォームを表示。
     """
-    action_url = "/login"
+    action_url = "login"
     if request.query_params:
         action_url += f"?{urlencode(request.query_params)}"
     return templates.TemplateResponse(
@@ -83,7 +83,7 @@ async def login_post(
         "redirect_uri"
     ):  # TODO:リダイレクト先の URI が指定されている場合
         # リダイレクト先の URL にクエリパラメータを追加
-        redirect_url = "/auth?" + urlencode(request.query_params._dict)
+        redirect_url = "auth?" + urlencode(request.query_params._dict)
 
     # セッションを作成
     session = UserSession(
@@ -167,7 +167,7 @@ async def auth(request: Request, db: Session = Depends(get_db)):
     # セッションからユーザ情報を取得
     user_info = request.cookies.get("user_id")
     if not user_info:
-        raise RedirectResponse(url="/login", status_code=302)
+        raise RedirectResponse(url="login", status_code=302)
 
     user = db.query(User).filter_by(id=int(user_info)).first()
     if not user:
@@ -215,7 +215,7 @@ async def auth(request: Request, db: Session = Depends(get_db)):
         "state": request_query_params.get("state", str(uuid4())),
         "response_type": request_query_params.get("response_type", "code"),
     }
-    action_url = "/auth/confirm"
+    action_url = "auth/confirm"
     # 認可画面に必要な情報をテンプレートに渡す
     # ここでは、アプリケーションの情報とユーザ情報を渡す
     auth_data = {
@@ -247,7 +247,7 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="No auth request found in session")
     user_info = request.cookies.get("user_id")
     if not user_info:
-        raise RedirectResponse(url="/login", status_code=302)
+        raise RedirectResponse(url="login", status_code=302)
 
     user = db.query(User).filter_by(id=int(user_info)).first()
     if not user:
@@ -285,7 +285,7 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     db.commit()
 
     request.session.clear()
-
+    print(f"http://localhost:8000/code?code={code.token}")
     return RedirectResponse(
         url=f"{auth_request['redirect_uri']}?code={code.token}",
         status_code=302,
