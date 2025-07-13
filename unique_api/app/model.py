@@ -57,6 +57,15 @@ class Auth(Base):
     app_id: Mapped[str] = mapped_column(String(255), ForeignKey("apps.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     is_enable: Mapped[bool] = mapped_column(Boolean)
+    oidc_authorizations = relationship("OIDCAuthorization", back_populates="auth")
+    oidc_tokens = relationship(
+        "OIDCToken",
+        secondary="oidc_authorizations",
+        primaryjoin="Auth.id == OIDCAuthorization.auth_id",
+        secondaryjoin="OIDCAuthorization.id == OIDCToken.oidc_authorization_id",
+        viewonly=True,
+        backref="auth",
+    )
 
 
 # oidc_authorizationsテーブル
@@ -71,6 +80,8 @@ class OIDCAuthorization(Base):
 
     consent = relationship("Consent")
     code = relationship("Code", back_populates="oidc_authorization", uselist=False)
+    auth = relationship("Auth", back_populates="oidc_authorizations")
+    oidc_tokens = relationship("OIDCToken", back_populates="oidc_authorization")
 
 
 # oidc_tokensテーブル
@@ -84,6 +95,7 @@ class OIDCToken(Base):
     access_token_id: Mapped[int] = mapped_column(Integer, unique=True)
     refresh_token_id: Mapped[int] = mapped_column(Integer, unique=True)
     is_enable: Mapped[bool] = mapped_column(Boolean)
+    oidc_authorization = relationship("OIDCAuthorization", back_populates="oidc_tokens")
 
 
 # codeテーブル
