@@ -1,6 +1,6 @@
 # テスト用のデータを注入する
 from sqlalchemy.orm import Session
-from unique_api.app.model import User, App, Email, RedirectURI
+from unique_api.app.model import User, App, RedirectURI
 from datetime import datetime
 import hashlib
 
@@ -33,7 +33,7 @@ def create_test_data(db: Session):
     db.add(user)
     db.flush()  # ユーザーを先に保存してIDを取得
 
-    email = Email(user_id=user.id, email="admin@example.com", verified=True)
+    # TODO: ユーザーのメールアドレスの登録ロジックを変更
     db.add(email)
     db.commit()  # リダイレクトURIを保存
     # テストユーザーで認可する際のテストURLを生成

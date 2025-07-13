@@ -7,7 +7,7 @@ from unique_api.app.router import router
 from data import create_test_data
 
 # データベースをリセット
-Base.metadata.drop_all(bind=engine)
+# Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
 
