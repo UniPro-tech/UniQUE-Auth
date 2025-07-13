@@ -94,7 +94,6 @@ async def login_post(
         user_id=validated_user.id,
         ip_address=request.client.host,
         user_agent=request.headers.get("User-Agent", ""),
-        created_at=datetime.now(),
     )
     db.add(session)
     db.commit()
@@ -150,9 +149,7 @@ async def signup_post(
 
     # 新規ユーザの作成
     new_user = User(
-        name=name,
-        passwd_hash=hashlib.sha256(password.encode()).hexdigest(),
-        created_at=datetime.now(),
+        name=name, passwd_hash=hashlib.sha256(password.encode()).hexdigest()
     )
     db.add(new_user)
     db.commit()
@@ -260,32 +257,25 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     app = db.query(App).filter_by(client_id=auth_request["client_id"]).first()
     if not app:
         raise HTTPException(status_code=404, detail="Client not found")
-
     # すでに認可されているか確認
     existing_auth = (
         db.query(Auth).filter_by(auth_user_id=user.id, app_id=app.id).first()
     )
     if existing_auth is None:
         # 新規認可を作成
-        existing_auth = Auth(
-            auth_user_id=user.id, app_id=app.id, created_at=datetime.now()
-        )
+        existing_auth = Auth(auth_user_id=user.id, app_id=app.id)
         db.add(existing_auth)
         db.flush()
-
     # consentテーブルを作成
     consent = Consent(scope=auth_request["scope"], is_enable=False)
     code = Code(
         token=str(uuid4()),
-        created_at=datetime.now(timezone.utc),
         exp=datetime.now(timezone.utc) + timedelta(minutes=10),
         is_enable=False,
     )
-    db.add_all([consent, code])
-    db.flush()
-
     oidc_auth = OIDCAuthorization(auth_id=existing_auth.id, code=code, consent=consent)
-    db.add(oidc_auth)
+
+    db.add_all([consent, code, oidc_auth])
     db.commit()
 
     request.session.clear()
