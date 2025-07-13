@@ -35,9 +35,8 @@ CREATE TABLE `oidc_authorizations` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
   `auth_id` int,
   `code` int,
-  `content` int,
+  `consent_id` int,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (`content`),
   UNIQUE (`code`)
 );
 
@@ -165,7 +164,7 @@ ALTER TABLE `auths` ADD FOREIGN KEY (`app_id`) REFERENCES `apps` (`id`);
 
 ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`auth_id`) REFERENCES `auths` (`id`);
 
-ALTER TABLE `consents` ADD FOREIGN KEY (`id`) REFERENCES `oidc_authorizations` (`content`);
+ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`consent_id`) REFERENCES `consents` (`id`);
 
 ALTER TABLE `code` ADD FOREIGN KEY (`oidc_authorization_id`) REFERENCES `oidc_authorizations` (`id`);
 
