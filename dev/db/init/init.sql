@@ -54,6 +54,7 @@ CREATE TABLE `oidc_tokens` (
 
 CREATE TABLE `code` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
+  `oidc_authorization_id` int,
   `token` varchar(255),
   `created_at` int,
   `exp` int,
@@ -149,13 +150,10 @@ ALTER TABLE `users` ADD FOREIGN KEY (`custom_id`) REFERENCES `members` (`custom_
 
 ALTER TABLE `users` ADD FOREIGN KEY (`email`) REFERENCES `members` (`email`);
 
-ALTER TABLE `access_tokens` ADD FOREIGN KEY (`id`) REFERENCES `oidc_tokens` (`refresh_token_id`);
-
 ALTER TABLE `access_tokens` ADD FOREIGN KEY (`id`) REFERENCES `oidc_tokens` (`access_token_id`);
 
 ALTER TABLE `refresh_tokens` ADD FOREIGN KEY (`id`) REFERENCES `oidc_tokens` (`refresh_token_id`);
 
-ALTER TABLE `refresh_tokens` ADD FOREIGN KEY (`id`) REFERENCES `oidc_tokens` (`access_token_id`);
 
 ALTER TABLE `auths` ADD FOREIGN KEY (`auth_user_id`) REFERENCES `users` (`id`);
 
@@ -169,7 +167,7 @@ ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`auth_id`) REFERENCES `auths`
 
 ALTER TABLE `consents` ADD FOREIGN KEY (`id`) REFERENCES `oidc_authorizations` (`content`);
 
-ALTER TABLE `code` ADD FOREIGN KEY (`id`) REFERENCES `oidc_authorizations` (`code`);
+ALTER TABLE `code` ADD FOREIGN KEY (`oidc_authorization_id`) REFERENCES `oidc_authorizations` (`id`);
 
 ALTER TABLE `oidc_tokens` ADD FOREIGN KEY (`oidc_authorization_id`) REFERENCES `oidc_authorizations` (`id`);
 
