@@ -34,10 +34,10 @@ CREATE TABLE `auths` (
 CREATE TABLE `oidc_authorizations` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
   `auth_id` int,
-  `code` int,
+  `code_id` int,
   `consent_id` int,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (`code`)
+  UNIQUE (`code_id`)
 );
 
 CREATE TABLE `oidc_tokens` (
@@ -53,7 +53,6 @@ CREATE TABLE `oidc_tokens` (
 
 CREATE TABLE `code` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `oidc_authorization_id` int,
   `token` varchar(255),
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `exp` timestamp,
@@ -166,7 +165,7 @@ ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`auth_id`) REFERENCES `auths`
 
 ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`consent_id`) REFERENCES `consents` (`id`);
 
-ALTER TABLE `code` ADD FOREIGN KEY (`oidc_authorization_id`) REFERENCES `oidc_authorizations` (`id`);
+ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`code_id`) REFERENCES `code` (`id`);
 
 ALTER TABLE `oidc_tokens` ADD FOREIGN KEY (`oidc_authorization_id`) REFERENCES `oidc_authorizations` (`id`);
 
