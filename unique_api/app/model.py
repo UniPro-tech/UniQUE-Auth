@@ -1,7 +1,7 @@
 from datetime import datetime
 import uuid
 from sqlalchemy import Boolean, ForeignKey, String, DateTime, Integer
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from db import Base
 
 
@@ -35,6 +35,7 @@ class App(Base):
     name: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     is_enable: Mapped[bool] = mapped_column(Boolean)
+    redirect_uris = relationship("RedirectURI", cascade="all, delete-orphan")
 
 
 # redirect_urisテーブル
