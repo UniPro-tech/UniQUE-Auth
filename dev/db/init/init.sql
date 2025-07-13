@@ -1,5 +1,5 @@
 CREATE TABLE `users` (
-  `id` int PRIMARY KEY,
+  `id` int PRIMARY KEY AUTO_INCREMENT,
   `custom_id` varchar(255) UNIQUE,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `password_hash` varchar(255) NOT NULL,
@@ -24,7 +24,7 @@ CREATE TABLE `redirect_uris` (
 );
 
 CREATE TABLE `auths` (
-  `id` int PRIMARY KEY,
+  `id` int PRIMARY KEY AUTO_INCREMENT,
   `auth_user_id` int,
   `app_id` varchar(255),
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
@@ -32,7 +32,7 @@ CREATE TABLE `auths` (
 );
 
 CREATE TABLE `oidc_authorizations` (
-  `id` int PRIMARY KEY,
+  `id` int PRIMARY KEY AUTO_INCREMENT,
   `auth_id` int,
   `code` int,
   `content` int,
@@ -42,7 +42,7 @@ CREATE TABLE `oidc_authorizations` (
 );
 
 CREATE TABLE `oidc_tokens` (
-  `id` int PRIMARY KEY,
+  `id` int PRIMARY KEY AUTO_INCREMENT,
   `oidc_authorization_id` int,
   `access_token_id` int,
   `refresh_token_id` int,
@@ -53,7 +53,7 @@ CREATE TABLE `oidc_tokens` (
 );
 
 CREATE TABLE `code` (
-  `id` int,
+  `id` int PRIMARY KEY AUTO_INCREMENT,
   `token` varchar(255),
   `created_at` int,
   `exp` int,
@@ -61,7 +61,7 @@ CREATE TABLE `code` (
 );
 
 CREATE TABLE `access_tokens` (
-  `id` int PRIMARY KEY,
+  `id` int PRIMARY KEY AUTO_INCREMENT,
   `hash` varchar(255),
   `type` varchar(255),
   `scope` varchar(255),
@@ -73,7 +73,7 @@ CREATE TABLE `access_tokens` (
 );
 
 CREATE TABLE `refresh_tokens` (
-  `id` int PRIMARY KEY,
+  `id` int PRIMARY KEY AUTO_INCREMENT,
   `hash` varchar(255),
   `type` varchar(255),
   `scope` varchar(255),
@@ -85,13 +85,13 @@ CREATE TABLE `refresh_tokens` (
 );
 
 CREATE TABLE `consents` (
-  `id` int PRIMARY KEY,
+  `id` int PRIMARY KEY AUTO_INCREMENT,
   `scope` varchar(255),
   `is_enable` bool
 );
 
 CREATE TABLE `sessions` (
-  `id` int PRIMARY KEY,
+  `id` int PRIMARY KEY AUTO_INCREMENT,
   `user_id` int,
   `ip_address` varchar(255),
   `user_agent` varchar(255),
