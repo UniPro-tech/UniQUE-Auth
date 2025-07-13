@@ -229,7 +229,7 @@ async def auth(request: Request, db: Session = Depends(get_db)):
             "redirect_uris": [uri.uri for uri in app.redirect_uris],
             "scope": request_query_params.get("scope", "default"),
         },
-        "user": {"name": user.name, "id": user.id},
+        "user": {"name": user.custom_id, "id": user.id},
     }
 
     response = templates.TemplateResponse(
