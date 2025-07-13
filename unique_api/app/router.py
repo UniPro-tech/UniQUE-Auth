@@ -10,14 +10,15 @@ import hashlib
 import jwt
 from uuid import uuid4
 from unique_api.app.model import (
+    AccessToken,
+    RefreshToken,
     User,
     Session as UserSession,
     App,
     Auth,
     Consent,
     OIDCAuthorization,
-    OIDCTokens,
-    Token,
+    OIDCToken,
     Code,
 )
 import os
@@ -331,12 +332,12 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
             "app_id": auth.app_id,
             "scope": consent.scope,
             "issued_at": str(issued_at),
-            "exp": str(issued_at + timedelta(minutes=60))
+            "exp": str(issued_at + timedelta(minutes=60)),
         },
         "your-secret-key",
         algorithm="HS256",
     )
-    access_token = Token(
+    access_token = AccessToken(
         hash=access_token_hash,
         type="access",
         scope=consent.scope,
@@ -351,12 +352,12 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
             "app_id": auth.app_id,
             "scope": consent.scope,
             "issued_at": str(issued_at),
-            "exp": str(issued_at + timedelta(days=30))
+            "exp": str(issued_at + timedelta(days=30)),
         },
         "your-secret-key",
         algorithm="HS256",
     )
-    refresh_token = Token(
+    refresh_token = RefreshToken(
         hash=refresh_token_hash,
         type="refresh",
         scope=consent.scope,
@@ -369,7 +370,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     db.flush()
 
     # OIDC トークンを更新
-    oidc_token = OIDCTokens(
+    oidc_token = OIDCToken(
         oidc_authorization_id=oidc_auth.id,
         access_token_id=access_token.id,
         refresh_token_id=refresh_token.id,
