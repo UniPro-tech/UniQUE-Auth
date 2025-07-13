@@ -267,11 +267,11 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
         db.add(existing_auth)
         db.flush()
     # consentテーブルを作成
-    consent = Consent(scope=auth_request["scope"], is_enable=False)
+    consent = Consent(scope=auth_request["scope"], is_enable=True)
     code = Code(
         token=str(uuid4()),
         exp=datetime.now(timezone.utc) + timedelta(minutes=10),
-        is_enable=False,
+        is_enable=True,
     )
     oidc_auth = OIDCAuthorization(auth_id=existing_auth.id, code=code, consent=consent)
 
@@ -307,7 +307,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     code: Code = db.query(Code).filter_by(token=qp_code).first()
     if not code:
         raise HTTPException(status_code=400, detail="Code not found")
-    code.is_enable = True
+    code.is_enable = False
     db.add(code)
     db.commit()
 
