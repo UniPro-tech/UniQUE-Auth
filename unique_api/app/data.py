@@ -38,5 +38,5 @@ def create_test_data(db: Session):
     db.commit()  # リダイレクトURIを保存
     # テストユーザーで認可する際のテストURLを生成
     print(
-        f"http://localhost:8000/login?response_type=code&scope=openid+profile+email&client_id={app.client_id}&state=af0ifjsldkj&redirect_uri={redirect_uri.uri}"
+        f"http://localhost:8000/auth?response_type=code&scope=openid+profile+email&client_id={app.client_id}&state=af0ifjsldkj&redirect_uri={redirect_uri.uri}"
     )
