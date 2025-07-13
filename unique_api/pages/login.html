@@ -8,18 +8,20 @@
   <body>
     <h2>ログイン</h2>
 
-    <form action="{{ action_url }}" method="post">
-      <label for="name">名前:</label><br />
-      <input type="text" id="name" name="name" required /><br /><br />
+    <form
+      action="{{ action_url }}"
+      method="post"
+      class="flex column space-around"
+    >
+      <div class="flex column my-1">
+        <label for="custom_id">名前:</label>
+        <input type="text" id="custom_id" name="custom_id" required />
+      </div>
 
-      <label for="password">パスワード:</label><br />
-      <input
-        type="password"
-        id="password"
-        name="password"
-        required
-      /><br /><br />
-
+      <div class="flex column my-1">
+        <label for="password">パスワード:</label>
+        <input type="password" id="password" name="password" required />
+      </div>
       <button type="submit">ログイン</button>
     </form>
   </body>
