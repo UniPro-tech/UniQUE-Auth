@@ -1,6 +1,6 @@
 from datetime import datetime
 import uuid
-from sqlalchemy import Boolean, ForeignKey, String, DateTime, Integer
+from sqlalchemy import Boolean, ForeignKey, String, DateTime, Integer, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from db import Base
 
@@ -13,7 +13,7 @@ class User(Base):
     custom_id: Mapped[str] = mapped_column(
         String(255), ForeignKey("members.custom_id"), unique=True
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(
         String(255), ForeignKey("members.email"), unique=True
@@ -33,7 +33,7 @@ class App(Base):
     client_id: Mapped[str] = mapped_column(String(255), unique=True)
     client_secret: Mapped[str] = mapped_column(String(255))
     name: Mapped[str] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     is_enable: Mapped[bool] = mapped_column(Boolean)
     redirect_uris = relationship("RedirectURI", cascade="all, delete-orphan")
 
@@ -45,7 +45,7 @@ class RedirectURI(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     app_id: Mapped[str] = mapped_column(String(255), ForeignKey("apps.id"))
     uri: Mapped[str] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
 # authsテーブル
@@ -55,7 +55,7 @@ class Auth(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     auth_user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
     app_id: Mapped[str] = mapped_column(String(255), ForeignKey("apps.id"))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     is_enable: Mapped[bool] = mapped_column(Boolean)
 
 
@@ -66,8 +66,11 @@ class OIDCAuthorization(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     auth_id: Mapped[int] = mapped_column(Integer, ForeignKey("auths.id"))
     code: Mapped[int] = mapped_column(Integer, unique=True)
-    content: Mapped[int] = mapped_column(Integer, unique=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    consent_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("consents.id"), unique=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    consent = relationship("Consent")
 
 
 # oidc_tokensテーブル
@@ -89,8 +92,8 @@ class Code(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     token: Mapped[str] = mapped_column(String(255))
-    created_at: Mapped[int] = mapped_column(Integer)
-    exp: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    exp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     is_enable: Mapped[bool] = mapped_column(Boolean)
 
 
@@ -128,7 +131,7 @@ class RefreshToken(Base):
 class Consent(Base):
     __tablename__ = "consents"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     scope: Mapped[str] = mapped_column(String(255))
     is_enable: Mapped[bool] = mapped_column(Boolean)
 
@@ -141,7 +144,7 @@ class Session(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
     ip_address: Mapped[str] = mapped_column(String(255))
     user_agent: Mapped[str] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     is_enable: Mapped[bool] = mapped_column(Boolean)
 
 
@@ -159,7 +162,7 @@ class Member(Base):
     external_email: Mapped[str] = mapped_column(String(255), nullable=False)
     custom_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now, nullable=False
+        DateTime, server_default=func.now(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(DateTime)
     joined_at: Mapped[datetime] = mapped_column(DateTime)
@@ -180,7 +183,7 @@ class Role(Base):
     custom_id: Mapped[str] = mapped_column(String(255), unique=True)
     permissions: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now, nullable=False
+        DateTime, server_default=func.now(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(DateTime)
     is_enable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

@@ -13,7 +13,6 @@ def create_test_data(db: Session):
             client_id="admin_app",
             client_secret="password",
             name="アドミンアプリケーション",
-            created_at=datetime.now(),
             is_enable=False,
         )
         db.add(app)
@@ -26,9 +25,7 @@ def create_test_data(db: Session):
         .first()
     )
     if not redirect_uri:
-        redirect_uri = RedirectURI(
-            app_id=app.id, uri="https://example.com/callback", created_at=datetime.now()
-        )
+        redirect_uri = RedirectURI(app_id=app.id, uri="https://example.com/callback")
         db.add(redirect_uri)
 
     # メンバーの作成 (存在しない場合のみ)
@@ -39,7 +36,6 @@ def create_test_data(db: Session):
             name="admin",
             email="admin@example.com",
             external_email="admin@example.com",
-            created_at=datetime.now(),
             updated_at=datetime.now(),
             joined_at=datetime.now(),
             is_enable=True,
@@ -54,7 +50,6 @@ def create_test_data(db: Session):
         user = User(
             custom_id="admin",
             password_hash=hashlib.sha256("admin".encode()).hexdigest(),
-            created_at=datetime.now(),
             is_enable=False,
         )
         db.add(user)
