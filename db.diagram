@@ -1,97 +1,98 @@
 Table users {
-  id integer [primary key]
-  name varchar
-  created_at timestamp
-  invalid bool
-}
-
-Table emails {
-  user_id integer
-  email varchar [unique]
-  verified bool
+  id int [pk]
+  custom_id varchar [unique, ref: - "members"."custom_id"]
+  created_at timestamp [default: "now()"]
+  password_hash varchar [not null]
+  email varchar [unique, ref: - "members"."email"]
+  is_enable bool
 }
 
 Table apps {
-  id integer [primary key]
+  id varchar [pk, default: "uuid()"]
   client_id varchar [unique]
   client_secret varchar
   name varchar
   created_at timestamp
-  invalid bool
+  is_enable bool
 }
 
 Table redirect_uris {
-  app_id integer
+  id int [pk,increment]
+  app_id varchar
   uri varchar
   created_at timestamp
 }
 
 Table auths {
-  id integer [primary key]
-  auth_user_id integer
-  app_id integer
+  id int [pk]
+  auth_user_id int
+  app_id varchar
   created_at timestamp
-  invalid bool
+  is_enable bool
 }
 
 Table oidc_authorizations {
-  id integer [pk]
-  auth_id integer
-  code integer
-  content integer
+  id int [pk]
+  auth_id int
+  code int
+  content int
   created_at timestamp
 }
 
 Table oidc_tokens{
-  id integer [primary key]
-  oidc_authorization_id integer
-  access_token_id integer
-  refresh_token_id integer
-  invalid bool
+  id int [pk]
+  oidc_authorization_id int
+  access_token_id int [unique]
+  refresh_token_id int [unique]
+  is_enable bool
 }
 
 Table code{
-  oidc_token_id integer
+  id int
   token varchar
-  create_at integer
-  exp integer
-  invalid bool
+  create_at int
+  exp int
+  is_enable bool
 }
 
-Table tokens {
-  id integer [primary key]
+Table access_tokens {
+  id int [pk, ref: - "oidc_tokens"."refresh_token_id", ref: - "oidc_tokens"."access_token_id"]
   hash varchar
   type varchar // access, refresh, etc.
   scope varchar // "openid profile email" etc.
   issued_at timestamp  // 発行時刻
   exp timestamp  // 有効期限
-  client_id integer  // apps.id（どのアプリに対して発行したか）
-  user_id integer  // users.id（誰のトークンか）
+  client_id int  // apps.id（どのアプリに対して発行したか）
+  user_id int  // users.id（誰のトークンか）
+  revoked bool
+}
+
+Table refresh_tokens {
+  id int [pk, ref: - "oidc_tokens"."refresh_token_id", ref: - "oidc_tokens"."access_token_id"]
+  hash varchar
+  type varchar // access, refresh, etc.
+  scope varchar // "openid profile email" etc.
+  issued_at timestamp  // 発行時刻
+  exp timestamp  // 有効期限
+  client_id int  // apps.id（どのアプリに対して発行したか）
+  user_id int  // users.id（誰のトークンか）
   revoked bool
 }
 
 Table consents {
-  id integer [primary key]
+  id int [pk]
   scope varchar
-  invalid bool
+  is_enable bool
 }
 
 Table sessions {
-  id integer [primary key]
-  user_id integer
+  id int [pk]
+  user_id int
   ip_address varchar
   user_agent varchar
   created_at timestamp
-  invalid bool
+  is_enable bool
 }
-
-Table Profile {
-  user_id integer
-  nickname varchar
-  icon_uri varchar
-
-}
-
 
 
 Ref: "users"."id" - "auths"."auth_user_id"
@@ -100,20 +101,58 @@ Ref: "users"."id" < "sessions"."user_id"
 
 Ref: "apps"."id" < "redirect_uris"."app_id"
 
-Ref: "users"."id" - "emails"."user_id"
-
-Ref: "oidc_tokens"."access_token_id" - "tokens"."id"
-
-Ref: "oidc_tokens"."refresh_token_id" - "tokens"."id"
-
 Ref: "apps"."id" - "auths"."app_id"
-
-Ref: "users"."id" - "Profile"."user_id"
 
 Ref: "auths"."id" < "oidc_authorizations"."auth_id"
 
 Ref: "oidc_authorizations"."content" - "consents"."id"
 
-Ref: "oidc_authorizations"."code" - "code"."oidc_token_id"
+Ref: "oidc_authorizations"."code" - "code"."id"
 
 Ref: "oidc_authorizations"."id" - "oidc_tokens"."oidc_authorization_id"
+
+Table members {
+  id varchar [pk, default: "uuid()"]
+  name varchar [not null]
+  email varchar [unique]
+  external_email varchar [not null]
+  custom_id varchar [unique, not null]
+  created_at timestamp [not null, default: "now()"]
+  updated_at timestamp
+  joined_at  timestamp [null]
+  is_enabled bool [not null, default: "true"]
+  period varchar [not null]
+  system bool [not null, default: "false"]
+  Note: "メンバー情報"
+}
+
+Table roles {
+  id varchar [pk, default: "uuid()"]
+  custom_id varchar [unique]
+  permissions int [not null, default: 0]
+  created_at timestamp [not null, default: "now()"]
+  updated_at timestamp
+  is_enabled bool [not null, default: "true"]
+  system bool [not null, default: "false"]
+  Note: "ロール情報"
+}
+
+Table discords {
+  id int [pk, increment]
+  discord_id varchar [unique, not null]
+  member varchar [not null, ref: > "members"."id"]
+}
+
+// 中間テーブル
+
+Table member_role {
+  id int [pk, increment]
+  member varchar [ref: > "members"."id", not null]
+  role varchar [ref: > "roles"."id", not null]
+}
+
+Table member_app {
+  id int [pk, increment] 
+  app varchar [ref: > "apps"."id"]
+  member varchar [ref: > "members"."id"]
+}
