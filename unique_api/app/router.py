@@ -274,12 +274,12 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
         db.flush()
 
     # consentテーブルを作成
-    consent = Consent(scope=auth_request["scope"], invalid=False)
+    consent = Consent(scope=auth_request["scope"], is_enable=False)
     code = Code(
         token=str(uuid4()),
         created_at=datetime.now(timezone.utc),
         exp=datetime.now(timezone.utc) + timedelta(minutes=10),
-        invalid=False,
+        is_enable=False,
     )
     db.add_all([consent, code])
     db.flush()
@@ -317,7 +317,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     code: Code = db.query(Code).filter_by(token=qp_code).first()
     if not code:
         raise HTTPException(status_code=400, detail="Code not found")
-    code.invalid = True
+    code.is_enable = True
     db.add(code)
     db.commit()
 
