@@ -49,7 +49,7 @@ async def login(request: Request):
 @router.post("/login")
 async def login_post(
     request: Request,
-    name: str = Form(...),
+    custom_id: str = Form(...),
     password: str = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -63,7 +63,10 @@ async def login_post(
     # セッションにユーザ情報を保存する
     validated_user = (
         db.query(User)
-        .filter_by(name=name, passwd_hash=hashlib.sha256(password.encode()).hexdigest())
+        .filter_by(
+            custom_id=custom_id,
+            password_hash=hashlib.sha256(password.encode()).hexdigest(),
+        )
         .first()
     )
 
@@ -74,7 +77,7 @@ async def login_post(
 
     # 認証成功
     request.session["user"] = (
-        f"{{'id': {validated_user.id}, 'name': {validated_user.name}}}"
+        f"{{'id': {validated_user.id}, 'name': {validated_user.custom_id}}}"
     )
 
     if request.query_params._dict == {}:
