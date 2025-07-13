@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 from sqlalchemy import Boolean, ForeignKey, String, DateTime, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 from db import Base
@@ -8,7 +9,7 @@ from db import Base
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     custom_id: Mapped[str] = mapped_column(
         String(255), ForeignKey("members.custom_id"), unique=True
     )
@@ -24,7 +25,11 @@ class User(Base):
 class App(Base):
     __tablename__ = "apps"
 
-    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    id: Mapped[str] = mapped_column(
+        String(255),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),  # ← これが必要！
+    )
     client_id: Mapped[str] = mapped_column(String(255), unique=True)
     client_secret: Mapped[str] = mapped_column(String(255))
     name: Mapped[str] = mapped_column(String(255))
@@ -143,7 +148,11 @@ class Session(Base):
 class Member(Base):
     __tablename__ = "members"
 
-    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    id: Mapped[str] = mapped_column(
+        String(255),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),  # ← これが必要！
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True)
     external_email: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -162,7 +171,11 @@ class Member(Base):
 class Role(Base):
     __tablename__ = "roles"
 
-    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    id: Mapped[str] = mapped_column(
+        String(255),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),  # ← これが必要！
+    )
     custom_id: Mapped[str] = mapped_column(String(255), unique=True)
     permissions: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
