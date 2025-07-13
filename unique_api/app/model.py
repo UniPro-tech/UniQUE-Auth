@@ -63,14 +63,14 @@ class Auth(Base):
 class OIDCAuthorization(Base):
     __tablename__ = "oidc_authorizations"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    auth_id: Mapped[int] = mapped_column(Integer, ForeignKey("auths.id"))
-    code: Mapped[int] = mapped_column(Integer, unique=True)
-    consent_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("consents.id"), unique=True
-    )
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    id = mapped_column(Integer, primary_key=True)
+    auth_id = mapped_column(Integer, ForeignKey("auths.id"))
+    code_id = mapped_column(Integer, ForeignKey("code.id"), unique=True)
+    consent_id = mapped_column(Integer, ForeignKey("consents.id"), unique=True)
+    created_at = mapped_column(DateTime, server_default=func.now())
+
     consent = relationship("Consent")
+    code = relationship("Code", back_populates="oidc_authorization", uselist=False)
 
 
 # oidc_tokensテーブル
@@ -90,11 +90,16 @@ class OIDCToken(Base):
 class Code(Base):
     __tablename__ = "code"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    token: Mapped[str] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    exp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    is_enable: Mapped[bool] = mapped_column(Boolean)
+    id = mapped_column(Integer, primary_key=True)
+    token = mapped_column(String(255))
+    created_at = mapped_column(DateTime, server_default=func.now())
+    exp = mapped_column(DateTime, nullable=False)
+    is_enable = mapped_column(Boolean)
+
+    # 外部キーを削除！逆参照だけにする
+    oidc_authorization = relationship(
+        "OIDCAuthorization", back_populates="code", uselist=False
+    )
 
 
 # access_tokensテーブル
