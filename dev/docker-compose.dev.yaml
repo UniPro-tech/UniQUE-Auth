@@ -8,6 +8,7 @@ services:
       - ../:/app
     environment:
       - ENV=development
+      - VIRTUAL_ENV=.venv-compose
     working_dir: /app
     command: >
       /bin/sh -c "apk add --no-cache \
@@ -17,7 +18,10 @@ services:
       mariadb-dev \
       pkgconf \
       build-base \
-      mysql-client && uv sync && uv run unique_api/app/main.py"
+      mysql-client && \
+      uv venv .venv-compose && \
+      uv sync --active && \
+      uv run --active unique_api/app/main.py"
   api-dbsrv-01:
     image: mysql:8.4
     container_name: unique_db
