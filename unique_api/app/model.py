@@ -1,28 +1,20 @@
 from datetime import datetime
 import uuid
-from sqlalchemy import Boolean, ForeignKey, String, DateTime, Integer
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Boolean, ForeignKey, String, DateTime, Integer, func
+from sqlalchemy.orm import mapped_column, relationship
 from db import Base
-from datetime import datetime, timezone
 
 
 # usersテーブル
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    custom_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("members.custom_id"), unique=True
-    )
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    email: Mapped[str] = mapped_column(
-        String(255), ForeignKey("members.email"), unique=True
-    )
-    is_enable: Mapped[bool] = mapped_column(Boolean)
-
-    sessions: Mapped[list["Session"]] = relationship(back_populates="user")
-    auths: Mapped[list["Auth"]] = relationship(back_populates="user")
+    id = mapped_column(Integer, primary_key=True, autoincrement=True)
+    custom_id = mapped_column(String(255), ForeignKey("members.custom_id"), unique=True)
+    created_at = mapped_column(DateTime, server_default=func.now())
+    password_hash = mapped_column(String(255), nullable=False)
+    email = mapped_column(String(255), ForeignKey("members.email"), unique=True)
+    is_enable = mapped_column(Boolean)
 
 
 # appsテーブル
@@ -34,42 +26,41 @@ class App(Base):
         primary_key=True,
         default=lambda: str(uuid.uuid4()),  # ← これが必要！
     )
-    client_id: Mapped[str] = mapped_column(String(255), unique=True)
-    client_secret: Mapped[str] = mapped_column(String(255))
-    name: Mapped[str] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    is_enable: Mapped[bool] = mapped_column(Boolean)
-
-    redirect_uris: Mapped[list["RedirectURI"]] = relationship(back_populates="app")
-    auths: Mapped[list["Auth"]] = relationship(back_populates="app")
+    client_id = mapped_column(String(255), unique=True)
+    client_secret = mapped_column(String(255))
+    name = mapped_column(String(255))
+    created_at = mapped_column(DateTime, server_default=func.now())
+    is_enable = mapped_column(Boolean)
+    redirect_uris = relationship("RedirectURI", cascade="all, delete-orphan")
 
 
 # redirect_urisテーブル
 class RedirectURI(Base):
     __tablename__ = "redirect_uris"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    app_id: Mapped[str] = mapped_column(String(255), ForeignKey("apps.id"))
-    uri: Mapped[str] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-
-    app: Mapped["App"] = relationship(back_populates="redirect_uris")
+    id = mapped_column(Integer, primary_key=True, autoincrement=True)
+    app_id = mapped_column(String(255), ForeignKey("apps.id"))
+    uri = mapped_column(String(255))
+    created_at = mapped_column(DateTime, server_default=func.now())
 
 
 # authsテーブル
 class Auth(Base):
     __tablename__ = "auths"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    auth_user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
-    app_id: Mapped[str] = mapped_column(String(255), ForeignKey("apps.id"))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    is_enable: Mapped[bool] = mapped_column(Boolean)
-
-    user: Mapped["User"] = relationship(back_populates="auths")
-    app: Mapped["App"] = relationship(back_populates="auths")
-    oidc_authorizations: Mapped[list["OIDCAuthorization"]] = relationship(
-        back_populates="auth"
+    id = mapped_column(Integer, primary_key=True)
+    auth_user_id = mapped_column(Integer, ForeignKey("users.id"))
+    app_id = mapped_column(String(255), ForeignKey("apps.id"))
+    created_at = mapped_column(DateTime, server_default=func.now())
+    is_enable = mapped_column(Boolean)
+    oidc_authorizations = relationship("OIDCAuthorization", back_populates="auth")
+    oidc_tokens = relationship(
+        "OIDCToken",
+        secondary="oidc_authorizations",
+        primaryjoin="Auth.id == OIDCAuthorization.auth_id",
+        secondaryjoin="OIDCAuthorization.id == OIDCToken.oidc_authorization_id",
+        viewonly=True,
+        backref="auth",
     )
 
 
@@ -77,16 +68,16 @@ class Auth(Base):
 class OIDCAuthorization(Base):
     __tablename__ = "oidc_authorizations"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    auth_id: Mapped[int] = mapped_column(Integer, ForeignKey("auths.id"))
-    code: Mapped[int] = mapped_column(ForeignKey("code.id"), unique=True)
-    content: Mapped[int] = mapped_column(Integer, unique=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    id = mapped_column(Integer, primary_key=True)
+    auth_id = mapped_column(Integer, ForeignKey("auths.id"))
+    code_id = mapped_column(Integer, ForeignKey("code.id"), unique=True)
+    consent_id = mapped_column(Integer, ForeignKey("consents.id"), unique=True)
+    created_at = mapped_column(DateTime, server_default=func.now())
 
-    code: Mapped["Code"] = relationship(back_populates="oidc_authorization")
-    consent: Mapped["Consent"] = relationship(back_populates="oidc_authorization")
-    auth: Mapped["Auth"] = relationship(back_populates="oidc_authorizations")
-    oidc_token: Mapped["OIDCToken"] = relationship(back_populates="oidc_authorization")
+    consent = relationship("Consent")
+    code = relationship("Code", back_populates="oidc_authorization", uselist=False)
+    auth = relationship("Auth", back_populates="oidc_authorizations")
+    oidc_tokens = relationship("OIDCToken", back_populates="oidc_authorization")
 
 
 # oidc_tokensテーブル
@@ -97,29 +88,25 @@ class OIDCToken(Base):
     oidc_authorization_id = mapped_column(
         Integer, ForeignKey("oidc_authorizations.id"), unique=True
     )
-    access_token_id: Mapped[int] = mapped_column(ForeignKey("access_tokens.id"), unique=True)
-    refresh_token_id: Mapped[int] = mapped_column(ForeignKey("refresh_tokens.id"), unique=True)
-    is_enable: Mapped[bool] = mapped_column(Boolean)
-
-    access_token: Mapped["AccessToken"] = relationship(back_populates="oidc_token")
-    refresh_token: Mapped["RefreshToken"] = relationship(back_populates="oidc_token")
-    oidc_authorization: Mapped["OIDCAuthorization"] = relationship(
-        back_populates="oidc_token"
-    )
+    access_token_id = mapped_column(Integer, unique=True)
+    refresh_token_id = mapped_column(Integer, unique=True)
+    is_enable = mapped_column(Boolean)
+    oidc_authorization = relationship("OIDCAuthorization", back_populates="oidc_tokens")
 
 
 # codeテーブル
 class Code(Base):
     __tablename__ = "code"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    token: Mapped[str] = mapped_column(String(255))
-    created_at: Mapped[int] = mapped_column(Integer)
-    exp: Mapped[int] = mapped_column(Integer)
-    is_enable: Mapped[bool] = mapped_column(Boolean)
+    id = mapped_column(Integer, primary_key=True)
+    token = mapped_column(String(255))
+    created_at = mapped_column(DateTime, server_default=func.now())
+    exp = mapped_column(DateTime, nullable=False)
+    is_enable = mapped_column(Boolean)
 
-    oidc_authorization: Mapped["OIDCAuthorization"] = relationship(
-        back_populates="code"
+    # 外部キーを削除！逆参照だけにする
+    oidc_authorization = relationship(
+        "OIDCAuthorization", back_populates="code", uselist=False
     )
 
 
@@ -127,61 +114,51 @@ class Code(Base):
 class AccessToken(Base):
     __tablename__ = "access_tokens"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    hash: Mapped[str] = mapped_column(String(255))
-    type: Mapped[str] = mapped_column(String(255))
-    scope: Mapped[str] = mapped_column(String(255))
-    issued_at: Mapped[datetime] = mapped_column(DateTime)
-    exp: Mapped[datetime] = mapped_column(DateTime)
-    client_id: Mapped[int] = mapped_column(Integer)
-    user_id: Mapped[int] = mapped_column(Integer)
-    revoked: Mapped[bool] = mapped_column(Boolean)
-
-    oidc_token: Mapped["OIDCToken"] = relationship(back_populates="access_token")
+    id = mapped_column(Integer, primary_key=True)
+    hash = mapped_column(String(255))
+    type = mapped_column(String(255))
+    scope = mapped_column(String(255))
+    issued_at = mapped_column(DateTime)
+    exp = mapped_column(DateTime)
+    client_id = mapped_column(Integer)
+    user_id = mapped_column(Integer)
+    revoked = mapped_column(Boolean)
 
 
 # refresh_tokensテーブル
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    hash: Mapped[str] = mapped_column(String(255))
-    type: Mapped[str] = mapped_column(String(255))
-    scope: Mapped[str] = mapped_column(String(255))
-    issued_at: Mapped[datetime] = mapped_column(DateTime)
-    exp: Mapped[datetime] = mapped_column(DateTime)
-    client_id: Mapped[int] = mapped_column(Integer)
-    user_id: Mapped[int] = mapped_column(Integer)
-    revoked: Mapped[bool] = mapped_column(Boolean)
-
-    oidc_token: Mapped["OIDCToken"] = relationship(back_populates="refresh_token")
+    id = mapped_column(Integer, primary_key=True)
+    hash = mapped_column(String(255))
+    type = mapped_column(String(255))
+    scope = mapped_column(String(255))
+    issued_at = mapped_column(DateTime)
+    exp = mapped_column(DateTime)
+    client_id = mapped_column(Integer)
+    user_id = mapped_column(Integer)
+    revoked = mapped_column(Boolean)
 
 
 # consentsテーブル
 class Consent(Base):
     __tablename__ = "consents"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    scope: Mapped[str] = mapped_column(String(255))
-    is_enable: Mapped[bool] = mapped_column(Boolean)
-
-    oidc_authorization: Mapped["OIDCAuthorization"] = relationship(
-        back_populates="consent"
-    )
+    id = mapped_column(Integer, primary_key=True, autoincrement=True)
+    scope = mapped_column(String(255))
+    is_enable = mapped_column(Boolean)
 
 
 # sessionsテーブル
 class Session(Base):
     __tablename__ = "sessions"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
-    ip_address: Mapped[str] = mapped_column(String(255))
-    user_agent: Mapped[str] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    is_enable: Mapped[bool] = mapped_column(Boolean)
-
-    user: Mapped["User"] = relationship(back_populates="sessions")
+    id = mapped_column(Integer, primary_key=True)
+    user_id = mapped_column(Integer, ForeignKey("users.id"))
+    ip_address = mapped_column(String(255))
+    user_agent = mapped_column(String(255))
+    created_at = mapped_column(DateTime, server_default=func.now())
+    is_enable = mapped_column(Boolean)
 
 
 # membersテーブル
@@ -197,7 +174,7 @@ class Member(Base):
     email = mapped_column(String(255), unique=True)
     external_email = mapped_column(String(255), nullable=False)
     custom_id = mapped_column(String(255), unique=True, nullable=False)
-    created_at = mapped_column(DateTime, server_default=datetime.now(timezone.utc), nullable=False)
+    created_at = mapped_column(DateTime, server_default=func.now(), nullable=False)
     updated_at = mapped_column(DateTime)
     joined_at = mapped_column(DateTime)
     is_enable = mapped_column(Boolean, nullable=False, default=True)
@@ -216,7 +193,7 @@ class Role(Base):
     )
     custom_id = mapped_column(String(255), unique=True)
     permissions = mapped_column(Integer, nullable=False, default=0)
-    created_at = mapped_column(DateTime, server_default=datetime.now(timezone.utc), nullable=False)
+    created_at = mapped_column(DateTime, server_default=func.now(), nullable=False)
     updated_at = mapped_column(DateTime)
     is_enable = mapped_column(Boolean, nullable=False, default=True)
     system = mapped_column(Boolean, nullable=False, default=False)
