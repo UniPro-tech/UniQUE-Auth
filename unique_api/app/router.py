@@ -57,7 +57,7 @@ async def login_post(
     ログインフォームの POST 送信を受けて、認証処理を行う。
     認証成功時はセッションにユーザ情報を保存し、リダイレクトする。
     """
-    print("Login POST request received:", request.query_params._dict)
+    print("Login POST request received:", dict(request.query_params))
     # ここでユーザ認証を行う
     # 例えば、email と password を使ってユーザを検索し、認証が成功したら
     # セッションにユーザ情報を保存する
@@ -138,7 +138,7 @@ async def signup_post(
     サインアップフォームの POST 送信を受けて、ユーザ登録処理を行う。
     登録成功時はログインページにリダイレクトする。
     """
-    print("Signup POST request received:", request.query_params._dict)
+    print("Signup POST request received:", dict(request.query_params))
 
     # ユーザ名の重複チェック
     existing_user = db.query(User).filter_by(name=name).first()
@@ -163,8 +163,8 @@ async def auth(request: Request, db: Session = Depends(get_db)):
     """
     OIDC 認可フローのためのエンドポイント。
     """
-    print("Auth request received:", request.query_params._dict)
-    request_query_params = request.query_params._dict
+    print("Auth request received:", dict(request.query_params))
+    request_query_params = dict(request.query_params)
     # セッションからユーザ情報を取得
     user_info = request.cookies.get("user_id")
     if not user_info:
@@ -241,7 +241,7 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     """
     OIDC 認可フローの確認画面での POST 送信を受けて、認可処理を行う。
     """
-    print("Auth confirm request received:", request.query_params._dict)
+    print("Auth confirm request received:", dict(request.query_params))
     # セッションからリクエスト情報を取得
     auth_request = request.session.get("auth_request")
     if not auth_request:
@@ -291,7 +291,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     """
     OIDC 認可コードを取得するエンドポイント。
     """
-    print("Get code request received:", request.query_params._dict)
+    print("Get code request received:", dict(request.query_params))
     user_info = request.cookies.get("user_id")
     if not user_info:
         raise RedirectResponse(url="/login", status_code=302)
