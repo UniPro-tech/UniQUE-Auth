@@ -11,6 +11,7 @@ from uuid import uuid4
 import jwt
 from unique_api.app.model import (
     AccessToken,
+    Member,
     RefreshToken,
     User,
     Session as UserSession,
@@ -130,28 +131,40 @@ async def signup(request: Request):
 @router.post("/signup")
 async def signup_post(
     request: Request,
+    custom_id: str = Form(...),
+    email: str = Form(...),
     name: str = Form(...),
     password: str = Form(...),
+    external_email: str = Form(...),
+    period: str = Form(...),
     db: Session = Depends(get_db),
 ):
     """
-    サインアップフォームの POST 送信を受けて、ユーザ登録処理を行う。
-    登録成功時はログインページにリダイレクトする。
+    サインアップフォームの POST 送信を受けて、ユーザ仮登録処理を行う。
+    登録成功時はメールを送信する。
     """
     print("Signup POST request received:", dict(request.query_params))
 
     # ユーザ名の重複チェック
-    existing_user = db.query(User).filter_by(name=name).first()
-    if existing_user:
+    existing_member = db.query(Member).filter_by(custom_id=custom_id).first()
+    if existing_member:
         return templates.TemplateResponse(
             "signup.html", {"request": request, "error": "User already exists"}
         )
 
     # 新規ユーザの作成
-    new_user = User(
-        name=name, passwd_hash=hashlib.sha256(password.encode()).hexdigest()
+    new_member = Member(
+        custom_id=custom_id,
+        name=name,
+        email=email,
+        external_email=external_email,
+        updated_at=datetime.now(),
+        joined_at=datetime.now(),
+        is_enable=True,
+        period=period,
+        system=False,
     )
-    db.add(new_user)
+    db.add(new_member)
     db.commit()
 
     # 登録成功後はログインページにリダイレクト
