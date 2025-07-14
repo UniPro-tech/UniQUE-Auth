@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>サインアップ</title>
+    <link rel="stylesheet" href="https://matcha.mizu.sh/matcha.css" />
+  </head>
+  <body>
+    <h2>サインアップ</h2>
+
+    <form action="{{ action_url }}" method="post">
+      <label for="custom_id">ID:</label>
+      <input type="text" id="custom_id" name="custom_id" required />
+
+      <label for="name">名前:</label>
+      <input type="text" id="name" name="name" required />
+
+      <label for="email">メールアドレス:</label>
+      <input type="email" id="email" name="email" required />
+
+      <label for="external_email">外部メールアドレス:</label>
+      <input type="email" id="external_email" name="external_email" required />
+
+      <label for="period">期間:</label>
+      <input type="text" id="period" name="period" required />
+
+      <button type="submit">サインアップ</button>
+    </form>
+  </body>
+</html>
