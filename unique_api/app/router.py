@@ -7,8 +7,8 @@ from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
 from db import get_db
 import hashlib
-import jwt
 from uuid import uuid4
+import jwt
 from unique_api.app.model import (
     AccessToken,
     RefreshToken,
