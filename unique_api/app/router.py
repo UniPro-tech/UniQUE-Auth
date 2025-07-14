@@ -132,9 +132,62 @@ async def signup(request: Request):
 async def signup_post(
     request: Request,
     custom_id: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """
+    サインアップフォームの POST 送信を受けて、ユーザ登録処理を行う。
+    登録成功時はログインページにリダイレクトする。
+    """
+    print("Signup POST request received:", dict(request.query_params))
+
+    # ユーザ名のメンバーの登録可否
+    existing_member = db.query(Member).filter_by(custom_id=custom_id).first()
+    if not existing_member:
+        return templates.TemplateResponse(
+            "signup.html", {"request": request, "error": "Member is not registered"}
+        )
+
+    # ユーザ名の重複チェック
+    existing_user = db.query(User).filter_by(custom_id=custom_id).first()
+    if existing_user:
+        return templates.TemplateResponse(
+            "signup.html", {"request": request, "error": "User already exists"}
+        )
+
+    # 新規ユーザの作成
+    new_user = User(
+        custom_id=custom_id,
+        is_enable=True,
+        password_hash=hashlib.sha256(password.encode()).hexdigest(),
+        email=existing_member.email,
+    )
+    db.add(new_user)
+    db.commit()
+
+    # 登録成功後はログインページにリダイレクト
+    return RedirectResponse(url="/login", status_code=302)
+
+
+@router.get("/join")
+async def join(request: Request):
+    """
+    サインアップ処理を行うエンドポイント。
+    """
+    action_url = "/join"
+    if request.query_params:
+        action_url += f"?{urlencode(request.query_params)}"
+    return templates.TemplateResponse(
+        "join.html", {"request": request, "action_url": action_url}
+    )
+
+
+@router.post("/join")
+async def join_post(
+    request: Request,
+    custom_id: str = Form(...),
     email: str = Form(...),
     name: str = Form(...),
-    password: str = Form(...),
     external_email: str = Form(...),
     period: str = Form(...),
     db: Session = Depends(get_db),
