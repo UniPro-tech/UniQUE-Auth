@@ -80,19 +80,19 @@ async def login_post(
         f"{{'id': {validated_user.id}, 'name': {validated_user.custom_id}}}"
     )
 
-    if request.query_params._dict == {}:
+    if dict(request.query_params) == {}:
         redirect_url = "/"
     # OIDC 認可フローの場合、リダイレクト先の URL に
-    elif request.query_params._dict.get(
+    elif dict(request.query_params).get(
         "redirect_uri"
     ):  # TODO:リダイレクト先の URI が指定されている場合
         # リダイレクト先の URL にクエリパラメータを追加
-        redirect_url = "auth?" + urlencode(request.query_params._dict)
+        redirect_url = "auth?" + urlencode(dict(request.query_params))
 
     # セッションを作成
     session = UserSession(
         user_id=validated_user.id,
-        ip_address=request.client.host,
+        ip_address=request.client.host,  # type: ignore
         user_agent=request.headers.get("User-Agent", ""),
     )
     db.add(session)
