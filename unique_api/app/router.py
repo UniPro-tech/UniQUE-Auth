@@ -169,6 +169,7 @@ async def signup_post(
     return RedirectResponse(url="/login", status_code=302)
 
 
+# TODO: これはFrontで実装する
 @router.get("/join")
 async def join(request: Request):
     """
