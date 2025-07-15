@@ -1,12 +1,20 @@
+-- usersテーブルのCREATE文
 CREATE TABLE `users` (
-  `id` int PRIMARY KEY AUTO_INCREMENT,
-  `custom_id` varchar(255) UNIQUE,
-  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-  `password_hash` varchar(255) NOT NULL,
-  `email` varchar(255) UNIQUE,
-  `is_enable` bool
+    `id` varchar(255) PRIMARY KEY DEFAULT 'uuid()',,
+    `custom_id` VARCHAR(255) UNIQUE,
+    `name` VARCHAR(255) NOT NULL,
+    `password_hash` VARCHAR(255) NOT NULL,
+    `email` VARCHAR(255) UNIQUE,
+    `external_email` VARCHAR(255) NOT NULL,
+    `period` VARCHAR(255) NOT NULL,
+    `joined_at` DATETIME,
+    `is_system` BOOLEAN NOT NULL DEFAULT FALSE,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME,
+    `is_enable` BOOLEAN DEFAULT TRUE
 );
 
+CREATE INDEX idx_users_custom_id ON users(custom_id);
 CREATE TABLE `apps` (
   `id` varchar(255) PRIMARY KEY DEFAULT 'uuid()',
   `client_id` varchar(255) UNIQUE,
@@ -96,20 +104,6 @@ CREATE TABLE `sessions` (
   `user_agent` varchar(255),
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `is_enable` bool
-);
-
-CREATE TABLE `members` (
-  `id` varchar(255) PRIMARY KEY DEFAULT 'uuid()',
-  `name` varchar(255) NOT NULL,
-  `email` varchar(255) UNIQUE,
-  `external_email` varchar(255) NOT NULL,
-  `custom_id` varchar(255) UNIQUE NOT NULL,
-  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  `updated_at` timestamp,
-  `joined_at` timestamp,
-  `is_enable` bool NOT NULL DEFAULT true,
-  `period` varchar(255) NOT NULL,
-  `system` bool NOT NULL DEFAULT false
 );
 
 CREATE TABLE `roles` (
