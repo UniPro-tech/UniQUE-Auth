@@ -1,226 +1,569 @@
+# from sqlacodegen --generator sqlmodels "mysql://api:P%40ssw0rd@127.0.0.1:8336/devdb"
 from datetime import datetime
-import uuid
-from sqlalchemy import Boolean, ForeignKey, String, DateTime, Integer, func
-from sqlalchemy.orm import mapped_column, relationship
-from db import Base
+from typing import List, Optional
+
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKeyConstraint,
+    Index,
+    Integer,
+    String,
+    TIMESTAMP,
+    text,
+)
+from sqlalchemy.dialects.mysql import TINYINT
+from sqlmodel import Field, Relationship, SQLModel
 
 
-# usersテーブル
-class User(Base):
-    __tablename__ = "users"
+class Apps(SQLModel, table=True):
+    __table_args__ = (Index("client_id", "client_id", unique=True),)
 
-    id = mapped_column(Integer, primary_key=True, autoincrement=True)
-    custom_id = mapped_column(String(255), ForeignKey("members.custom_id"), unique=True)
-    created_at = mapped_column(DateTime, server_default=func.now())
-    password_hash = mapped_column(String(255), nullable=False)
-    email = mapped_column(String(255), ForeignKey("members.email"), unique=True)
-    is_enable = mapped_column(Boolean)
-
-
-# appsテーブル
-class App(Base):
-    __tablename__ = "apps"
-
-    id = mapped_column(
-        String(255),
-        primary_key=True,
-        default=lambda: str(uuid.uuid4()),  # ← これが必要！
+    id: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            "id",
+            String(255, "utf8mb4_unicode_ci"),
+            primary_key=True,
+            server_default=text("'uuid()'"),
+        ),
     )
-    client_id = mapped_column(String(255), unique=True)
-    client_secret = mapped_column(String(255))
-    name = mapped_column(String(255))
-    created_at = mapped_column(DateTime, server_default=func.now())
-    is_enable = mapped_column(Boolean)
-    redirect_uris = relationship("RedirectURI", cascade="all, delete-orphan")
-
-
-# redirect_urisテーブル
-class RedirectURI(Base):
-    __tablename__ = "redirect_uris"
-
-    id = mapped_column(Integer, primary_key=True, autoincrement=True)
-    app_id = mapped_column(String(255), ForeignKey("apps.id"))
-    uri = mapped_column(String(255))
-    created_at = mapped_column(DateTime, server_default=func.now())
-
-
-# authsテーブル
-class Auth(Base):
-    __tablename__ = "auths"
-
-    id = mapped_column(Integer, primary_key=True)
-    auth_user_id = mapped_column(Integer, ForeignKey("users.id"))
-    app_id = mapped_column(String(255), ForeignKey("apps.id"))
-    created_at = mapped_column(DateTime, server_default=func.now())
-    is_enable = mapped_column(Boolean)
-    oidc_authorizations = relationship("OIDCAuthorization", back_populates="auth")
-    oidc_tokens = relationship(
-        "OIDCToken",
-        secondary="oidc_authorizations",
-        primaryjoin="Auth.id == OIDCAuthorization.auth_id",
-        secondaryjoin="OIDCAuthorization.id == OIDCToken.oidc_authorization_id",
-        viewonly=True,
-        backref="auth",
+    client_id: Optional[str] = Field(
+        default=None, sa_column=Column("client_id", String(255, "utf8mb4_unicode_ci"))
+    )
+    client_secret: Optional[str] = Field(
+        default=None,
+        sa_column=Column("client_secret", String(255, "utf8mb4_unicode_ci")),
+    )
+    name: Optional[str] = Field(
+        default=None, sa_column=Column("name", String(255, "utf8mb4_unicode_ci"))
+    )
+    created_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(
+            "created_at", TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
+        ),
+    )
+    is_enable: Optional[int] = Field(
+        default=None, sa_column=Column("is_enable", TINYINT(1))
     )
 
-
-# oidc_authorizationsテーブル
-class OIDCAuthorization(Base):
-    __tablename__ = "oidc_authorizations"
-
-    id = mapped_column(Integer, primary_key=True)
-    auth_id = mapped_column(Integer, ForeignKey("auths.id"))
-    code_id = mapped_column(Integer, ForeignKey("code.id"), unique=True)
-    consent_id = mapped_column(Integer, ForeignKey("consents.id"), unique=True)
-    created_at = mapped_column(DateTime, server_default=func.now())
-
-    consent = relationship("Consent")
-    code = relationship("Code", back_populates="oidc_authorization", uselist=False)
-    auth = relationship("Auth", back_populates="oidc_authorizations")
-    oidc_tokens = relationship("OIDCToken", back_populates="oidc_authorization")
+    auths: List["Auths"] = Relationship(back_populates="app")
+    member_app: List["MemberApp"] = Relationship(back_populates="apps")
+    redirect_uris: List["RedirectUris"] = Relationship(back_populates="app")
+    user_app: List["UserApp"] = Relationship(back_populates="app")
 
 
-# oidc_tokensテーブル
-class OIDCToken(Base):
-    __tablename__ = "oidc_tokens"
-
-    id = mapped_column(Integer, primary_key=True)
-    oidc_authorization_id = mapped_column(
-        Integer, ForeignKey("oidc_authorizations.id"), unique=True
+class Code(SQLModel, table=True):
+    id: Optional[int] = Field(
+        default=None, sa_column=Column("id", Integer, primary_key=True)
     )
-    access_token_id = mapped_column(Integer, unique=True)
-    refresh_token_id = mapped_column(Integer, unique=True)
-    is_enable = mapped_column(Boolean)
-    oidc_authorization = relationship("OIDCAuthorization", back_populates="oidc_tokens")
+    token: Optional[str] = Field(
+        default=None, sa_column=Column("token", String(255, "utf8mb4_unicode_ci"))
+    )
+    created_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(
+            "created_at", TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
+        ),
+    )
+    exp: Optional[datetime] = Field(default=None, sa_column=Column("exp", TIMESTAMP))
+    is_enable: Optional[int] = Field(
+        default=None, sa_column=Column("is_enable", TINYINT(1))
+    )
 
-
-# codeテーブル
-class Code(Base):
-    __tablename__ = "code"
-
-    id = mapped_column(Integer, primary_key=True)
-    token = mapped_column(String(255))
-    created_at = mapped_column(DateTime, server_default=func.now())
-    exp = mapped_column(DateTime, nullable=False)
-    is_enable = mapped_column(Boolean)
-
-    # 外部キーを削除！逆参照だけにする
-    oidc_authorization = relationship(
-        "OIDCAuthorization", back_populates="code", uselist=False
+    oidc_authorizations: List["OidcAuthorizations"] = Relationship(
+        back_populates="code"
     )
 
 
-# access_tokensテーブル
-class AccessToken(Base):
-    __tablename__ = "access_tokens"
-
-    id = mapped_column(Integer, primary_key=True)
-    hash = mapped_column(String(255))
-    type = mapped_column(String(255))
-    scope = mapped_column(String(255))
-    issued_at = mapped_column(DateTime)
-    exp = mapped_column(DateTime)
-    client_id = mapped_column(Integer)
-    user_id = mapped_column(Integer)
-    revoked = mapped_column(Boolean)
-
-
-# refresh_tokensテーブル
-class RefreshToken(Base):
-    __tablename__ = "refresh_tokens"
-
-    id = mapped_column(Integer, primary_key=True)
-    hash = mapped_column(String(255))
-    type = mapped_column(String(255))
-    scope = mapped_column(String(255))
-    issued_at = mapped_column(DateTime)
-    exp = mapped_column(DateTime)
-    client_id = mapped_column(Integer)
-    user_id = mapped_column(Integer)
-    revoked = mapped_column(Boolean)
-
-
-# consentsテーブル
-class Consent(Base):
-    __tablename__ = "consents"
-
-    id = mapped_column(Integer, primary_key=True, autoincrement=True)
-    scope = mapped_column(String(255))
-    is_enable = mapped_column(Boolean)
-
-
-# sessionsテーブル
-class Session(Base):
-    __tablename__ = "sessions"
-
-    id = mapped_column(Integer, primary_key=True)
-    user_id = mapped_column(Integer, ForeignKey("users.id"))
-    ip_address = mapped_column(String(255))
-    user_agent = mapped_column(String(255))
-    created_at = mapped_column(DateTime, server_default=func.now())
-    is_enable = mapped_column(Boolean)
-
-
-# membersテーブル
-class Member(Base):
-    __tablename__ = "members"
-
-    id = mapped_column(
-        String(255),
-        primary_key=True,
-        default=lambda: str(uuid.uuid4()),  # ← これが必要！
+class Consents(SQLModel, table=True):
+    id: Optional[int] = Field(
+        default=None, sa_column=Column("id", Integer, primary_key=True)
     )
-    name = mapped_column(String(255), nullable=False)
-    email = mapped_column(String(255), unique=True)
-    external_email = mapped_column(String(255), nullable=False)
-    custom_id = mapped_column(String(255), unique=True, nullable=False)
-    created_at = mapped_column(DateTime, server_default=func.now(), nullable=False)
-    updated_at = mapped_column(DateTime)
-    joined_at = mapped_column(DateTime)
-    is_enable = mapped_column(Boolean, nullable=False, default=True)
-    period = mapped_column(String(255), nullable=False)
-    system = mapped_column(Boolean, nullable=False, default=False)
-
-
-# rolesテーブル
-class Role(Base):
-    __tablename__ = "roles"
-
-    id = mapped_column(
-        String(255),
-        primary_key=True,
-        default=lambda: str(uuid.uuid4()),  # ← これが必要！
+    scope: Optional[str] = Field(
+        default=None, sa_column=Column("scope", String(255, "utf8mb4_unicode_ci"))
     )
-    custom_id = mapped_column(String(255), unique=True)
-    permissions = mapped_column(Integer, nullable=False, default=0)
-    created_at = mapped_column(DateTime, server_default=func.now(), nullable=False)
-    updated_at = mapped_column(DateTime)
-    is_enable = mapped_column(Boolean, nullable=False, default=True)
-    system = mapped_column(Boolean, nullable=False, default=False)
+    is_enable: Optional[int] = Field(
+        default=None, sa_column=Column("is_enable", TINYINT(1))
+    )
+
+    oidc_authorizations: List["OidcAuthorizations"] = Relationship(
+        back_populates="consent"
+    )
 
 
-# discordsテーブル
-class Discord(Base):
-    __tablename__ = "discords"
+class Members(SQLModel, table=True):
+    __table_args__ = (
+        Index("custom_id", "custom_id", unique=True),
+        Index("email", "email", unique=True),
+    )
 
-    id = mapped_column(Integer, primary_key=True, autoincrement=True)
-    discord_id = mapped_column(String(255), unique=True, nullable=False)
-    member = mapped_column(String(255), ForeignKey("members.id"), nullable=False)
+    id: Optional[str] = Field(
+        default=None,
+        sa_column=Column("id", String(255, "utf8mb4_unicode_ci"), primary_key=True),
+    )
+    name: str = Field(sa_column=Column("name", String(255, "utf8mb4_unicode_ci")))
+    external_email: str = Field(
+        sa_column=Column("external_email", String(255, "utf8mb4_unicode_ci"))
+    )
+    custom_id: str = Field(
+        sa_column=Column("custom_id", String(255, "utf8mb4_unicode_ci"))
+    )
+    created_at: datetime = Field(
+        sa_column=Column("created_at", DateTime, server_default=text("(now())"))
+    )
+    is_enable: int = Field(sa_column=Column("is_enable", TINYINT(1)))
+    period: str = Field(sa_column=Column("period", String(255, "utf8mb4_unicode_ci")))
+    system: int = Field(sa_column=Column("system", TINYINT(1)))
+    email: Optional[str] = Field(
+        default=None, sa_column=Column("email", String(255, "utf8mb4_unicode_ci"))
+    )
+    updated_at: Optional[datetime] = Field(
+        default=None, sa_column=Column("updated_at", DateTime)
+    )
+    joined_at: Optional[datetime] = Field(
+        default=None, sa_column=Column("joined_at", DateTime)
+    )
+
+    member_app: List["MemberApp"] = Relationship(back_populates="members")
+    member_role: List["MemberRole"] = Relationship(back_populates="members")
 
 
-# member_roleテーブル
-class MemberRole(Base):
-    __tablename__ = "member_role"
+class Roles(SQLModel, table=True):
+    __table_args__ = (
+        Index("custom_id", "custom_id", unique=True),
+        {"comment": "ロール情報"},
+    )
 
-    id = mapped_column(Integer, primary_key=True, autoincrement=True)
-    member = mapped_column(String(255), ForeignKey("members.id"), nullable=False)
-    role = mapped_column(String(255), ForeignKey("roles.id"), nullable=False)
+    id: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            "id",
+            String(255, "utf8mb4_unicode_ci"),
+            primary_key=True,
+            server_default=text("'uuid()'"),
+        ),
+    )
+    permissions: int = Field(
+        sa_column=Column("permissions", Integer, server_default=text("'0'"))
+    )
+    created_at: datetime = Field(
+        sa_column=Column(
+            "created_at", TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
+        )
+    )
+    is_enable: int = Field(
+        sa_column=Column("is_enable", TINYINT(1), server_default=text("'1'"))
+    )
+    system: int = Field(
+        sa_column=Column("system", TINYINT(1), server_default=text("'0'"))
+    )
+    custom_id: Optional[str] = Field(
+        default=None, sa_column=Column("custom_id", String(255, "utf8mb4_unicode_ci"))
+    )
+    updated_at: Optional[datetime] = Field(
+        default=None, sa_column=Column("updated_at", TIMESTAMP)
+    )
+
+    member_role: List["MemberRole"] = Relationship(back_populates="roles")
+    user_role: List["UserRole"] = Relationship(back_populates="role")
 
 
-# member_appテーブル
-class MemberApp(Base):
+class Users(SQLModel, table=True):
+    __table_args__ = (
+        Index("custom_id", "custom_id", unique=True),
+        Index("email", "email", unique=True),
+        Index("idx_users_custom_id", "custom_id"),
+    )
+
+    id: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            "id",
+            String(255, "utf8mb4_unicode_ci"),
+            primary_key=True,
+            server_default=text("'uuid()'"),
+        ),
+    )
+    name: str = Field(sa_column=Column("name", String(255, "utf8mb4_unicode_ci")))
+    password_hash: str = Field(
+        sa_column=Column("password_hash", String(255, "utf8mb4_unicode_ci"))
+    )
+    external_email: str = Field(
+        sa_column=Column("external_email", String(255, "utf8mb4_unicode_ci"))
+    )
+    period: str = Field(sa_column=Column("period", String(255, "utf8mb4_unicode_ci")))
+    is_system: int = Field(
+        sa_column=Column("is_system", TINYINT(1), server_default=text("'0'"))
+    )
+    custom_id: Optional[str] = Field(
+        default=None, sa_column=Column("custom_id", String(255, "utf8mb4_unicode_ci"))
+    )
+    email: Optional[str] = Field(
+        default=None, sa_column=Column("email", String(255, "utf8mb4_unicode_ci"))
+    )
+    joined_at: Optional[datetime] = Field(
+        default=None, sa_column=Column("joined_at", DateTime)
+    )
+    created_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(
+            "created_at", DateTime, server_default=text("CURRENT_TIMESTAMP")
+        ),
+    )
+    updated_at: Optional[datetime] = Field(
+        default=None, sa_column=Column("updated_at", DateTime)
+    )
+    is_enable: Optional[int] = Field(
+        default=None,
+        sa_column=Column("is_enable", TINYINT(1), server_default=text("'1'")),
+    )
+
+    auths: List["Auths"] = Relationship(back_populates="auth_user")
+    discords: List["Discords"] = Relationship(back_populates="user")
+    sessions: List["Sessions"] = Relationship(back_populates="user")
+    user_app: List["UserApp"] = Relationship(back_populates="user")
+    user_role: List["UserRole"] = Relationship(back_populates="user")
+
+
+class Auths(SQLModel, table=True):
+    __table_args__ = (
+        ForeignKeyConstraint(["app_id"], ["apps.id"], name="auths_ibfk_2"),
+        ForeignKeyConstraint(["auth_user_id"], ["users.id"], name="auths_ibfk_1"),
+        Index("app_id", "app_id"),
+        Index("auth_user_id", "auth_user_id"),
+    )
+
+    id: Optional[int] = Field(
+        default=None, sa_column=Column("id", Integer, primary_key=True)
+    )
+    auth_user_id: Optional[str] = Field(
+        default=None,
+        sa_column=Column("auth_user_id", String(255, "utf8mb4_unicode_ci")),
+    )
+    app_id: Optional[str] = Field(
+        default=None, sa_column=Column("app_id", String(255, "utf8mb4_unicode_ci"))
+    )
+    created_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(
+            "created_at", TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
+        ),
+    )
+    is_enable: Optional[int] = Field(
+        default=None, sa_column=Column("is_enable", TINYINT(1))
+    )
+
+    app: Optional["Apps"] = Relationship(back_populates="auths")
+    auth_user: Optional["Users"] = Relationship(back_populates="auths")
+    oidc_authorizations: List["OidcAuthorizations"] = Relationship(
+        back_populates="auth"
+    )
+
+
+class Discords(SQLModel, table=True):
+    __table_args__ = (
+        ForeignKeyConstraint(["user_id"], ["users.id"], name="discords_ibfk_1"),
+        Index("discord_id", "discord_id", unique=True),
+        Index("user_id", "user_id"),
+    )
+
+    id: Optional[int] = Field(
+        default=None, sa_column=Column("id", Integer, primary_key=True)
+    )
+    discord_id: str = Field(
+        sa_column=Column("discord_id", String(255, "utf8mb4_unicode_ci"))
+    )
+    user_id: str = Field(sa_column=Column("user_id", String(255, "utf8mb4_unicode_ci")))
+
+    user: Optional["Users"] = Relationship(back_populates="discords")
+
+
+class MemberApp(SQLModel, table=True):
     __tablename__ = "member_app"
+    __table_args__ = (
+        ForeignKeyConstraint(["app"], ["apps.id"], name="member_app_ibfk_1"),
+        ForeignKeyConstraint(["member"], ["members.id"], name="member_app_ibfk_2"),
+        Index("app", "app"),
+        Index("member", "member"),
+    )
 
-    id = mapped_column(Integer, primary_key=True, autoincrement=True)
-    app = mapped_column(String(255), ForeignKey("apps.id"))
-    member = mapped_column(String(255), ForeignKey("members.id"))
+    id: Optional[int] = Field(
+        default=None, sa_column=Column("id", Integer, primary_key=True)
+    )
+    app: Optional[str] = Field(
+        default=None, sa_column=Column("app", String(255, "utf8mb4_unicode_ci"))
+    )
+    member: Optional[str] = Field(
+        default=None, sa_column=Column("member", String(255, "utf8mb4_unicode_ci"))
+    )
+
+    apps: Optional["Apps"] = Relationship(back_populates="member_app")
+    members: Optional["Members"] = Relationship(back_populates="member_app")
+
+
+class MemberRole(SQLModel, table=True):
+    __tablename__ = "member_role"
+    __table_args__ = (
+        ForeignKeyConstraint(["member"], ["members.id"], name="member_role_ibfk_1"),
+        ForeignKeyConstraint(["role"], ["roles.id"], name="member_role_ibfk_2"),
+        Index("member", "member"),
+        Index("role", "role"),
+    )
+
+    id: Optional[int] = Field(
+        default=None, sa_column=Column("id", Integer, primary_key=True)
+    )
+    member: str = Field(sa_column=Column("member", String(255, "utf8mb4_unicode_ci")))
+    role: str = Field(sa_column=Column("role", String(255, "utf8mb4_unicode_ci")))
+
+    members: Optional["Members"] = Relationship(back_populates="member_role")
+    roles: Optional["Roles"] = Relationship(back_populates="member_role")
+
+
+class RedirectUris(SQLModel, table=True):
+    __tablename__ = "redirect_uris"
+    __table_args__ = (
+        ForeignKeyConstraint(["app_id"], ["apps.id"], name="redirect_uris_ibfk_1"),
+        Index("app_id", "app_id"),
+    )
+
+    id: Optional[int] = Field(
+        default=None, sa_column=Column("id", Integer, primary_key=True)
+    )
+    app_id: Optional[str] = Field(
+        default=None, sa_column=Column("app_id", String(255, "utf8mb4_unicode_ci"))
+    )
+    uri: Optional[str] = Field(
+        default=None, sa_column=Column("uri", String(255, "utf8mb4_unicode_ci"))
+    )
+    created_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(
+            "created_at", TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
+        ),
+    )
+
+    app: Optional["Apps"] = Relationship(back_populates="redirect_uris")
+
+
+class Sessions(SQLModel, table=True):
+    __table_args__ = (
+        ForeignKeyConstraint(["user_id"], ["users.id"], name="sessions_ibfk_1"),
+        Index("user_id", "user_id"),
+    )
+
+    id: Optional[int] = Field(
+        default=None, sa_column=Column("id", Integer, primary_key=True)
+    )
+    user_id: Optional[str] = Field(
+        default=None, sa_column=Column("user_id", String(255, "utf8mb4_unicode_ci"))
+    )
+    ip_address: Optional[str] = Field(
+        default=None, sa_column=Column("ip_address", String(255, "utf8mb4_unicode_ci"))
+    )
+    user_agent: Optional[str] = Field(
+        default=None, sa_column=Column("user_agent", String(255, "utf8mb4_unicode_ci"))
+    )
+    created_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(
+            "created_at", TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
+        ),
+    )
+    is_enable: Optional[int] = Field(
+        default=None, sa_column=Column("is_enable", TINYINT(1))
+    )
+
+    user: Optional["Users"] = Relationship(back_populates="sessions")
+
+
+class UserApp(SQLModel, table=True):
+    __tablename__ = "user_app"
+    __table_args__ = (
+        ForeignKeyConstraint(["app_id"], ["apps.id"], name="user_app_ibfk_1"),
+        ForeignKeyConstraint(["user_id"], ["users.id"], name="user_app_ibfk_2"),
+        Index("app_id", "app_id"),
+        Index("user_id", "user_id"),
+    )
+
+    id: Optional[int] = Field(
+        default=None, sa_column=Column("id", Integer, primary_key=True)
+    )
+    app_id: Optional[str] = Field(
+        default=None, sa_column=Column("app_id", String(255, "utf8mb4_unicode_ci"))
+    )
+    user_id: Optional[str] = Field(
+        default=None, sa_column=Column("user_id", String(255, "utf8mb4_unicode_ci"))
+    )
+
+    app: Optional["Apps"] = Relationship(back_populates="user_app")
+    user: Optional["Users"] = Relationship(back_populates="user_app")
+
+
+class UserRole(SQLModel, table=True):
+    __tablename__ = "user_role"
+    __table_args__ = (
+        ForeignKeyConstraint(["role_id"], ["roles.id"], name="user_role_ibfk_2"),
+        ForeignKeyConstraint(["user_id"], ["users.id"], name="user_role_ibfk_1"),
+        Index("role_id", "role_id"),
+        Index("user_id", "user_id"),
+    )
+
+    id: Optional[int] = Field(
+        default=None, sa_column=Column("id", Integer, primary_key=True)
+    )
+    user_id: str = Field(sa_column=Column("user_id", String(255, "utf8mb4_unicode_ci")))
+    role_id: str = Field(sa_column=Column("role_id", String(255, "utf8mb4_unicode_ci")))
+
+    role: Optional["Roles"] = Relationship(back_populates="user_role")
+    user: Optional["Users"] = Relationship(back_populates="user_role")
+
+
+class OidcAuthorizations(SQLModel, table=True):
+    __tablename__ = "oidc_authorizations"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["auth_id"], ["auths.id"], name="oidc_authorizations_ibfk_1"
+        ),
+        ForeignKeyConstraint(
+            ["code_id"], ["code.id"], name="oidc_authorizations_ibfk_3"
+        ),
+        ForeignKeyConstraint(
+            ["consent_id"], ["consents.id"], name="oidc_authorizations_ibfk_2"
+        ),
+        Index("auth_id", "auth_id"),
+        Index("code_id", "code_id", unique=True),
+        Index("consent_id", "consent_id"),
+    )
+
+    id: Optional[int] = Field(
+        default=None, sa_column=Column("id", Integer, primary_key=True)
+    )
+    auth_id: Optional[int] = Field(default=None, sa_column=Column("auth_id", Integer))
+    code_id: Optional[int] = Field(default=None, sa_column=Column("code_id", Integer))
+    consent_id: Optional[int] = Field(
+        default=None, sa_column=Column("consent_id", Integer)
+    )
+    created_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(
+            "created_at", TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
+        ),
+    )
+
+    auth: Optional["Auths"] = Relationship(back_populates="oidc_authorizations")
+    code: Optional["Code"] = Relationship(back_populates="oidc_authorizations")
+    consent: Optional["Consents"] = Relationship(back_populates="oidc_authorizations")
+    oidc_tokens: List["OidcTokens"] = Relationship(back_populates="oidc_authorization")
+
+
+class OidcTokens(SQLModel, table=True):
+    __tablename__ = "oidc_tokens"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["oidc_authorization_id"],
+            ["oidc_authorizations.id"],
+            name="oidc_tokens_ibfk_1",
+        ),
+        Index("access_token_id", "access_token_id", unique=True),
+        Index("oidc_authorization_id", "oidc_authorization_id", unique=True),
+        Index("refresh_token_id", "refresh_token_id", unique=True),
+    )
+
+    id: Optional[int] = Field(
+        default=None, sa_column=Column("id", Integer, primary_key=True)
+    )
+    oidc_authorization_id: Optional[int] = Field(
+        default=None, sa_column=Column("oidc_authorization_id", Integer)
+    )
+    access_token_id: Optional[int] = Field(
+        default=None, sa_column=Column("access_token_id", Integer)
+    )
+    refresh_token_id: Optional[int] = Field(
+        default=None, sa_column=Column("refresh_token_id", Integer)
+    )
+    is_enable: Optional[int] = Field(
+        default=None, sa_column=Column("is_enable", TINYINT(1))
+    )
+
+    oidc_authorization: Optional["OidcAuthorizations"] = Relationship(
+        back_populates="oidc_tokens"
+    )
+
+
+class AccessTokens(OidcTokens, table=True):
+    __tablename__ = "access_tokens"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["id"], ["oidc_tokens.access_token_id"], name="access_tokens_ibfk_1"
+        ),
+    )
+
+    id: Optional[int] = Field(
+        default=None, sa_column=Column("id", Integer, primary_key=True)
+    )
+    hash: Optional[str] = Field(
+        default=None, sa_column=Column("hash", String(255, "utf8mb4_unicode_ci"))
+    )
+    type: Optional[str] = Field(
+        default=None, sa_column=Column("type", String(255, "utf8mb4_unicode_ci"))
+    )
+    scope: Optional[str] = Field(
+        default=None, sa_column=Column("scope", String(255, "utf8mb4_unicode_ci"))
+    )
+    issued_at: Optional[datetime] = Field(
+        default=None, sa_column=Column("issued_at", TIMESTAMP)
+    )
+    exp: Optional[datetime] = Field(default=None, sa_column=Column("exp", TIMESTAMP))
+    client_id: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            "client_id", String(255, "utf8mb4_unicode_ci"), comment="アプリケーションID"
+        ),
+    )
+    user_id: Optional[str] = Field(
+        default=None, sa_column=Column("user_id", String(255, "utf8mb4_unicode_ci"))
+    )
+    revoked: Optional[int] = Field(
+        default=None, sa_column=Column("revoked", TINYINT(1))
+    )
+
+
+class RefreshTokens(OidcTokens, table=True):
+    __tablename__ = "refresh_tokens"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["id"], ["oidc_tokens.refresh_token_id"], name="refresh_tokens_ibfk_1"
+        ),
+    )
+
+    id: Optional[int] = Field(
+        default=None, sa_column=Column("id", Integer, primary_key=True)
+    )
+    hash: Optional[str] = Field(
+        default=None, sa_column=Column("hash", String(255, "utf8mb4_unicode_ci"))
+    )
+    type: Optional[str] = Field(
+        default=None, sa_column=Column("type", String(255, "utf8mb4_unicode_ci"))
+    )
+    scope: Optional[str] = Field(
+        default=None, sa_column=Column("scope", String(255, "utf8mb4_unicode_ci"))
+    )
+    issued_at: Optional[datetime] = Field(
+        default=None, sa_column=Column("issued_at", TIMESTAMP)
+    )
+    exp: Optional[datetime] = Field(default=None, sa_column=Column("exp", TIMESTAMP))
+    client_id: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            "client_id", String(255, "utf8mb4_unicode_ci"), comment="アプリケーションID"
+        ),
+    )
+    user_id: Optional[str] = Field(
+        default=None, sa_column=Column("user_id", String(255, "utf8mb4_unicode_ci"))
+    )
+    revoked: Optional[int] = Field(
+        default=None, sa_column=Column("revoked", TINYINT(1))
+    )
