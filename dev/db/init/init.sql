@@ -1,5 +1,5 @@
 CREATE TABLE `users` (
-    `id` varchar(255) PRIMARY KEY DEFAULT 'uuid()',,
+    `id` varchar(255) PRIMARY KEY DEFAULT 'uuid()',
     `custom_id` VARCHAR(255) UNIQUE,
     `name` VARCHAR(255) NOT NULL,
     `password_hash` VARCHAR(255) NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE `redirect_uris` (
 
 CREATE TABLE `auths` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `auth_user_id` int,
+  `auth_user_id` varchar(255),
   `app_id` varchar(255),
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `is_enable` bool
@@ -73,8 +73,8 @@ CREATE TABLE `access_tokens` (
   `scope` varchar(255),
   `issued_at` timestamp,
   `exp` timestamp,
-  `client_id` int,
-  `user_id` int,
+  `client_id` varchar(255) COMMENT 'アプリケーションID',
+  `user_id` varchar(255),
   `revoked` bool
 );
 
@@ -85,8 +85,8 @@ CREATE TABLE `refresh_tokens` (
   `scope` varchar(255),
   `issued_at` timestamp,
   `exp` timestamp,
-  `client_id` int,
-  `user_id` int,
+  `client_id` varchar(255) COMMENT 'アプリケーションID',
+  `user_id` varchar(255),
   `revoked` bool
 );
 
@@ -98,7 +98,7 @@ CREATE TABLE `consents` (
 
 CREATE TABLE `sessions` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `user_id` int,
+  `user_id` varchar(255),
   `ip_address` varchar(255),
   `user_agent` varchar(255),
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
@@ -118,28 +118,22 @@ CREATE TABLE `roles` (
 CREATE TABLE `discords` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
   `discord_id` varchar(255) UNIQUE NOT NULL,
-  `member` varchar(255) NOT NULL
+  `user_id` varchar(255) NOT NULL
 );
 
-CREATE TABLE `member_role` (
+CREATE TABLE `user_role` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `member` varchar(255) NOT NULL,
-  `role` varchar(255) NOT NULL
+  `user_id` varchar(255) NOT NULL,
+  `role_id` varchar(255) NOT NULL
 );
 
-CREATE TABLE `member_app` (
+CREATE TABLE `user_app` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `app` varchar(255),
-  `member` varchar(255)
+  `app_id` varchar(255),
+  `user_id` varchar(255)
 );
-
-ALTER TABLE `members` COMMENT = 'メンバー情報';
 
 ALTER TABLE `roles` COMMENT = 'ロール情報';
-
-ALTER TABLE `users` ADD FOREIGN KEY (`custom_id`) REFERENCES `members` (`custom_id`);
-
-ALTER TABLE `users` ADD FOREIGN KEY (`email`) REFERENCES `members` (`email`);
 
 ALTER TABLE `access_tokens` ADD FOREIGN KEY (`id`) REFERENCES `oidc_tokens` (`access_token_id`);
 
@@ -162,12 +156,12 @@ ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`code_id`) REFERENCES `code` 
 
 ALTER TABLE `oidc_tokens` ADD FOREIGN KEY (`oidc_authorization_id`) REFERENCES `oidc_authorizations` (`id`);
 
-ALTER TABLE `discords` ADD FOREIGN KEY (`member`) REFERENCES `members` (`id`);
+ALTER TABLE `discords` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
-ALTER TABLE `member_role` ADD FOREIGN KEY (`member`) REFERENCES `members` (`id`);
+ALTER TABLE `user_role` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
-ALTER TABLE `member_role` ADD FOREIGN KEY (`role`) REFERENCES `roles` (`id`);
+ALTER TABLE `user_role` ADD FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`);
 
-ALTER TABLE `member_app` ADD FOREIGN KEY (`app`) REFERENCES `apps` (`id`);
+ALTER TABLE `user_app` ADD FOREIGN KEY (`app_id`) REFERENCES `apps` (`id`);
 
-ALTER TABLE `member_app` ADD FOREIGN KEY (`member`) REFERENCES `members` (`id`);
+ALTER TABLE `user_app` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
