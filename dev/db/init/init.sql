@@ -1,4 +1,3 @@
--- usersテーブルのCREATE文
 CREATE TABLE `users` (
     `id` varchar(255) PRIMARY KEY DEFAULT 'uuid()',,
     `custom_id` VARCHAR(255) UNIQUE,
