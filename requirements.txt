@@ -30,3 +30,4 @@ urllib3==2.5.0
 uuid7==0.1.0
 uvicorn==0.34.0
 yarg==0.1.10
+sqlacodegen>=3.0.0

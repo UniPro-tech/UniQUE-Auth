@@ -36,6 +36,9 @@ dependencies = [
     "uvicorn==0.34.0",
     "yarg==0.1.10",
     "mysqlclient==2.2.7",
+    "sqlacodegen>=3.0.0",
+    "pymysql>=1.1.1",
+    "sqlmodel>=0.0.24",
 ]
 
 [build-system]
