@@ -10,16 +10,15 @@ import hashlib
 from uuid import uuid4
 import jwt
 from unique_api.app.model import (
-    AccessToken,
-    Member,
-    RefreshToken,
-    User,
-    Session as UserSession,
-    App,
-    Auth,
-    Consent,
-    OIDCAuthorization,
-    OIDCToken,
+    AccessTokens,
+    RefreshTokens,
+    Users,
+    Sessions as UserSession,
+    Apps,
+    Auths,
+    Consents,
+    OidcAuthorizations,
+    OidcTokens,
     Code,
 )
 import os
@@ -63,7 +62,7 @@ async def login_post(
     # 例えば、email と password を使ってユーザを検索し、認証が成功したら
     # セッションにユーザ情報を保存する
     validated_user = (
-        db.query(User)
+        db.query(Users)
         .filter_by(
             custom_id=custom_id,
             password_hash=hashlib.sha256(password.encode()).hexdigest(),
@@ -142,21 +141,21 @@ async def signup_post(
     print("Signup POST request received:", dict(request.query_params))
 
     # ユーザ名のメンバーの登録可否
-    existing_member = db.query(Member).filter_by(custom_id=custom_id).first()
+    existing_member = db.query(Users).filter_by(custom_id=custom_id).first()
     if not existing_member:
         return templates.TemplateResponse(
             "signup.html", {"request": request, "error": "Member is not registered"}
         )
 
     # ユーザ名の重複チェック
-    existing_user = db.query(User).filter_by(custom_id=custom_id).first()
+    existing_user = db.query(Users).filter_by(custom_id=custom_id).first()
     if existing_user:
         return templates.TemplateResponse(
             "signup.html", {"request": request, "error": "User already exists"}
         )
 
     # 新規ユーザの作成
-    new_user = User(
+    new_user = Users(
         custom_id=custom_id,
         is_enable=True,
         password_hash=hashlib.sha256(password.encode()).hexdigest(),
@@ -200,14 +199,14 @@ async def join_post(
     print("Signup POST request received:", dict(request.query_params))
 
     # ユーザ名の重複チェック
-    existing_member = db.query(Member).filter_by(custom_id=custom_id).first()
+    existing_member = db.query(Users).filter_by(custom_id=custom_id).first()
     if existing_member:
         return templates.TemplateResponse(
             "signup.html", {"request": request, "error": "User already exists"}
         )
 
     # 新規ユーザの作成
-    new_member = Member(
+    new_member = Users(
         custom_id=custom_id,
         name=name,
         email=email,
@@ -237,13 +236,13 @@ async def auth(request: Request, db: Session = Depends(get_db)):
     if not user_info:
         raise RedirectResponse(url="login", status_code=302)
 
-    user = db.query(User).filter_by(id=int(user_info)).first()
+    user = db.query(Users).filter_by(id=user_info).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     client_id = request.query_params.get("client_id")
 
-    app = db.query(App).filter_by(client_id=client_id).first()
+    app = db.query(Apps).filter_by(client_id=client_id).first()
     if not app:
         raise HTTPException(status_code=404, detail="Client not found")
 
@@ -261,14 +260,13 @@ async def auth(request: Request, db: Session = Depends(get_db)):
 
     # すでに認可されているか確認
     existing_auth = (
-        db.query(Auth).filter_by(auth_user_id=user.id, app_id=app.id).first()
+        db.query(Auths).filter_by(auth_user_id=user.id, app_id=app.id).first()
     )
     if existing_auth:
         # すでに認可されている場合は、scopeの権限を確認
-        scopes = [
-            oidc_token.consent.scope.split(" ")
-            for oidc_token in existing_auth.oidc_tokens
-        ]
+        scopes = []
+        for oidc_token in existing_auth.oidc_authorizations:
+            scopes.extend(oidc_token.consent.scope.split(" "))
         if set(request_query_params["scope"].split(" ")) <= set(scopes):
             print("Existing auth found:", existing_auth.id)
             # TODO: codeを生成してリダイレクト
@@ -317,30 +315,30 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     if not user_info:
         raise RedirectResponse(url="login", status_code=302)
 
-    user = db.query(User).filter_by(id=int(user_info)).first()
+    user = db.query(Users).filter_by(id=user_info).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    app = db.query(App).filter_by(client_id=auth_request["client_id"]).first()
+    app = db.query(Apps).filter_by(client_id=auth_request["client_id"]).first()
     if not app:
         raise HTTPException(status_code=404, detail="Client not found")
     # すでに認可されているか確認
     existing_auth = (
-        db.query(Auth).filter_by(auth_user_id=user.id, app_id=app.id).first()
+        db.query(Auths).filter_by(auth_user_id=user.id, app_id=app.id).first()
     )
     if existing_auth is None:
         # 新規認可を作成
-        existing_auth = Auth(auth_user_id=user.id, app_id=app.id)
+        existing_auth = Auths(auth_user_id=user.id, app_id=app.id)
         db.add(existing_auth)
         db.flush()
     # consentテーブルを作成
-    consent = Consent(scope=auth_request["scope"], is_enable=True)
+    consent = Consents(scope=auth_request["scope"], is_enable=True)
     code = Code(
         token=str(uuid4()),
         exp=datetime.now(timezone.utc) + timedelta(minutes=10),
         is_enable=True,
     )
-    oidc_auth = OIDCAuthorization(auth_id=existing_auth.id, code=code, consent=consent)
+    oidc_auth = OidcAuthorizations(auth_id=existing_auth.id, code=code, consent=consent)
 
     db.add_all([consent, code, oidc_auth])
     db.commit()
@@ -363,7 +361,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     if not user_info:
         raise RedirectResponse(url="/login", status_code=302)
 
-    user = db.query(User).filter_by(id=int(user_info)).first()
+    user = db.query(Users).filter_by(id=user_info).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -378,10 +376,10 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     db.add(code)
     db.commit()
 
-    oidc_auth: OIDCAuthorization = (
-        db.query(OIDCAuthorization).filter_by(code_id=code.id).first()
+    oidc_auth: OidcAuthorizations = (
+        db.query(OidcAuthorizations).filter_by(code_id=code.id).first()
     )
-    auth = db.query(Auth).filter_by(id=oidc_auth.auth_id).first()
+    auth = db.query(Auths).filter_by(id=oidc_auth.auth_id).first()
     consent = oidc_auth.consent
 
     # アプリケーションの認証情報を取得
@@ -397,7 +395,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
         "your-secret-key",
         algorithm="HS256",
     )
-    access_token = AccessToken(
+    access_token = AccessTokens(
         hash=access_token_hash,
         type="access",
         scope=consent.scope,
@@ -417,7 +415,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
         "your-secret-key",
         algorithm="HS256",
     )
-    refresh_token = RefreshToken(
+    refresh_token = RefreshTokens(
         hash=refresh_token_hash,
         type="refresh",
         scope=consent.scope,
@@ -430,7 +428,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     db.flush()
 
     # OIDC トークンを更新
-    oidc_token = OIDCToken(
+    oidc_token = OidcTokens(
         oidc_authorization_id=oidc_auth.id,
         access_token_id=access_token.id,
         refresh_token_id=refresh_token.id,
