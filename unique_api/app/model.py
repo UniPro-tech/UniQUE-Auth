@@ -13,6 +13,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 import datetime
+from datetime import datetime
 import ulid
 
 
@@ -37,7 +38,7 @@ class Apps(Base):
     client_secret: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     name: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     is_enable: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'1'"))
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+    created_at: Mapped[Optional[datetime]] = mapped_column(
         TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
     )
 
@@ -55,10 +56,10 @@ class Code(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     token: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     is_enable: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'1'"))
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+    created_at: Mapped[Optional[datetime]] = mapped_column(
         TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
     )
-    exp: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP)
+    exp: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP)
 
     oidc_authorizations: Mapped[List["OidcAuthorizations"]] = relationship(
         "OidcAuthorizations", back_populates="code"
@@ -94,7 +95,7 @@ class Roles(Base):
     is_enable: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'1'"))
     system: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'0'"))
     custom_id: Mapped[Optional[str]] = mapped_column(String(255, "utf8mb4_unicode_ci"))
-    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP)
 
     user_role: Mapped[List["UserRole"]] = relationship(
         "UserRole", back_populates="role"
@@ -119,11 +120,11 @@ class Users(Base):
     is_system: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'0'"))
     custom_id: Mapped[Optional[str]] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     email: Mapped[Optional[str]] = mapped_column(String(255, "utf8mb4_unicode_ci"))
-    joined_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+    joined_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    created_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, server_default=text("CURRENT_TIMESTAMP")
     )
-    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     is_enable: Mapped[Optional[int]] = mapped_column(
         TINYINT(1), server_default=text("'1'")
     )
@@ -150,7 +151,7 @@ class Auths(Base):
     auth_user_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     app_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     is_enable: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'1'"))
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+    created_at: Mapped[Optional[datetime]] = mapped_column(
         TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
     )
 
@@ -186,7 +187,7 @@ class RedirectUris(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     app_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     uri: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+    created_at: Mapped[Optional[datetime]] = mapped_column(
         TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
     )
 
@@ -205,7 +206,7 @@ class Sessions(Base):
     ip_address: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     user_agent: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     is_enable: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'1'"))
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+    created_at: Mapped[Optional[datetime]] = mapped_column(
         TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
     )
 
@@ -317,8 +318,8 @@ class AccessTokens(OidcTokens):
     hash: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     type: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     scope: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
-    issued_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP)
-    exp: Mapped[datetime.datetime] = mapped_column(TIMESTAMP)
+    issued_at: Mapped[datetime] = mapped_column(TIMESTAMP)
+    exp: Mapped[datetime] = mapped_column(TIMESTAMP)
     client_id: Mapped[str] = mapped_column(
         String(255, "utf8mb4_unicode_ci"), comment="アプリケーションID"
     )
@@ -338,8 +339,8 @@ class RefreshTokens(OidcTokens):
     hash: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     type: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     scope: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
-    issued_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP)
-    exp: Mapped[datetime.datetime] = mapped_column(TIMESTAMP)
+    issued_at: Mapped[datetime] = mapped_column(TIMESTAMP)
+    exp: Mapped[datetime] = mapped_column(TIMESTAMP)
     client_id: Mapped[str] = mapped_column(
         String(255, "utf8mb4_unicode_ci"), comment="アプリケーションID"
     )
