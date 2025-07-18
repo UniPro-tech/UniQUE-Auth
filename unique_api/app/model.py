@@ -201,7 +201,9 @@ class Sessions(Base):
         Index("user_id", "user_id"),
     )
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[str] = mapped_column(
+        String(255, "utf8mb4_unicode_ci"), primary_key=True, default=generate_ulid
+    )
     user_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     ip_address: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     user_agent: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
