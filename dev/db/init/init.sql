@@ -97,7 +97,7 @@ CREATE TABLE `consents` (
 );
 
 CREATE TABLE `sessions` (
-  `id` int PRIMARY KEY AUTO_INCREMENT,
+  `id` varchar(255) PRIMARY KEY,
   `user_id` varchar(255) NOT NULL,
   `ip_address` varchar(255) NOT NULL,
   `user_agent` varchar(255) NOT NULL,
@@ -228,6 +228,17 @@ DELIMITER ;
 DELIMITER //
 CREATE TRIGGER before_insert_roles
 BEFORE INSERT ON roles
+FOR EACH ROW
+BEGIN
+  IF NEW.id IS NULL THEN
+    SET NEW.id = gen_ulid();
+  END IF;
+END; //
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER before_insert_sessions
+BEFORE INSERT ON sessions
 FOR EACH ROW
 BEGIN
   IF NEW.id IS NULL THEN
