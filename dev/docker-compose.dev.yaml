@@ -22,6 +22,9 @@ services:
       uv venv .venv-compose && \
       uv sync --active && \
       uv run --active unique_api/app/main.py"
+    networks:
+      - unique
+
   api-dbsrv-01:
     image: mysql:8.4
     container_name: unique_db
@@ -38,6 +41,9 @@ services:
       - ./db/init:/docker-entrypoint-initdb.d
     ports:
       - "3306:3306"
+    networks:
+      - unique
+
   phpmyadmin:
     image: phpmyadmin
     depends_on:
@@ -47,3 +53,9 @@ services:
       - PMA_HOSTS=unique_db
     ports:
       - "3001:80"
+    networks:
+      - unique
+
+networks:
+  unique:
+    external: true
