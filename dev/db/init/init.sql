@@ -1,5 +1,5 @@
 CREATE TABLE `users` (
-    `id` varchar(255) PRIMARY KEY DEFAULT 'uuid()',
+    `id` varchar(255) PRIMARY KEY,
     `custom_id` VARCHAR(255) UNIQUE,
     `name` VARCHAR(255) NOT NULL,
     `password_hash` VARCHAR(255) NOT NULL,
@@ -15,44 +15,44 @@ CREATE TABLE `users` (
 
 CREATE INDEX idx_users_custom_id ON users(custom_id);
 CREATE TABLE `apps` (
-  `id` varchar(255) PRIMARY KEY DEFAULT 'uuid()',
-  `client_id` varchar(255) UNIQUE,
-  `client_secret` varchar(255),
-  `name` varchar(255),
+  `id` varchar(255) PRIMARY KEY,
+  `client_id` varchar(255) UNIQUE NOT NULL,
+  `client_secret` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-  `is_enable` bool
+  `is_enable` bool NOT NULL DEFAULT true
 );
 
 CREATE TABLE `redirect_uris` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `app_id` varchar(255),
-  `uri` varchar(255),
+  `app_id` varchar(255) NOT NULL,
+  `uri` varchar(255) NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE `auths` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `auth_user_id` varchar(255),
-  `app_id` varchar(255),
+  `auth_user_id` varchar(255) NOT NULL,
+  `app_id` varchar(255) NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-  `is_enable` bool
+  `is_enable` bool NOT NULL DEFAULT true
 );
 
 CREATE TABLE `oidc_authorizations` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `auth_id` int,
-  `code_id` int,
-  `consent_id` int,
+  `auth_id` int NOT NULL,
+  `code_id` int NOT NULL,
+  `consent_id` int NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (`code_id`)
 );
 
 CREATE TABLE `oidc_tokens` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `oidc_authorization_id` int,
-  `access_token_id` int,
-  `refresh_token_id` int,
-  `is_enable` bool,
+  `oidc_authorization_id` int NOT NULL,
+  `access_token_id` int NOT NULL,
+  `refresh_token_id` int NOT NULL,
+  `is_enable` bool NOT NULL DEFAULT true,
   UNIQUE (`access_token_id`),
   UNIQUE (`refresh_token_id`),
   UNIQUE (`oidc_authorization_id`)
@@ -60,34 +60,34 @@ CREATE TABLE `oidc_tokens` (
 
 CREATE TABLE `code` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `token` varchar(255),
+  `token` varchar(255) UNIQUE NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `exp` timestamp,
-  `is_enable` bool
+  `is_enable` bool NOT NULL DEFAULT true
 );
 
 CREATE TABLE `access_tokens` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `hash` varchar(255),
-  `type` varchar(255),
-  `scope` varchar(255),
-  `issued_at` timestamp,
-  `exp` timestamp,
-  `client_id` varchar(255) COMMENT 'アプリケーションID',
-  `user_id` varchar(255),
-  `revoked` bool
+  `hash` varchar(255) NOT NULL,
+  `type` varchar(255) NOT NULL,
+  `scope` varchar(255) NOT NULL,
+  `issued_at` timestamp NOT NULL,
+  `exp` timestamp NOT NULL,
+  `client_id` varchar(255) NOT NULL COMMENT 'アプリケーションID',
+  `user_id` varchar(255) NOT NULL,
+  `revoked` bool NOT NULL DEFAULT false
 );
 
 CREATE TABLE `refresh_tokens` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `hash` varchar(255),
-  `type` varchar(255),
-  `scope` varchar(255),
-  `issued_at` timestamp,
-  `exp` timestamp,
-  `client_id` varchar(255) COMMENT 'アプリケーションID',
-  `user_id` varchar(255),
-  `revoked` bool
+  `hash` varchar(255) NOT NULL,
+  `type` varchar(255) NOT NULL,
+  `scope` varchar(255) NOT NULL,
+  `issued_at` timestamp NOT NULL,
+  `exp` timestamp NOT NULL,
+  `client_id` varchar(255) NOT NULL COMMENT 'アプリケーションID',
+  `user_id` varchar(255) NOT NULL,
+  `revoked` bool NOT NULL DEFAULT false
 );
 
 CREATE TABLE `consents` (
@@ -98,15 +98,15 @@ CREATE TABLE `consents` (
 
 CREATE TABLE `sessions` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
-  `user_id` varchar(255),
-  `ip_address` varchar(255),
-  `user_agent` varchar(255),
+  `user_id` varchar(255) NOT NULL,
+  `ip_address` varchar(255) NOT NULL,
+  `user_agent` varchar(255) NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-  `is_enable` bool
+  `is_enable` bool NOT NULL DEFAULT true
 );
 
 CREATE TABLE `roles` (
-  `id` varchar(255) PRIMARY KEY DEFAULT 'uuid()',
+  `id` varchar(255) PRIMARY KEY,
   `custom_id` varchar(255) UNIQUE,
   `permissions` int NOT NULL DEFAULT 0,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -165,3 +165,73 @@ ALTER TABLE `user_role` ADD FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`);
 ALTER TABLE `user_app` ADD FOREIGN KEY (`app_id`) REFERENCES `apps` (`id`);
 
 ALTER TABLE `user_app` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+
+DELIMITER //
+CREATE FUNCTION to_crockford_b32 (src BIGINT, encoded_len INT)
+RETURNS TEXT DETERMINISTIC READS SQL DATA
+BEGIN
+  DECLARE result TEXT DEFAULT '';
+  DECLARE b32char CHAR(32) DEFAULT '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+  DECLARE i INT DEFAULT 0;
+
+  ENCODE: LOOP
+    SET i = i + 1;
+    SET result = CONCAT(SUBSTRING(b32char, (src MOD 32)+1, 1), result);
+    SET src = src DIV 32;
+    IF i < encoded_len THEN
+      ITERATE ENCODE;
+    END IF;
+    LEAVE ENCODE;
+  END LOOP ENCODE;
+
+  RETURN result;
+END; //
+
+CREATE FUNCTION gen_ulid ()
+RETURNS CHAR(26) NOT DETERMINISTIC READS SQL DATA
+BEGIN
+  DECLARE msec_ts BIGINT DEFAULT FLOOR(UNIX_TIMESTAMP(CURRENT_TIMESTAMP(4)) * 1000);
+  DECLARE rand CHAR(20) DEFAULT HEX(RANDOM_BYTES(10));
+  DECLARE rand_first BIGINT DEFAULT CONV(SUBSTRING(rand, 1, 10), 16, 10);
+  DECLARE rand_last BIGINT DEFAULT CONV(SUBSTRING(rand, 11, 10), 16, 10);
+  RETURN CONCAT(
+    to_crockford_b32(msec_ts, 10),
+    to_crockford_b32(rand_first, 8),
+    to_crockford_b32(rand_last, 8)
+  );
+END; //
+
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER before_insert_users
+BEFORE INSERT ON users
+FOR EACH ROW
+BEGIN
+  IF NEW.id IS NULL THEN
+    SET NEW.id = gen_ulid();
+  END IF;
+END; //
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER before_insert_apps
+BEFORE INSERT ON apps
+FOR EACH ROW
+BEGIN
+  IF NEW.id IS NULL THEN
+    SET NEW.id = gen_ulid();
+  END IF;
+END; //
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER before_insert_roles
+BEFORE INSERT ON roles
+FOR EACH ROW
+BEGIN
+  IF NEW.id IS NULL THEN
+    SET NEW.id = gen_ulid();
+  END IF;
+END; //
+DELIMITER ;
