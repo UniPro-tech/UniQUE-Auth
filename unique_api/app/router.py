@@ -22,6 +22,9 @@ from unique_api.app.model import (
     Code,
     Sessions
 )
+from unique_api.app.schema import (
+    AuthenticationRequest
+)
 import os
 
 
@@ -221,37 +224,36 @@ async def join_post(
 
 
 @router.get("/auth")
-async def auth(request: Request, db: Session = Depends(get_db)):
+async def auth(
+    request: Request,
+    params: AuthenticationRequest = Depends(),
+    db: Session = Depends(get_db)
+):
     """
     OIDC 認可フローのためのエンドポイント。
     """
-    print("Auth request received:", dict(request.query_params))
-    request_query_params = dict(request.query_params)
+    print("Auth request received:", params.model_dump)
     # セッションからユーザ情報を取得
     session_id = request.cookies.get("session_")
     session = db.query(Sessions).filter_by(id=session_id).first()
     # セッションが保持されていない場合はloginにリダイレクト
     if not session:
         login_action_url = "login"
-        if request_query_params:
-            login_action_url += f"?{urlencode(request_query_params)}"
+        login_action_url += f"?{urlencode(params.model_dump)}"
         raise RedirectResponse(url=login_action_url, status_code=302)
 
     user = db.query(Users).filter_by(id=session.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    client_id = request.query_params.get("client_id")
-
-    app = db.query(Apps).filter_by(client_id=client_id).first()
+    app = db.query(Apps).filter_by(client_id=params.client_id).first()
     if not app:
         raise HTTPException(status_code=404, detail="Client not found")
 
     # リダイレクト URI の検証
-    redirect_uri = request_query_params.get("redirect_uri")
-    if redirect_uri is not None:
+    if params.redirect_uri is not None:
         redirect_uris = [uri.uri for uri in app.redirect_uris]
-        if redirect_uri not in redirect_uris:
+        if params.redirect_uri not in redirect_uris:
             # リダイレクトURIが許可されていない場合はエラーを返す
             # TODO: RFC準拠になるように修正
             raise HTTPException(status_code=400, detail="Redirect URI not allowed")
@@ -268,7 +270,7 @@ async def auth(request: Request, db: Session = Depends(get_db)):
         scopes = []
         for oidc_token in existing_auth.oidc_authorizations:
             scopes.extend(oidc_token.consent.scope.split(" "))
-        if set(request_query_params["scope"].split(" ")) <= set(scopes):
+        if set(params.scope.split(" ")) <= set(scopes):
             print("Existing auth found:", existing_auth.id)
             # TODO: codeを生成してリダイレクト
             pass
@@ -277,10 +279,10 @@ async def auth(request: Request, db: Session = Depends(get_db)):
     # リクエストパラメータをセッションストレージに署名付きで保存する
     request.session["auth_request"] = {
         "client_id": app.client_id,
-        "redirect_uri": redirect_uri,
-        "scope": request_query_params.get("scope", "default"),
-        "state": request_query_params.get("state", str(uuid4())),
-        "response_type": request_query_params.get("response_type", "code"),
+        "redirect_uri": params.redirect_uri,
+        "scope": params.scope,
+        "state": params.state,
+        "response_type": params.response_type,
     }
     action_url = "auth/confirm"
     # 認可画面に必要な情報をテンプレートに渡す
@@ -289,8 +291,8 @@ async def auth(request: Request, db: Session = Depends(get_db)):
         "app": {
             "name": app.name,
             "client_id": app.client_id,
-            "redirect_uris": [uri.uri for uri in app.redirect_uris],
-            "scope": request_query_params.get("scope", "default"),
+            "redirect_uris": params.redirect_uri,
+            "scope": params.scope,
         },
         "user": {"name": user.custom_id, "id": user.id},
     }
