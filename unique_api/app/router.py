@@ -312,21 +312,21 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     print("Auth confirm request received:", dict(request.query_params))
     # セッションからリクエスト情報を取得
     auth_request = request.session.get("auth_request")
-    if not auth_request:
+    if auth_request is None:
         raise HTTPException(status_code=400, detail="No auth request found in session")
     # セッションチェック♪
     session_id = request.cookies.get("session_")
     session = db.query(Sessions).filter_by(id=session_id).first()
     # セッションが保持されていない場合はloginにリダイレクト
-    if not session:
+    if session is None:
         raise HTTPException(status_code=500, detail="Oops, we have a problem.")
 
     user = db.query(Users).filter_by(id=session.user_id).first()
-    if not user:
+    if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
     app = db.query(Apps).filter_by(client_id=auth_request["client_id"]).first()
-    if not app:
+    if app is None:
         raise HTTPException(status_code=404, detail="Client not found")
 
     # すでに認可されているか確認
