@@ -58,6 +58,7 @@ async def login_post(
     認証成功時はセッションにユーザ情報を保存し、リダイレクトする。
     """
     print("Login POST request received:", dict(request.query_params))
+    request_query_params = dict(request.query_params)
     # ここでユーザ認証を行う
     # 例えば、email と password を使ってユーザを検索し、認証が成功したら
     # セッションにユーザ情報を保存する
@@ -75,19 +76,13 @@ async def login_post(
         response = HTTPException(status_code=401, detail="Invalid username or password")
         return response
 
-    # 認証成功
-    request.session["user"] = (
-        f"{{'id': {validated_user.id}, 'name': {validated_user.custom_id}}}"
-    )
-
-    if dict(request.query_params) == {}:
-        redirect_url = "/"
-    # OIDC 認可フローの場合、リダイレクト先の URL に
-    elif dict(request.query_params).get(
-        "redirect_uri"
-    ):  # TODO:リダイレクト先の URI が指定されている場合
-        # リダイレクト先の URL にクエリパラメータを追加
+    # response_typeがサポートされているcodeか確認
+    response_type = request_query_params.get("response_type")
+    if type(response_type) is str:
         redirect_url = "auth?" + urlencode(dict(request.query_params))
+    else:
+        # OIDC認証ではない通常の認証であればルートページに飛ばす
+        redirect_url = "/"
 
     # セッションを作成
     session = UserSession(
@@ -99,7 +94,7 @@ async def login_post(
     db.commit()
     # リダイレクト
     response = RedirectResponse(url=redirect_url, status_code=302)
-    response.set_cookie(key="user_id", value=validated_user.id)
+    response.set_cookie(key="session_", value=session.id)
     return response
 
 
