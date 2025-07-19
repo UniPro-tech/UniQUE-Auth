@@ -353,7 +353,7 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     request.session.clear()
     print(f"http://localhost:8000/code?code={code.token}")
     return RedirectResponse(
-        url=f"{auth_request['redirect_uri']}?code={code.token}",
+        url=f"{auth_request['redirect_uri']}?code={code.token}&state={auth_request["state"]}",
         status_code=302,
     )
 
