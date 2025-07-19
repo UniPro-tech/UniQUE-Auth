@@ -20,6 +20,7 @@ from unique_api.app.model import (
     OidcAuthorizations,
     OidcTokens,
     Code,
+    Sessions
 )
 import os
 
@@ -105,7 +106,7 @@ async def logout(request: Request):
     """
     request.session.clear()
     response = RedirectResponse(url="/", status_code=302)
-    response.delete_cookie(key="user_id")
+    response.delete_cookie(key="session_")
     return response
 
 
@@ -227,11 +228,16 @@ async def auth(request: Request, db: Session = Depends(get_db)):
     print("Auth request received:", dict(request.query_params))
     request_query_params = dict(request.query_params)
     # セッションからユーザ情報を取得
-    user_info = request.cookies.get("user_id")
-    if not user_info:
-        raise RedirectResponse(url="login", status_code=302)
+    session_id = request.cookies.get("session_")
+    session = db.query(Sessions).filter_by(id=session_id).first()
+    # セッションが保持されていない場合はloginにリダイレクト
+    if not session:
+        login_action_url = "login"
+        if request_query_params:
+            login_action_url += f"?{urlencode(request_query_params)}"
+        raise RedirectResponse(url=login_action_url, status_code=302)
 
-    user = db.query(Users).filter_by(id=user_info).first()
+    user = db.query(Users).filter_by(id=session.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -306,11 +312,13 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     auth_request = request.session.get("auth_request")
     if not auth_request:
         raise HTTPException(status_code=400, detail="No auth request found in session")
-    user_info = request.cookies.get("user_id")
-    if not user_info:
-        raise RedirectResponse(url="login", status_code=302)
+    session_id = request.cookies.get("session_")
+    session = db.query(Sessions).filter_by(id=session_id).first()
+    # セッションが保持されていない場合はloginにリダイレクト
+    if not session:
+        raise HTTPException(status_code=500, detail="Oops, we have a problem.")
 
-    user = db.query(Users).filter_by(id=user_info).first()
+    user = db.query(Users).filter_by(id=session.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
