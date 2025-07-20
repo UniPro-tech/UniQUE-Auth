@@ -8,6 +8,7 @@ from sqlalchemy import (
     Integer,
     String,
     TIMESTAMP,
+    ForeignKey,
     text,
 )
 from sqlalchemy.dialects.mysql import TINYINT
@@ -298,22 +299,24 @@ class OidcTokens(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     oidc_authorization_id: Mapped[int] = mapped_column(Integer)
-    access_token_id: Mapped[int] = mapped_column(Integer)
-    refresh_token_id: Mapped[int] = mapped_column(Integer)
+    access_token_id: Mapped[int] = mapped_column(ForeignKey("access_tokens.id"))
+    refresh_token_id: Mapped[int] = mapped_column(ForeignKey("refresh_tokens.id"))
     is_enable: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'1'"))
 
     oidc_authorization: Mapped["OidcAuthorizations"] = relationship(
         "OidcAuthorizations", back_populates="oidc_tokens"
     )
+    access_token: Mapped["AccessTokens"] = relationship(
+        back_populates="oidc_token"
+    )
+    refresh_token: Mapped["RefreshTokens"] = relationship(
+        back_populates="oidc_token"
+    )
 
 
-class AccessTokens(OidcTokens):
+class AccessTokens(Base):
     __tablename__ = "access_tokens"
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ["id"], ["oidc_tokens.access_token_id"], name="access_tokens_ibfk_1"
-        ),
-    )
+    __table_args__ = ()
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     hash: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
@@ -327,14 +330,14 @@ class AccessTokens(OidcTokens):
     user_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     revoked: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'0'"))
 
+    oidc_token: Mapped["OidcTokens"] = relationship(
+        back_populates="access_token"
+    )
 
-class RefreshTokens(OidcTokens):
+
+class RefreshTokens(Base):
     __tablename__ = "refresh_tokens"
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ["id"], ["oidc_tokens.refresh_token_id"], name="refresh_tokens_ibfk_1"
-        ),
-    )
+    __table_args__ = ()
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     hash: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
@@ -347,3 +350,7 @@ class RefreshTokens(OidcTokens):
     )
     user_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     revoked: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'0'"))
+
+    oidc_token: Mapped["OidcTokens"] = relationship(
+        back_populates="refresh_token"
+    )
