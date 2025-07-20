@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
 from db import get_db
 import hashlib
+import os
 from uuid import uuid4
 import jwt
 from unique_api.app.model import (
@@ -25,7 +26,13 @@ from unique_api.app.model import (
 from unique_api.app.schema import (
     AuthenticationRequest
 )
-import os
+from unique_api.app.crud.auth import (
+    get_existing_auth
+)
+from unique_api.app.services.authorization import (
+    extract_authorized_scopes,
+    is_scope_authorized
+)
 
 
 router = APIRouter()
@@ -262,15 +269,11 @@ async def auth(
         raise HTTPException(status_code=400, detail="Redirect URI not provided")
 
     # すでに認可されているか確認
-    existing_auth = (
-        db.query(Auths).filter_by(auth_user_id=user.id, app_id=app.id).first()
-    )
+    existing_auth = get_existing_auth(db, user.id, app.client_id)
     if existing_auth:
         # すでに認可されている場合は、scopeの権限を確認
-        scopes = []
-        for oidc_token in existing_auth.oidc_authorizations:
-            scopes.extend(oidc_token.consent.scope.split(" "))
-        if set(params.scope.split(" ")) <= set(scopes):
+        scopes = extract_authorized_scopes(existing_auth)
+        if is_scope_authorized(params.scope, scopes):
             print("Existing auth found:", existing_auth.id)
             # TODO: codeを生成してリダイレクト
             pass
@@ -316,10 +319,12 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="No auth request found in session")
     # セッションチェック♪
     session_id = request.cookies.get("session_")
+    if session_id is None:
+        raise HTTPException(status_code=500, detail="Oops, we have a problem.")
     session = db.query(Sessions).filter_by(id=session_id).first()
     # セッションが保持されていない場合はloginにリダイレクト
     if session is None:
-        raise HTTPException(status_code=500, detail="Oops, we have a problem.")
+        raise HTTPException(status_code=404, detail="Oops, we have a problem.")
 
     user = db.query(Users).filter_by(id=session.user_id).first()
     if user is None:
