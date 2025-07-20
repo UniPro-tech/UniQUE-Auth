@@ -33,6 +33,7 @@ from unique_api.app.services.authorization import (
     get_or_create_auth,
     create_oidc_authorization
 )
+from unique_api.app.services.oauth_utils import validate_redirect_uri
 
 
 router = APIRouter()
@@ -258,15 +259,8 @@ async def auth(
         raise HTTPException(status_code=404, detail="Client not found")
 
     # リダイレクト URI の検証
-    if params.redirect_uri is not None:
-        redirect_uris = [uri.uri for uri in app.redirect_uris]
-        if params.redirect_uri not in redirect_uris:
-            # リダイレクトURIが許可されていない場合はエラーを返す
-            # TODO: RFC準拠になるように修正
-            raise HTTPException(status_code=400, detail="Redirect URI not allowed")
-    else:
-        # リダイレクト URI が指定されていない場合はエラーを返す
-        raise HTTPException(status_code=400, detail="Redirect URI not provided")
+    redirect_uris = [uri.uri for uri in app.redirect_uris]
+    validated_redirect_uri = validate_redirect_uri(params.redirect_uri, redirect_uris)
 
     # すでに認可されているか確認
     existing_auth = get_existing_auth(db, user.id, app.client_id)
@@ -275,14 +269,21 @@ async def auth(
         scopes = extract_authorized_scopes(existing_auth)
         if is_scope_authorized(params.scope, scopes):
             print("Existing auth found:", existing_auth.id)
-            # TODO: codeを生成してリダイレクト
-            pass
+            auth = get_or_create_auth(db, user.id, app.id)
+            oidc_auth = create_oidc_authorization(db, auth, params.scope)
+
+            request.session.clear()
+            print(f"http://localhost:8000/code?code={oidc_auth.code.token}")
+            return RedirectResponse(
+                url=f"{params.redirect_uri}?code={oidc_auth.code.token}&state={params.state}",
+                status_code=302,
+            )
 
     # 認可されていない場合は認可画面を表示
     # リクエストパラメータをセッションストレージに署名付きで保存する
     request.session["auth_request"] = {
         "client_id": app.client_id,
-        "redirect_uri": params.redirect_uri,
+        "redirect_uri": validated_redirect_uri,
         "scope": params.scope,
         "state": params.state,
         "response_type": params.response_type,
@@ -294,7 +295,7 @@ async def auth(
         "app": {
             "name": app.name,
             "client_id": app.client_id,
-            "redirect_uris": params.redirect_uri,
+            "redirect_uris": validated_redirect_uri,
             "scope": params.scope,
         },
         "user": {"name": user.custom_id, "id": user.id},
