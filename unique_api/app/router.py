@@ -240,15 +240,20 @@ async def auth(
     """
     OIDC 認可フローのためのエンドポイント。
     """
-    print("Auth request received:", params.model_dump)
+    print("Auth request received:", params.model_dump(exclude_none=True))
     # セッションからユーザ情報を取得
     session_id = request.cookies.get("session_")
+    if session_id is None:
+        login_action_url = "login"
+        login_action_url += f"?{urlencode(params.model_dump(exclude_none=True))}"
+        return RedirectResponse(url=login_action_url, status_code=302)
+
     session = db.query(Sessions).filter_by(id=session_id).first()
     # セッションが保持されていない場合はloginにリダイレクト
     if not session:
         login_action_url = "login"
-        login_action_url += f"?{urlencode(params.model_dump)}"
-        raise RedirectResponse(url=login_action_url, status_code=302)
+        login_action_url += f"?{urlencode(params.model_dump(exclude_none=True))}"
+        return RedirectResponse(url=login_action_url, status_code=302)
 
     user = db.query(Users).filter_by(id=session.user_id).first()
     if not user:
