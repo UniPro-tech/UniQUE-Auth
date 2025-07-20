@@ -88,7 +88,7 @@ class Roles(Base):
         String(255, "utf8mb4_unicode_ci"), primary_key=True, default=generate_ulid
     )
     permissions: Mapped[int] = mapped_column(Integer, server_default=text("'0'"))
-    created_at: Mapped[datetime.datetime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
     )
     is_enable: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'1'"))
@@ -269,7 +269,7 @@ class OidcAuthorizations(Base):
     auth_id: Mapped[int] = mapped_column(Integer)
     code_id: Mapped[int] = mapped_column(Integer)
     consent_id: Mapped[int] = mapped_column(Integer)
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+    created_at: Mapped[Optional[datetime]] = mapped_column(
         TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
     )
 
