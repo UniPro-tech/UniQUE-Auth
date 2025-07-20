@@ -2,7 +2,7 @@ CREATE TABLE `users` (
     `id` varchar(255) PRIMARY KEY,
     `custom_id` VARCHAR(255) UNIQUE,
     `name` VARCHAR(255) NOT NULL,
-    `password_hash` VARCHAR(255) NOT NULL,
+    `password_hash` VARCHAR(255) NULL,
     `email` VARCHAR(255) UNIQUE,
     `external_email` VARCHAR(255) NOT NULL,
     `period` VARCHAR(255) NOT NULL,
