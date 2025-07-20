@@ -12,7 +12,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-import datetime
 from datetime import datetime
 import ulid
 
