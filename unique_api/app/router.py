@@ -8,7 +8,6 @@ from datetime import datetime, timedelta, timezone
 from db import get_db
 import hashlib
 import os
-from uuid import uuid4
 import jwt
 from unique_api.app.model import (
     AccessTokens,
@@ -17,7 +16,6 @@ from unique_api.app.model import (
     Sessions as UserSession,
     Apps,
     Auths,
-    Consents,
     OidcAuthorizations,
     OidcTokens,
     Code,
@@ -31,7 +29,9 @@ from unique_api.app.crud.auth import (
 )
 from unique_api.app.services.authorization import (
     extract_authorized_scopes,
-    is_scope_authorized
+    is_scope_authorized,
+    get_or_create_auth,
+    create_oidc_authorization
 )
 
 
@@ -335,30 +335,13 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Client not found")
 
     # すでに認可されているか確認
-    existing_auth = (
-        db.query(Auths).filter_by(auth_user_id=user.id, app_id=app.id).first()
-    )
-    if existing_auth is None:
-        # 新規認可を作成
-        existing_auth = Auths(auth_user_id=user.id, app_id=app.id)
-        db.add(existing_auth)
-        db.flush()
-    # consentテーブルを作成
-    consent = Consents(scope=auth_request["scope"], is_enable=True)
-    code = Code(
-        token=str(uuid4()),
-        exp=datetime.now(timezone.utc) + timedelta(minutes=10),
-        is_enable=True,
-    )
-    oidc_auth = OidcAuthorizations(auth_id=existing_auth.id, code=code, consent=consent)
-
-    db.add_all([consent, code, oidc_auth])
-    db.commit()
+    auth = get_or_create_auth(db, user.id, app.id)
+    oidc_auth = create_oidc_authorization(db, auth, auth_request["scope"])
 
     request.session.clear()
-    print(f"http://localhost:8000/code?code={code.token}")
+    print(f"http://localhost:8000/code?code={oidc_auth.code.token}")
     return RedirectResponse(
-        url=f"{auth_request['redirect_uri']}?code={code.token}&state={auth_request["state"]}",
+        url=f"{auth_request['redirect_uri']}?code={oidc_auth.code.token}&state={auth_request["state"]}",
         status_code=302,
     )
 
