@@ -48,7 +48,7 @@ CREATE TABLE `oidc_authorizations` (
   UNIQUE (`code_id`)
 );
 
-CREATE TABLE `oidc_tokens` (
+CREATE TABLE `token_sets` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
   `oidc_authorization_id` int NOT NULL,
   `access_token_id` int NOT NULL,
@@ -86,6 +86,24 @@ CREATE TABLE `refresh_tokens` (
   `issued_at` timestamp NOT NULL,
   `exp` timestamp NOT NULL,
   `client_id` varchar(255) NOT NULL COMMENT 'アプリケーションID',
+  `user_id` varchar(255) NOT NULL,
+  `revoked` bool NOT NULL DEFAULT false
+);
+
+CREATE TABLE `id_tokens` (
+  `id` int PRIMARY KEY AUTO_INCREMENT,
+  `hash` varchar(255) NOT NULL,
+  `type` varchar(255) NOT NULL,
+  `scope` varchar(255) NOT NULL,
+  `issued_at` timestamp NOT NULL,
+  `exp` timestamp NOT NULL,
+  `client_id` varchar(255) NOT NULL COMMENT 'アプリケーションID',
+  `aud` varchar(255) NOT NULL,
+  `nonce` varchar(255) NULL,
+  `auth_time` timestamp NULL,
+  `acr` varchar(255) NULL,
+  `amr` varchar(255) NULL,  -- JSONでもよい
+  `jti` varchar(64) UNIQUE NOT NULL,
   `user_id` varchar(255) NOT NULL,
   `revoked` bool NOT NULL DEFAULT false
 );
@@ -135,9 +153,9 @@ CREATE TABLE `user_app` (
 
 ALTER TABLE `roles` COMMENT = 'ロール情報';
 
-ALTER TABLE `oidc_tokens` ADD FOREIGN KEY (`access_token_id`) REFERENCES `access_tokens` (`id`);
+ALTER TABLE `token_sets` ADD FOREIGN KEY (`access_token_id`) REFERENCES `access_tokens` (`id`);
 
-ALTER TABLE `oidc_tokens` ADD FOREIGN KEY (`refresh_token_id`) REFERENCES `refresh_tokens` (`id`);
+ALTER TABLE `token_sets` ADD FOREIGN KEY (`refresh_token_id`) REFERENCES `refresh_tokens` (`id`);
 
 ALTER TABLE `auths` ADD FOREIGN KEY (`auth_user_id`) REFERENCES `users` (`id`);
 
@@ -153,7 +171,7 @@ ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`consent_id`) REFERENCES `con
 
 ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`code_id`) REFERENCES `code` (`id`);
 
-ALTER TABLE `oidc_tokens` ADD FOREIGN KEY (`oidc_authorization_id`) REFERENCES `oidc_authorizations` (`id`);
+ALTER TABLE `token_sets` ADD FOREIGN KEY (`oidc_authorization_id`) REFERENCES `oidc_authorizations` (`id`);
 
 ALTER TABLE `discords` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 

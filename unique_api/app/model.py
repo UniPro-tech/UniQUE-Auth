@@ -280,18 +280,18 @@ class OidcAuthorizations(Base):
     consent: Mapped["Consents"] = relationship(
         "Consents", back_populates="oidc_authorizations"
     )
-    oidc_tokens: Mapped[List["OidcTokens"]] = relationship(
-        "OidcTokens", back_populates="oidc_authorization"
+    token_sets: Mapped[List["TokenSets"]] = relationship(
+        "TokenSets", back_populates="oidc_authorization"
     )
 
 
-class OidcTokens(Base):
-    __tablename__ = "oidc_tokens"
+class TokenSets(Base):
+    __tablename__ = "token_sets"
     __table_args__ = (
         ForeignKeyConstraint(
             ["oidc_authorization_id"],
             ["oidc_authorizations.id"],
-            name="oidc_tokens_ibfk_1",
+            name="token_sets_ibfk_1",
         ),
         Index("oidc_authorization_id", "oidc_authorization_id", unique=True)
     )
@@ -300,16 +300,20 @@ class OidcTokens(Base):
     oidc_authorization_id: Mapped[int] = mapped_column(Integer)
     access_token_id: Mapped[int] = mapped_column(ForeignKey("access_tokens.id"))
     refresh_token_id: Mapped[int] = mapped_column(ForeignKey("refresh_tokens.id"))
+    id_token_id: Mapped[int] = mapped_column(ForeignKey("id_tokens.id"))
     is_enable: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'1'"))
 
     oidc_authorization: Mapped["OidcAuthorizations"] = relationship(
-        "OidcAuthorizations", back_populates="oidc_tokens"
+        "OidcAuthorizations", back_populates="token_sets"
     )
     access_token: Mapped["AccessTokens"] = relationship(
-        back_populates="oidc_token"
+        back_populates="token_set"
     )
     refresh_token: Mapped["RefreshTokens"] = relationship(
-        back_populates="oidc_token"
+        back_populates="token_set"
+    )
+    id_token: Mapped["IDTokens"] = relationship(
+        back_populates="token_set"
     )
 
 
@@ -328,7 +332,7 @@ class AccessTokens(Base):
     user_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     revoked: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'0'"))
 
-    oidc_token: Mapped["OidcTokens"] = relationship(
+    token_set: Mapped["TokenSets"] = relationship(
         back_populates="access_token"
     )
 
@@ -347,6 +351,31 @@ class RefreshTokens(Base):
     user_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     revoked: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'0'"))
 
-    oidc_token: Mapped["OidcTokens"] = relationship(
+    token_set: Mapped["TokenSets"] = relationship(
         back_populates="refresh_token"
+    )
+
+
+class IDTokens(Base):
+    __tablename__ = "id_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    hash: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
+    type: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
+    issued_at: Mapped[datetime] = mapped_column(TIMESTAMP)
+    exp: Mapped[datetime] = mapped_column(TIMESTAMP)
+    client_id: Mapped[str] = mapped_column(
+        String(255, "utf8mb4_unicode_ci"), comment="アプリケーションID"
+    )
+    user_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
+    aud: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
+    nonce: Mapped[Optional[str]] = mapped_column(String(255, "utf8mb4_unicode_ci"), nullable=True)
+    auth_time: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    acr: Mapped[Optional[str]] = mapped_column(String(255, "utf8mb4_unicode_ci"), nullable=True)
+    amr: Mapped[Optional[str]] = mapped_column(String(255, "utf8mb4_unicode_ci"), nullable=True)  # JSONでもよい
+    jti: Mapped[str] = mapped_column(String(64, "utf8mb4_unicode_ci"), unique=True)
+    revoked: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'0'"))
+
+    token_set: Mapped["TokenSets"] = relationship(
+        back_populates="id_token"
     )
