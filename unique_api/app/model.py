@@ -35,6 +35,7 @@ class Apps(Base):
         String(255, "utf8mb4_unicode_ci"), primary_key=True, default=generate_ulid
     )
     client_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
+    aud: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     client_secret: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     name: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     is_enable: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'1'"))
