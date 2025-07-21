@@ -11,6 +11,7 @@ def create_test_data(db: Session):
         app = Apps(
             client_id="admin_app",
             client_secret="password",
+            aud="auth.admin.uniproject.jp",
             name="アドミンアプリケーション",
             is_enable=False,
         )
