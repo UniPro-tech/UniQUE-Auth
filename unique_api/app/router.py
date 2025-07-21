@@ -387,10 +387,10 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     issued_at = datetime.now(timezone.utc)
     access_token_hash = jwt.encode(
         {
-            "user_id": user.id,
-            "app_id": auth.app_id,
+            "iss": "https://auth.uniproject.jp",
+            "sub": user.id,
+            "aud": auth.app_id,
             "scope": consent.scope,
-            "issued_at": str(issued_at),
             "exp": str(issued_at + timedelta(minutes=60)),
         },
         "your-secret-key",
@@ -407,10 +407,9 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     )
     refresh_token_hash = jwt.encode(
         {
-            "user_id": user.id,
-            "app_id": auth.app_id,
-            "scope": consent.scope,
-            "issued_at": str(issued_at),
+            "iss": "https://auth.uniproject.jp",
+            "sub": user.id,
+            "aud": auth.app_id,
             "exp": str(issued_at + timedelta(days=30)),
         },
         "your-secret-key",
