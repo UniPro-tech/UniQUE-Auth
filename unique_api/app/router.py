@@ -358,13 +358,6 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     OIDC 認可コードを取得するエンドポイント。
     """
     print("Get code request received:", dict(request.query_params))
-    user_info = request.cookies.get("user_id")
-    if not user_info:
-        raise RedirectResponse(url="/login", status_code=302)
-
-    user = db.query(Users).filter_by(id=user_info).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
 
     qp_code = request.query_params.get("code")
     if not qp_code:
@@ -376,11 +369,12 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     code.is_enable = False
     db.add(code)
     db.commit()
-
     oidc_auth: OidcAuthorizations = (
         db.query(OidcAuthorizations).filter_by(code_id=code.id).first()
     )
     auth = db.query(Auths).filter_by(id=oidc_auth.auth_id).first()
+    user = db.query(Users).filter_by(id=auth.auth_user_id).first()
+
     consent = oidc_auth.consent
     app: Apps = db.query(Apps).filter_by(id=auth.app_id).first()
     # アプリケーションの認証情報を取得
@@ -398,13 +392,14 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
         algorithm="HS256",
     )
     access_token = AccessTokens(
-        hash=access_token_hash,
+        hash=hashlib.sha256(access_token_hash.encode()).hexdigest(),
         type="access",
         scope=consent.scope,
         issued_at=issued_at,
         exp=issued_at + timedelta(minutes=60),  # 1時間有効
         client_id=auth.app_id,
         user_id=user.id,
+        revoked=False,
     )
     refresh_token_hash = jwt.encode(
         {
@@ -418,13 +413,13 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
         algorithm="HS256",
     )
     refresh_token = RefreshTokens(
-        hash=refresh_token_hash,
+        hash=hashlib.sha256(refresh_token_hash.encode()).hexdigest(),
         type="refresh",
-        scope=consent.scope,
         issued_at=issued_at,
         exp=issued_at + timedelta(days=30),  # 30日有効
         client_id=auth.app_id,
         user_id=user.id,
+        revoked=False,
     )
     db.add_all([access_token, refresh_token])
     db.flush()
