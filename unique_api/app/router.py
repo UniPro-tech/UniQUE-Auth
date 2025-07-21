@@ -379,7 +379,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     app: Apps = db.query(Apps).filter_by(id=auth.app_id).first()
     # アプリケーションの認証情報を取得
     issued_at = datetime.now(timezone.utc)
-    access_token_hash = jwt.encode(
+    access_token_jwt = jwt.encode(
         {
             "iss": "https://auth.uniproject.jp",
             "sub": user.id,
@@ -392,7 +392,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
         algorithm="HS256",
     )
     access_token = AccessTokens(
-        hash=hashlib.sha256(access_token_hash.encode()).hexdigest(),
+        hash=hashlib.sha256(access_token_jwt.encode()).hexdigest(),
         type="access",
         scope=consent.scope,
         issued_at=issued_at,
@@ -401,7 +401,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
         user_id=user.id,
         revoked=False,
     )
-    refresh_token_hash = jwt.encode(
+    refresh_token_jwt = jwt.encode(
         {
             "iss": "https://auth.uniproject.jp",
             "sub": user.id,
@@ -413,7 +413,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
         algorithm="HS256",
     )
     refresh_token = RefreshTokens(
-        hash=hashlib.sha256(refresh_token_hash.encode()).hexdigest(),
+        hash=hashlib.sha256(refresh_token_jwt.encode()).hexdigest(),
         type="refresh",
         issued_at=issued_at,
         exp=issued_at + timedelta(days=30),  # 30日有効
@@ -434,9 +434,9 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     db.commit()
 
     token_response = {
-        "access_token": access_token.hash,
+        "access_token": access_token_jwt,
         "token_type": "Bearer",
-        "refresh_token": refresh_token.hash,
+        "refresh_token": refresh_token_jwt,
         # id_tokenをつける
     }
     return JSONResponse(token_response)
