@@ -316,7 +316,6 @@ class OidcTokens(Base):
 
 class AccessTokens(Base):
     __tablename__ = "access_tokens"
-    __table_args__ = ()
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     hash: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
@@ -337,12 +336,10 @@ class AccessTokens(Base):
 
 class RefreshTokens(Base):
     __tablename__ = "refresh_tokens"
-    __table_args__ = ()
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     hash: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     type: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
-    scope: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     issued_at: Mapped[datetime] = mapped_column(TIMESTAMP)
     exp: Mapped[datetime] = mapped_column(TIMESTAMP)
     client_id: Mapped[str] = mapped_column(
