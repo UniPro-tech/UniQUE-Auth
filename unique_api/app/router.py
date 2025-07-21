@@ -382,14 +382,15 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     )
     auth = db.query(Auths).filter_by(id=oidc_auth.auth_id).first()
     consent = oidc_auth.consent
-
+    app: Apps = db.query(Apps).filter_by(id=auth.app_id).first()
     # アプリケーションの認証情報を取得
     issued_at = datetime.now(timezone.utc)
     access_token_hash = jwt.encode(
         {
             "iss": "https://auth.uniproject.jp",
             "sub": user.id,
-            "aud": auth.app_id,
+            "aud": app.aud,
+            "client_id": auth.app_id,
             "scope": consent.scope,
             "exp": str(issued_at + timedelta(minutes=60)),
         },
@@ -409,7 +410,8 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
         {
             "iss": "https://auth.uniproject.jp",
             "sub": user.id,
-            "aud": auth.app_id,
+            "client_id": auth.app_id,
+            "aud": app.aud,
             "exp": str(issued_at + timedelta(days=30)),
         },
         "your-secret-key",
