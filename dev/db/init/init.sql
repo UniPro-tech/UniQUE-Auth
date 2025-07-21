@@ -6,7 +6,7 @@ CREATE TABLE `users` (
     `email` VARCHAR(255) UNIQUE,
     `external_email` VARCHAR(255) NOT NULL,
     `period` VARCHAR(255) NOT NULL,
-    `joined_at` DATETIME,
+    `joined_at` DATETIME NULL,
     `is_system` BOOLEAN NOT NULL DEFAULT FALSE,
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME,
