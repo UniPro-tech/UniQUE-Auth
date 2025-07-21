@@ -17,7 +17,7 @@ from unique_api.app.model import (
     Apps,
     Auths,
     OidcAuthorizations,
-    OidcTokens,
+    TokenSets,
     Code,
     Sessions
 )
@@ -425,12 +425,12 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     db.flush()
 
     # OIDC トークンを更新
-    oidc_token = OidcTokens(
+    token_set = TokenSets(
         oidc_authorization_id=oidc_auth.id,
         access_token_id=access_token.id,
         refresh_token_id=refresh_token.id,
     )
-    db.add(oidc_token)
+    db.add(token_set)
     db.commit()
 
     token_response = {
