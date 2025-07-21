@@ -82,7 +82,6 @@ CREATE TABLE `refresh_tokens` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
   `hash` varchar(255) NOT NULL,
   `type` varchar(255) NOT NULL,
-  `scope` varchar(255) NOT NULL,
   `issued_at` timestamp NOT NULL,
   `exp` timestamp NOT NULL,
   `client_id` varchar(255) NOT NULL COMMENT 'アプリケーションID',
