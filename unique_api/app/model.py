@@ -293,9 +293,7 @@ class OidcTokens(Base):
             ["oidc_authorizations.id"],
             name="oidc_tokens_ibfk_1",
         ),
-        Index("access_token_id", "access_token_id", unique=True),
-        Index("oidc_authorization_id", "oidc_authorization_id", unique=True),
-        Index("refresh_token_id", "refresh_token_id", unique=True),
+        Index("oidc_authorization_id", "oidc_authorization_id", unique=True)
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

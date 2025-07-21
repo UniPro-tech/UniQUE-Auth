@@ -135,10 +135,9 @@ CREATE TABLE `user_app` (
 
 ALTER TABLE `roles` COMMENT = 'ロール情報';
 
-ALTER TABLE `access_tokens` ADD FOREIGN KEY (`id`) REFERENCES `oidc_tokens` (`access_token_id`);
+ALTER TABLE `oidc_tokens` ADD FOREIGN KEY (`access_token_id`) REFERENCES `access_tokens` (`id`);
 
-ALTER TABLE `refresh_tokens` ADD FOREIGN KEY (`id`) REFERENCES `oidc_tokens` (`refresh_token_id`);
-
+ALTER TABLE `oidc_tokens` ADD FOREIGN KEY (`refresh_token_id`) REFERENCES `refresh_tokens` (`id`);
 
 ALTER TABLE `auths` ADD FOREIGN KEY (`auth_user_id`) REFERENCES `users` (`id`);
 
