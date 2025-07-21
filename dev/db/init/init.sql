@@ -17,6 +17,7 @@ CREATE INDEX idx_users_custom_id ON users(custom_id);
 CREATE TABLE `apps` (
   `id` varchar(255) PRIMARY KEY,
   `client_id` varchar(255) UNIQUE NOT NULL,
+  `aud` varchar(255) UNIQUE NOT NULL,
   `client_secret` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
