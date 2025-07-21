@@ -225,7 +225,7 @@ CREATE TRIGGER before_insert_users
 BEFORE INSERT ON users
 FOR EACH ROW
 BEGIN
-  IF NEW.id IS NULL THEN
+  IF NEW.id IS NULL OR NEW.id = '' THEN
     SET NEW.id = gen_ulid();
   END IF;
 END; //
@@ -236,7 +236,7 @@ CREATE TRIGGER before_insert_apps
 BEFORE INSERT ON apps
 FOR EACH ROW
 BEGIN
-  IF NEW.id IS NULL THEN
+  IF NEW.id IS NULL OR NEW.id = '' THEN
     SET NEW.id = gen_ulid();
   END IF;
 END; //
@@ -247,7 +247,7 @@ CREATE TRIGGER before_insert_roles
 BEFORE INSERT ON roles
 FOR EACH ROW
 BEGIN
-  IF NEW.id IS NULL THEN
+  IF NEW.id IS NULL OR NEW.id = '' THEN
     SET NEW.id = gen_ulid();
   END IF;
 END; //
@@ -258,7 +258,7 @@ CREATE TRIGGER before_insert_sessions
 BEFORE INSERT ON sessions
 FOR EACH ROW
 BEGIN
-  IF NEW.id IS NULL THEN
+  IF NEW.id IS NULL OR NEW.id = '' THEN
     SET NEW.id = gen_ulid();
   END IF;
 END; //
