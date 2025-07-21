@@ -25,6 +25,3 @@ class AuthenticationRequest(BaseModel):
 
     # Optional extension fields
     audience: Optional[str] = Field(None, description="Targeted resource server (optional extension)")
-
-    class Config:
-        extra = "allow"
