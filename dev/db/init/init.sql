@@ -120,9 +120,9 @@ CREATE TABLE `sessions` (
   `ip_address` varchar(255) NOT NULL,
   `user_agent` varchar(255) NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-  `exp` timestamp NOT NULL,
+  `expires_at` timestamp NOT NULL,
   `is_enable` bool NOT NULL DEFAULT true
-) TTL = 'exp';
+);
 
 CREATE TABLE `roles` (
   `id` varchar(255) PRIMARY KEY,
@@ -264,3 +264,10 @@ BEGIN
   END IF;
 END; //
 DELIMITER ;
+
+SET GLOBAL event_scheduler = ON;
+
+CREATE EVENT delete_expired_sessions
+ON SCHEDULE EVERY 1 HOUR
+DO
+  DELETE FROM sessions WHERE expires_at < NOW();
