@@ -56,6 +56,7 @@ class Code(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     token: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
+    nonce: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     is_enable: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'1'"))
     created_at: Mapped[Optional[datetime]] = mapped_column(
         TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
@@ -208,6 +209,7 @@ class Sessions(Base):
     user_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     ip_address: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     user_agent: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
+    exp: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP)
     is_enable: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'1'"))
     created_at: Mapped[Optional[datetime]] = mapped_column(
         TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
