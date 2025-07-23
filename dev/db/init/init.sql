@@ -68,7 +68,7 @@ CREATE TABLE `code` (
 );
 
 CREATE TABLE `access_tokens` (
-  `id` int PRIMARY KEY AUTO_INCREMENT,
+    `id` varchar(255) PRIMARY KEY,
   `hash` varchar(255) NOT NULL,
   `type` varchar(255) NOT NULL,
   `scope` varchar(255) NOT NULL,
@@ -80,7 +80,7 @@ CREATE TABLE `access_tokens` (
 );
 
 CREATE TABLE `refresh_tokens` (
-  `id` int PRIMARY KEY AUTO_INCREMENT,
+  `id` varchar(255) PRIMARY KEY,
   `hash` varchar(255) NOT NULL,
   `type` varchar(255) NOT NULL,
   `issued_at` timestamp NOT NULL,
@@ -91,7 +91,7 @@ CREATE TABLE `refresh_tokens` (
 );
 
 CREATE TABLE `id_tokens` (
-  `id` int PRIMARY KEY AUTO_INCREMENT,
+  `id` varchar(255) PRIMARY KEY,
   `hash` varchar(255) NOT NULL,
   `type` varchar(255) NOT NULL,
   `scope` varchar(255) NOT NULL,

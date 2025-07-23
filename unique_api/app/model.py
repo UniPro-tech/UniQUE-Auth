@@ -322,7 +322,9 @@ class TokenSets(Base):
 class AccessTokens(Base):
     __tablename__ = "access_tokens"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[str] = mapped_column(
+        String(255, "utf8mb4_unicode_ci"), primary_key=True, default=generate_ulid
+    )
     hash: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     type: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     scope: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
@@ -342,7 +344,9 @@ class AccessTokens(Base):
 class RefreshTokens(Base):
     __tablename__ = "refresh_tokens"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[str] = mapped_column(
+        String(255, "utf8mb4_unicode_ci"), primary_key=True, default=generate_ulid
+    )
     hash: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     type: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     issued_at: Mapped[datetime] = mapped_column(TIMESTAMP)
@@ -361,7 +365,9 @@ class RefreshTokens(Base):
 class IDTokens(Base):
     __tablename__ = "id_tokens"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[str] = mapped_column(
+        String(255, "utf8mb4_unicode_ci"), primary_key=True, default=generate_ulid
+    )
     hash: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     type: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     issued_at: Mapped[datetime] = mapped_column(TIMESTAMP)
