@@ -97,7 +97,6 @@ CREATE TABLE `id_tokens` (
   `id` varchar(255) PRIMARY KEY,
   `hash` varchar(255) NOT NULL,
   `type` varchar(255) NOT NULL,
-  `scope` varchar(255) NOT NULL,
   `issued_at` timestamp NOT NULL,
   `exp` timestamp NOT NULL,
   `client_id` varchar(255) NOT NULL COMMENT 'アプリケーションID',
@@ -122,7 +121,7 @@ CREATE TABLE `sessions` (
   `ip_address` varchar(255) NOT NULL,
   `user_agent` varchar(255) NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-  `expires_at` timestamp NOT NULL,
+  `expires_at` timestamp,
   `is_enable` bool NOT NULL DEFAULT true
 );
 
