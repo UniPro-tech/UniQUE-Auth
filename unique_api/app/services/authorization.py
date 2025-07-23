@@ -31,12 +31,16 @@ def get_or_create_auth(db: Session, user_id: int, app_id: str) -> Auths:
 
 
 def create_oidc_authorization(
-    db: Session, auth: Auths, scope: str, nonce: str | None = None
+    db: Session, auth: Auths, scope: str, created_at: datetime,
+    nonce: str | None = None, acr: str | None = None, amr: str | None = None
 ) -> OidcAuthorizations:
     consent = Consents(scope=scope, is_enable=True)
     code = Code(
         token=str(uuid4()),
         nonce=nonce,
+        acr=acr,
+        amr=amr,
+        created_at=datetime.now(timezone.utc),
         exp=datetime.now(timezone.utc) + timedelta(minutes=10),
         is_enable=True,
     )
