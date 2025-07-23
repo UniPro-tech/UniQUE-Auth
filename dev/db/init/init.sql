@@ -51,8 +51,8 @@ CREATE TABLE `oidc_authorizations` (
 CREATE TABLE `token_sets` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
   `oidc_authorization_id` int NOT NULL,
-  `access_token_id` int NOT NULL,
-  `refresh_token_id` int NOT NULL,
+  `access_token_id` varchar(255) NOT NULL,
+  `refresh_token_id` varchar(255) NOT NULL,
   `is_enable` bool NOT NULL DEFAULT true,
   UNIQUE (`access_token_id`),
   UNIQUE (`refresh_token_id`),
