@@ -62,6 +62,7 @@ CREATE TABLE `token_sets` (
 CREATE TABLE `code` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
   `token` varchar(255) UNIQUE NOT NULL,
+  `nonce` varchar(255) NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `exp` timestamp,
   `is_enable` bool NOT NULL DEFAULT true
@@ -103,7 +104,6 @@ CREATE TABLE `id_tokens` (
   `auth_time` timestamp NULL,
   `acr` varchar(255) NULL,
   `amr` varchar(255) NULL,  -- JSONでもよい
-  `jti` varchar(64) UNIQUE NOT NULL,
   `user_id` varchar(255) NOT NULL,
   `revoked` bool NOT NULL DEFAULT false
 );
