@@ -7,13 +7,14 @@ from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
 from db import get_db
 import hashlib
+import ulid
 import os
 import jwt
 from unique_api.app.model import (
     AccessTokens,
     RefreshTokens,
+    IDTokens,
     Users,
-    Sessions as UserSession,
     Apps,
     Auths,
     OidcAuthorizations,
@@ -97,10 +98,13 @@ async def login_post(
         redirect_url = "/"
 
     # セッションを作成
-    session = UserSession(
+    session = Sessions(
         user_id=validated_user.id,
         ip_address=request.client.host,  # type: ignore
         user_agent=request.headers.get("User-Agent", ""),
+        created_at=datetime.now(timezone.utc),
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=1), # 1時間有効
+        is_enable=True
     )
     db.add(session)
     db.commit()
@@ -292,8 +296,10 @@ async def auth(
         "scope": params.scope,
         "state": params.state,
         "response_type": params.response_type,
+        "auth_at": session.created_at.isoformat(),
+        "nonce": params.nonce,
     }
-    action_url = "auth/confirm"
+    action_url = "auth"
     # 認可画面に必要な情報をテンプレートに渡す
     # ここでは、アプリケーションの情報とユーザ情報を渡す
     auth_data = {
@@ -313,7 +319,7 @@ async def auth(
     return response
 
 
-@router.post("/auth/confirm")
+@router.post("/auth")
 async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     """
     OIDC 認可フローの確認画面での POST 送信を受けて、認可処理を行う。
@@ -342,12 +348,17 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
 
     # すでに認可されているか確認
     auth = get_or_create_auth(db, user.id, app.id)
-    oidc_auth = create_oidc_authorization(db, auth, auth_request["scope"])
+    # 将来的にamrやacrを使う場合はここでチェックする
+    # 現在はpwdオンリー
+    oidc_auth = create_oidc_authorization(
+        db, auth, auth_request["scope"], created_at=session.created_at,
+        nonce=auth_request["nonce"], acr="pwd", amr="pwd"  # JSONでもよい
+    )
 
     request.session.clear()
     print(f"http://localhost:8000/code?code={oidc_auth.code.token}")
     return RedirectResponse(
-        url=f"{auth_request['redirect_uri']}?code={oidc_auth.code.token}&state={auth_request["state"]}",
+        url=f"{auth_request['redirect_uri']}?code={oidc_auth.code.token}&state={auth_request['state']}",
         status_code=302,
     )
 
@@ -378,7 +389,6 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     consent = oidc_auth.consent
     app: Apps = db.query(Apps).filter_by(id=auth.app_id).first()
     # アプリケーションの認証情報を取得
-    issued_at = datetime.now(timezone.utc)
     access_token_jwt = jwt.encode(
         {
             "iss": "https://auth.uniproject.jp",
@@ -386,7 +396,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
             "aud": app.aud,
             "client_id": auth.app_id,
             "scope": consent.scope,
-            "exp": str(issued_at + timedelta(minutes=60)),
+            "exp": str(code.created_at + timedelta(minutes=60)),
         },
         "your-secret-key",
         algorithm="HS256",
@@ -395,8 +405,8 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
         hash=hashlib.sha256(access_token_jwt.encode()).hexdigest(),
         type="access",
         scope=consent.scope,
-        issued_at=issued_at,
-        exp=issued_at + timedelta(minutes=60),  # 1時間有効
+        issued_at=code.created_at,
+        exp=code.created_at + timedelta(minutes=60),  # 1時間有効
         client_id=auth.app_id,
         user_id=user.id,
         revoked=False,
@@ -407,7 +417,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
             "sub": user.id,
             "client_id": auth.app_id,
             "aud": app.aud,
-            "exp": str(issued_at + timedelta(days=30)),
+            "exp": str(code.created_at + timedelta(days=30)),
         },
         "your-secret-key",
         algorithm="HS256",
@@ -415,13 +425,45 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     refresh_token = RefreshTokens(
         hash=hashlib.sha256(refresh_token_jwt.encode()).hexdigest(),
         type="refresh",
-        issued_at=issued_at,
-        exp=issued_at + timedelta(days=30),  # 30日有効
+        issued_at=code.created_at,
+        exp=code.created_at + timedelta(days=30),  # 30日有効
         client_id=auth.app_id,
         user_id=user.id,
         revoked=False,
     )
-    db.add_all([access_token, refresh_token])
+    id_token_id = str(ulid.new())
+    id_token_jwt = jwt.encode(
+        {
+            "iss": "https://auth.uniproject.jp",
+            "sub": user.id,
+            "aud": app.aud,
+            "client_id": auth.app_id,
+            "scope": consent.scope,
+            "exp": str(code.created_at + timedelta(minutes=60)),
+            "nonce": code.nonce,
+            "auth_time": str(code.created_at),
+            "acr": code.acr,
+            "amr": code.amr,
+            "jti": id_token_id,  # JWT ID
+        },
+        "your-secret-key",
+        algorithm="HS256",
+    )
+    id_token = IDTokens(
+        id=id_token_id,
+        hash=hashlib.sha256(id_token_jwt.encode()).hexdigest(),
+        type="id",
+        issued_at=code.created_at,
+        exp=code.created_at + timedelta(minutes=60),  # 1時間有効
+        client_id=auth.app_id,
+        user_id=user.id,
+        aud=app.aud,
+        nonce=code.nonce,
+        auth_time=code.created_at,
+        acr=code.acr,
+        amr=code.amr,  # JSONでもよい
+    )
+    db.add_all([access_token, refresh_token, id_token])
     db.flush()
 
     # OIDC トークンを更新
@@ -429,6 +471,7 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
         oidc_authorization_id=oidc_auth.id,
         access_token_id=access_token.id,
         refresh_token_id=refresh_token.id,
+        id_token_id=id_token.id,
     )
     db.add(token_set)
     db.commit()
@@ -437,6 +480,6 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
         "access_token": access_token_jwt,
         "token_type": "Bearer",
         "refresh_token": refresh_token_jwt,
-        # id_tokenをつける
+        "id_token": id_token_jwt,
     }
     return JSONResponse(token_response)
