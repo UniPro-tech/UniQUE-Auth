@@ -475,7 +475,8 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     )
     db.add(token_set)
     db.commit()
-
+    # トークンセットを返す
+    # TODO:返却の形をrfc準拠にする
     token_response = {
         "access_token": access_token_jwt,
         "token_type": "Bearer",
