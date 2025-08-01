@@ -29,8 +29,8 @@ app.add_middleware(
     secret_key="your-secret-key",
 )
 
-app.include_router(authorization_router, prefix="/auth", tags=["Authorization"])
-app.include_router(authentication_router, prefix="/auth", tags=["Authentication"])
+app.include_router(authorization_router, tags=["Authorization"])
+app.include_router(authentication_router, tags=["Authentication"])
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ from unique_api.app.model import (
 
 router = APIRouter()
 templates = Jinja2Templates(
-    directory=os.path.join(os.path.dirname(__file__), "../pages")
+    directory=os.path.join(os.path.dirname(__file__), "../../pages")
 )
 
 

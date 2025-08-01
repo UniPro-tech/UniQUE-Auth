@@ -39,7 +39,7 @@ from unique_api.app.services.oauth_utils import validate_redirect_uri
 
 router = APIRouter()
 templates = Jinja2Templates(
-    directory=os.path.join(os.path.dirname(__file__), "../pages")
+    directory=os.path.join(os.path.dirname(__file__), "../../pages")
 )
 
 
