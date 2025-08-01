@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-import uvicorn
 from contextlib import asynccontextmanager
 from starlette.middleware.sessions import SessionMiddleware
+import uvicorn
+
 from db import engine, Base, get_db
 from unique_api.app.router.authorization import router as authorization_router
 from unique_api.app.router.authentication import router as authentication_router
@@ -30,6 +31,7 @@ app.add_middleware(
 
 app.include_router(authorization_router, prefix="/auth", tags=["Authorization"])
 app.include_router(authentication_router, prefix="/auth", tags=["Authentication"])
+
 
 if __name__ == "__main__":
     uvicorn.run("unique_api.app.main:app", reload=True, host="0.0.0.0")
