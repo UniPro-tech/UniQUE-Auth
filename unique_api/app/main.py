@@ -14,7 +14,7 @@ Base.metadata.create_all(bind=engine)
 # 立ち上がったらテスト用のデータを作成する
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from unique_api.app.db import create_test_data
+    from unique_api.app.data import create_test_data
     db = next(get_db())
     create_test_data(db)
     yield
