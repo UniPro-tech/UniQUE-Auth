@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, HTTPException, Depends, Header
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, JSONResponse
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from urllib.parse import urlencode
 from datetime import timedelta
+from typing import Annotated
 from db import get_db
 import hashlib
 import ulid
@@ -86,8 +86,8 @@ async def auth(
         scopes = extract_authorized_scopes(existing_auth)
         if is_scope_authorized(params.scope, scopes):
             print("Existing auth found:", existing_auth.id)
-            auth = get_or_create_auth(db, user.id, app.id)
-            oidc_auth = create_oidc_authorization(db, auth, params.scope)
+            auth: Auths = get_or_create_auth(db, user.id, app.id)
+            oidc_auth: OidcAuthorizations = create_oidc_authorization(db, auth, params.scope)
 
             request.session.clear()
             print(f"http://localhost:8000/code?code={oidc_auth.code.token}")
@@ -164,15 +164,19 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     )
 
     request.session.clear()
-    print(f"http://localhost:8000/code?code={oidc_auth.code.token}")
+    print(f"http://localhost:8000/token?code={oidc_auth.code.token}")
     return RedirectResponse(
         url=f"{auth_request['redirect_uri']}?code={oidc_auth.code.token}&state={auth_request['state']}",
         status_code=302,
     )
 
 
-@router.get("/code")
-async def get_code(request: Request, db: Session = Depends(get_db)):
+@router.get("/token")
+async def get_code(
+    request: Request,
+    authorization: Annotated[str | None, Header()] = Depends(),
+    db: Session = Depends(get_db)
+):
     """
     OIDC 認可コードを取得するエンドポイント。
     """
