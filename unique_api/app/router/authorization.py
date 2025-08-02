@@ -204,6 +204,9 @@ async def get_code(
 
     consent = oidc_auth.consent
     app: Apps = db.query(Apps).filter_by(id=auth.app_id).first()
+    # Appのシークレットを検証
+    if authorization is None or not app.verify_client_secret(authorization):
+        raise HTTPException(status_code=401, detail="Invalid client credentials")
     # アプリケーションの認証情報を取得
     access_token_jwt = jwt.encode(
         {
