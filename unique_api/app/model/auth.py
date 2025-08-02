@@ -13,6 +13,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from unique_api.app.db import Base
 from unique_api.app.model.util import generate_ulid
+
 if TYPE_CHECKING:
     from unique_api.app.model.user import Users
     from unique_api.app.model.app import Apps
@@ -49,8 +50,18 @@ class Code(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     token: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     nonce: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"), nullable=True)
-    acr: Mapped[Optional[str]] = mapped_column(String(255, "utf8mb4_unicode_ci"), nullable=True)
-    amr: Mapped[Optional[str]] = mapped_column(String(255, "utf8mb4_unicode_ci"), nullable=True)  # JSONでもよい
+    code_challenge: Mapped[Optional[str]] = mapped_column(
+        String(255, "utf8mb4_unicode_ci"), nullable=True
+    )
+    code_challenge_method: Mapped[Optional[str]] = mapped_column(
+        String(255, "utf8mb4_unicode_ci"), nullable=True
+    )
+    acr: Mapped[Optional[str]] = mapped_column(
+        String(255, "utf8mb4_unicode_ci"), nullable=True
+    )
+    amr: Mapped[Optional[str]] = mapped_column(
+        String(255, "utf8mb4_unicode_ci"), nullable=True
+    )  # JSONでもよい
     is_enable: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'1'"))
     created_at: Mapped[Optional[datetime]] = mapped_column(
         TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
@@ -117,7 +128,7 @@ class TokenSets(Base):
             ["oidc_authorizations.id"],
             name="token_sets_ibfk_1",
         ),
-        Index("oidc_authorization_id", "oidc_authorization_id", unique=True)
+        Index("oidc_authorization_id", "oidc_authorization_id", unique=True),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -130,15 +141,9 @@ class TokenSets(Base):
     oidc_authorization: Mapped["OidcAuthorizations"] = relationship(
         "OidcAuthorizations", back_populates="token_sets"
     )
-    access_token: Mapped["AccessTokens"] = relationship(
-        back_populates="token_set"
-    )
-    refresh_token: Mapped["RefreshTokens"] = relationship(
-        back_populates="token_set"
-    )
-    id_token: Mapped["IDTokens"] = relationship(
-        back_populates="token_set"
-    )
+    access_token: Mapped["AccessTokens"] = relationship(back_populates="token_set")
+    refresh_token: Mapped["RefreshTokens"] = relationship(back_populates="token_set")
+    id_token: Mapped["IDTokens"] = relationship(back_populates="token_set")
 
 
 class AccessTokens(Base):
@@ -158,9 +163,7 @@ class AccessTokens(Base):
     user_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     revoked: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'0'"))
 
-    token_set: Mapped["TokenSets"] = relationship(
-        back_populates="access_token"
-    )
+    token_set: Mapped["TokenSets"] = relationship(back_populates="access_token")
 
 
 class RefreshTokens(Base):
@@ -179,9 +182,7 @@ class RefreshTokens(Base):
     user_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     revoked: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'0'"))
 
-    token_set: Mapped["TokenSets"] = relationship(
-        back_populates="refresh_token"
-    )
+    token_set: Mapped["TokenSets"] = relationship(back_populates="refresh_token")
 
 
 class IDTokens(Base):
@@ -199,12 +200,16 @@ class IDTokens(Base):
     )
     user_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     aud: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
-    nonce: Mapped[Optional[str]] = mapped_column(String(255, "utf8mb4_unicode_ci"), nullable=True)
+    nonce: Mapped[Optional[str]] = mapped_column(
+        String(255, "utf8mb4_unicode_ci"), nullable=True
+    )
     auth_time: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
-    acr: Mapped[Optional[str]] = mapped_column(String(255, "utf8mb4_unicode_ci"), nullable=True)
-    amr: Mapped[Optional[str]] = mapped_column(String(255, "utf8mb4_unicode_ci"), nullable=True)  # JSONでもよい
+    acr: Mapped[Optional[str]] = mapped_column(
+        String(255, "utf8mb4_unicode_ci"), nullable=True
+    )
+    amr: Mapped[Optional[str]] = mapped_column(
+        String(255, "utf8mb4_unicode_ci"), nullable=True
+    )  # JSONでもよい
     revoked: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'0'"))
 
-    token_set: Mapped["TokenSets"] = relationship(
-        back_populates="id_token"
-    )
+    token_set: Mapped["TokenSets"] = relationship(back_populates="id_token")

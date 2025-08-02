@@ -32,6 +32,8 @@ def create_oidc_authorization(
     nonce: str | None = None,
     acr: str | None = None,
     amr: str | None = None,
+    code_challenge: str | None = None,
+    code_challenge_method: str | None = None,
 ) -> OidcAuthorizations:
     consent = Consents(scope=scope, is_enable=True)
     code = Code(
@@ -39,6 +41,8 @@ def create_oidc_authorization(
         nonce=nonce,
         acr=acr,
         amr=amr,
+        code_challenge=code_challenge,
+        code_challenge_method=code_challenge_method,
         created_at=datetime.now(timezone.utc),
         exp=datetime.now(timezone.utc) + timedelta(minutes=10),
         is_enable=True,

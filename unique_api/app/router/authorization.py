@@ -20,19 +20,15 @@ from unique_api.app.model import (
     OidcAuthorizations,
     TokenSets,
     Code,
-    Sessions
+    Sessions,
 )
-from unique_api.app.schema import (
-    AuthenticationRequest
-)
-from unique_api.app.crud.auth import (
-    get_existing_auth
-)
+from unique_api.app.schema import AuthenticationRequest
+from unique_api.app.crud.auth import get_existing_auth
 from unique_api.app.services.authorization import (
     extract_authorized_scopes,
     is_scope_authorized,
     get_or_create_auth,
-    create_oidc_authorization
+    create_oidc_authorization,
 )
 from unique_api.app.services.oauth_utils import validate_redirect_uri
 
@@ -47,7 +43,7 @@ templates = Jinja2Templates(
 async def auth(
     request: Request,
     params: AuthenticationRequest = Depends(),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     OIDC 認可フローのためのエンドポイント。
@@ -106,6 +102,8 @@ async def auth(
         "response_type": params.response_type,
         "auth_at": session.created_at.isoformat(),
         "nonce": params.nonce,
+        "code_challenge": params.code_challenge,
+        "code_challenge_method": params.code_challenge_method,
     }
     action_url = "auth"
     # 認可画面に必要な情報をテンプレートに渡す
@@ -159,8 +157,14 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     # 将来的にamrやacrを使う場合はここでチェックする
     # 現在はpwdオンリー
     oidc_auth = create_oidc_authorization(
-        db, auth, auth_request["scope"], created_at=session.created_at,
-        nonce=auth_request["nonce"], acr="pwd", amr="pwd"  # JSONでもよい
+        db,
+        auth,
+        auth_request["scope"],
+        nonce=auth_request["nonce"],
+        code_challenge=auth_request["code_challenge"],
+        code_challenge_method=auth_request["code_challenge_method"],
+        acr="pwd",
+        amr="pwd",  # JSONでもよい
     )
 
     request.session.clear()
