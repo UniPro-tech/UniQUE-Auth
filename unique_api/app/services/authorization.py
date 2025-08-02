@@ -1,12 +1,7 @@
 from uuid import uuid4
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone, timedelta
-from unique_api.app.model import (
-    Auths,
-    Code,
-    OidcAuthorizations,
-    Consents
-)
+from unique_api.app.model import Auths, Code, OidcAuthorizations, Consents
 
 
 def extract_authorized_scopes(existing_auth: Auths) -> set[str]:
@@ -21,7 +16,7 @@ def is_scope_authorized(requested_scope: str, authorized_scopes: set[str]) -> bo
     return set(requested_scope.split()) <= authorized_scopes
 
 
-def get_or_create_auth(db: Session, user_id: int, app_id: str) -> Auths:
+def get_or_create_auth(db: Session, user_id: str, app_id: str) -> Auths:
     auth = db.query(Auths).filter_by(auth_user_id=user_id, app_id=app_id).first()
     if auth is None:
         auth = Auths(auth_user_id=user_id, app_id=app_id)
@@ -31,8 +26,12 @@ def get_or_create_auth(db: Session, user_id: int, app_id: str) -> Auths:
 
 
 def create_oidc_authorization(
-    db: Session, auth: Auths, scope: str, created_at: datetime,
-    nonce: str | None = None, acr: str | None = None, amr: str | None = None
+    db: Session,
+    auth: Auths,
+    scope: str,
+    nonce: str | None = None,
+    acr: str | None = None,
+    amr: str | None = None,
 ) -> OidcAuthorizations:
     consent = Consents(scope=scope, is_enable=True)
     code = Code(
