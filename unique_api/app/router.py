@@ -363,32 +363,124 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     )
 
 
-@router.get("/code")
-async def get_code(request: Request, db: Session = Depends(get_db)):
+@router.post("/token")
+async def token_endpoint(
+    request: Request,
+    grant_type: str = Form(...),
+    code: str = Form(...),
+    redirect_uri: str = Form(...),
+    db: Session = Depends(get_db)
+):
     """
-    OIDC 認可コードを取得するエンドポイント。
+    OIDC Token Endpoint - RFC6749 Section 3.2に準拠
+    
+    環境変数:
+    - REQUIRE_TLS: "true" (デフォルト) の場合、TLSを強制。"false"の場合、TLS検証をスキップ
+    - REQUIRE_CLIENT_AUTH: "true" (デフォルト) の場合、クライアント認証を強制。"false"の場合、認証をスキップ
     """
-    print("Get code request received:", dict(request.query_params))
+    # TLS要件のチェック
+    require_tls = os.getenv("REQUIRE_TLS", "true").lower() == "true"
+    if require_tls and not request.url.scheme == "https":
+        return JSONResponse(
+            status_code=400,
+            content={"error": "invalid_request", "error_description": "HTTPS required"},
+            headers={
+                "Cache-Control": "no-store",
+                "Pragma": "no-cache"
+            }
+        )
 
-    qp_code = request.query_params.get("code")
-    if not qp_code:
-        raise HTTPException(status_code=400, detail="Code not found")
+    # クライアント認証のチェック
+    require_client_auth = os.getenv("REQUIRE_CLIENT_AUTH", "true").lower() == "true"
+    if require_client_auth:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Basic "):
+            return JSONResponse(
+                status_code=401,
+                content={"error": "invalid_client"},
+                headers={
+                    "Cache-Control": "no-store",
+                    "Pragma": "no-cache",
+                    "WWW-Authenticate": "Basic"
+                }
+            )
+            
+        # TODO: Basic認証の検証ロジックを実装
+        # auth_value = auth_header.split(" ")[1]
+        # client_id, client_secret = base64.b64decode(auth_value).decode().split(":")
+        # クライアントの検証処理を追加
 
-    code: Code = db.query(Code).filter_by(token=qp_code).first()
-    if not code:
-        raise HTTPException(status_code=400, detail="Code not found")
-    code.is_enable = False
-    db.add(code)
+    # grant_typeの検証
+    if grant_type != "authorization_code":
+        return JSONResponse(
+            status_code=400,
+            content={"error": "unsupported_grant_type"},
+            headers={
+                "Cache-Control": "no-store",
+                "Pragma": "no-cache"
+            }
+        )
+
+    # Authorization Codeの検証
+    code_obj: Code = db.query(Code).filter_by(token=code).first()
+    if not code_obj or not code_obj.is_enable:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "invalid_grant"},
+            headers={
+                "Cache-Control": "no-store",
+                "Pragma": "no-cache"
+            }
+        )
+
+    # Codeの有効期限チェック
+    if datetime.now(timezone.utc) > code_obj.exp:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "invalid_grant"},
+            headers={
+                "Cache-Control": "no-store",
+                "Pragma": "no-cache"
+            }
+        )
+
+    # Codeを使用済みにする
+    code_obj.is_enable = False
+    db.add(code_obj)
     db.commit()
+
+    # OIDCの認可情報を取得
     oidc_auth: OidcAuthorizations = (
-        db.query(OidcAuthorizations).filter_by(code_id=code.id).first()
+        db.query(OidcAuthorizations).filter_by(code_id=code_obj.id).first()
     )
+    if not oidc_auth:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "invalid_grant"},
+            headers={
+                "Cache-Control": "no-store",
+                "Pragma": "no-cache"
+            }
+        )
+
     auth = db.query(Auths).filter_by(id=oidc_auth.auth_id).first()
     user = db.query(Users).filter_by(id=auth.auth_user_id).first()
-
     consent = oidc_auth.consent
     app: Apps = db.query(Apps).filter_by(id=auth.app_id).first()
-    # アプリケーションの認証情報を取得
+
+    # redirect_uriの検証
+    redirect_uris = [uri.uri for uri in app.redirect_uris]
+    if redirect_uri not in redirect_uris:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "invalid_request"},
+            headers={
+                "Cache-Control": "no-store",
+                "Pragma": "no-cache"
+            }
+        )
+
+    # アクセストークンの生成
     access_token_jwt = jwt.encode(
         {
             "iss": "https://auth.uniproject.jp",
@@ -396,41 +488,51 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
             "aud": app.aud,
             "client_id": auth.app_id,
             "scope": consent.scope,
-            "exp": str(code.created_at + timedelta(minutes=60)),
+            "exp": int((datetime.now(timezone.utc) + timedelta(minutes=60)).timestamp()),
+            "iat": int(datetime.now(timezone.utc).timestamp())
         },
         "your-secret-key",
         algorithm="HS256",
     )
+
+    # アクセストークンの保存
     access_token = AccessTokens(
         hash=hashlib.sha256(access_token_jwt.encode()).hexdigest(),
         type="access",
         scope=consent.scope,
-        issued_at=code.created_at,
-        exp=code.created_at + timedelta(minutes=60),  # 1時間有効
+        issued_at=datetime.now(timezone.utc),
+        exp=datetime.now(timezone.utc) + timedelta(minutes=60),
         client_id=auth.app_id,
         user_id=user.id,
         revoked=False,
     )
+
+    # リフレッシュトークンの生成
     refresh_token_jwt = jwt.encode(
         {
             "iss": "https://auth.uniproject.jp",
             "sub": user.id,
             "client_id": auth.app_id,
             "aud": app.aud,
-            "exp": str(code.created_at + timedelta(days=30)),
+            "exp": int((datetime.now(timezone.utc) + timedelta(days=30)).timestamp()),
+            "iat": int(datetime.now(timezone.utc).timestamp())
         },
         "your-secret-key",
         algorithm="HS256",
     )
+
+    # リフレッシュトークンの保存
     refresh_token = RefreshTokens(
         hash=hashlib.sha256(refresh_token_jwt.encode()).hexdigest(),
         type="refresh",
-        issued_at=code.created_at,
-        exp=code.created_at + timedelta(days=30),  # 30日有効
+        issued_at=datetime.now(timezone.utc),
+        exp=datetime.now(timezone.utc) + timedelta(days=30),
         client_id=auth.app_id,
         user_id=user.id,
         revoked=False,
     )
+
+    # IDトークンの生成
     id_token_id = str(ulid.new())
     id_token_jwt = jwt.encode(
         {
@@ -439,34 +541,39 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
             "aud": app.aud,
             "client_id": auth.app_id,
             "scope": consent.scope,
-            "exp": str(code.created_at + timedelta(minutes=60)),
-            "nonce": code.nonce,
-            "auth_time": str(code.created_at),
-            "acr": code.acr,
-            "amr": code.amr,
-            "jti": id_token_id,  # JWT ID
+            "exp": int((datetime.now(timezone.utc) + timedelta(minutes=60)).timestamp()),
+            "iat": int(datetime.now(timezone.utc).timestamp()),
+            "auth_time": int(code_obj.created_at.timestamp()),
+            "nonce": code_obj.nonce,
+            "acr": code_obj.acr,
+            "amr": code_obj.amr,
+            "jti": id_token_id,
         },
         "your-secret-key",
         algorithm="HS256",
     )
+
+    # IDトークンの保存
     id_token = IDTokens(
         id=id_token_id,
         hash=hashlib.sha256(id_token_jwt.encode()).hexdigest(),
         type="id",
-        issued_at=code.created_at,
-        exp=code.created_at + timedelta(minutes=60),  # 1時間有効
+        issued_at=datetime.now(timezone.utc),
+        exp=datetime.now(timezone.utc) + timedelta(minutes=60),
         client_id=auth.app_id,
         user_id=user.id,
         aud=app.aud,
-        nonce=code.nonce,
-        auth_time=code.created_at,
-        acr=code.acr,
-        amr=code.amr,  # JSONでもよい
+        nonce=code_obj.nonce,
+        auth_time=code_obj.created_at,
+        acr=code_obj.acr,
+        amr=code_obj.amr,
     )
+
+    # トークンの保存
     db.add_all([access_token, refresh_token, id_token])
     db.flush()
 
-    # OIDC トークンを更新
+    # トークンセットの作成と保存
     token_set = TokenSets(
         oidc_authorization_id=oidc_auth.id,
         access_token_id=access_token.id,
@@ -475,12 +582,21 @@ async def get_code(request: Request, db: Session = Depends(get_db)):
     )
     db.add(token_set)
     db.commit()
-    # トークンセットを返す
-    # TODO:返却の形をrfc準拠にする
+
+    # RFC6749に準拠したレスポンスの生成
     token_response = {
         "access_token": access_token_jwt,
         "token_type": "Bearer",
+        "expires_in": 3600,  # 1時間
         "refresh_token": refresh_token_jwt,
         "id_token": id_token_jwt,
     }
-    return JSONResponse(token_response)
+
+    return JSONResponse(
+        content=token_response,
+        headers={
+            "Cache-Control": "no-store",
+            "Pragma": "no-cache",
+            "Content-Type": "application/json"
+        }
+    )
