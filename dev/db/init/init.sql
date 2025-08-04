@@ -137,7 +137,7 @@ CREATE TABLE `roles` (
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
   `updated_at` timestamp,
   `is_enable` bool NOT NULL DEFAULT true,
-  `system` bool NOT NULL DEFAULT false
+  `is_system` bool NOT NULL DEFAULT false
 );
 
 CREATE TABLE `discords` (
