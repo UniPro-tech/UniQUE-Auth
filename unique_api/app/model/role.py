@@ -29,7 +29,7 @@ class Roles(Base):
     name: Mapped[Optional[str]] = mapped_column(
         String(255, "utf8mb4_unicode_ci"), nullable=True
     )
-    permissions: Mapped[int] = mapped_column(Integer, server_default=text("'0'"))
+    permission: Mapped[int] = mapped_column(Integer, server_default=text("'0'"))
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
     )

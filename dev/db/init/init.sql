@@ -133,7 +133,7 @@ CREATE TABLE `roles` (
   `id` varchar(255) PRIMARY KEY,
   `custom_id` varchar(255) UNIQUE,
   `name` varchar(255) NULL,
-  `permissions` int NOT NULL DEFAULT 0,
+  `permission` int NOT NULL DEFAULT 0,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
   `updated_at` timestamp,
   `is_enable` bool NOT NULL DEFAULT true,
