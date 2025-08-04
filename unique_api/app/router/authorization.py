@@ -272,7 +272,9 @@ async def token_endpoint(
         )
 
     # Codeの有効期限チェック
-    if datetime.now(timezone.utc) > code_obj.exp:
+    now = datetime.now(timezone.utc)
+    code_exp = code_obj.exp.replace(tzinfo=timezone.utc) if code_obj.exp.tzinfo is None else code_obj.exp
+    if now > code_exp:
         return JSONResponse(
             status_code=400,
             content={"error": "invalid_grant"},
