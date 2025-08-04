@@ -169,7 +169,12 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     )
 
     request.session.clear()
-    print(f"http://localhost:8000/token?code={oidc_auth.code.token}")
+    print(
+        "Token can be obtained with:\n"
+        f"curl -X POST http://localhost:8000/token \\\n"
+        "  -H 'Content-Type: application/x-www-form-urlencoded' \\\n"
+        f"  -d 'grant_type=authorization_code&code={oidc_auth.code.token}&redirect_uri={auth_request['redirect_uri']}'"
+    )
     return RedirectResponse(
         url=f"{auth_request['redirect_uri']}?code={oidc_auth.code.token}&state={auth_request['state']}",
         status_code=302,
