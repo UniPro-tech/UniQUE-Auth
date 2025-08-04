@@ -132,11 +132,12 @@ CREATE TABLE `sessions` (
 CREATE TABLE `roles` (
   `id` varchar(255) PRIMARY KEY,
   `custom_id` varchar(255) UNIQUE,
-  `permissions` int NOT NULL DEFAULT 0,
+  `name` varchar(255) NULL,
+  `permission` int NOT NULL DEFAULT 0,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
   `updated_at` timestamp,
   `is_enable` bool NOT NULL DEFAULT true,
-  `system` bool NOT NULL DEFAULT false
+  `is_system` bool NOT NULL DEFAULT false
 );
 
 CREATE TABLE `discords` (
