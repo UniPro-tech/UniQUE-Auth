@@ -1,5 +1,4 @@
 from typing import List, Optional, TYPE_CHECKING
-import base64
 from sqlalchemy import (
     ForeignKeyConstraint,
     Integer,
@@ -39,27 +38,6 @@ class Apps(Base):
         "RedirectUris", back_populates="app"
     )
     user_app: Mapped[List["UserApp"]] = relationship("UserApp", back_populates="app")
-
-    def verify_client_secret(self, authorization: str | None) -> bool:
-        """
-        クライアントシークレットを検証するメソッド。
-        authorization ヘッダーが "Basic {base64エンコードされたクライアントID:クライアントシークレット}" 形式であることを確認します。
-        """
-        if authorization is None:
-            return False
-
-        try:
-            # "Basic " プレフィックスを除去
-            auth_value = authorization.split(" ")[1]
-            decoded = base64.b64decode(auth_value).decode("utf-8")
-            client_id, client_secret = decoded.split(":", 1)
-
-            # クライアントIDとクライアントシークレットを比較
-            return (
-                client_id == self.client_id and client_secret == self.client_secret
-            )
-        except (ValueError, IndexError):
-            return False
 
 
 class RedirectUris(Base):
