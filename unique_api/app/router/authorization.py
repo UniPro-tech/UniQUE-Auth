@@ -83,7 +83,9 @@ async def auth(
         if is_scope_authorized(params.scope, scopes):
             print("Existing auth found:", existing_auth.id)
             auth: Auths = get_or_create_auth(db, user.id, app.id)
-            oidc_auth: OidcAuthorizations = create_oidc_authorization(db, auth, params.scope)
+            oidc_auth: OidcAuthorizations = create_oidc_authorization(
+                db, auth, params.scope
+            )
 
             request.session.clear()
             print(f"http://localhost:8000/code?code={oidc_auth.code.token}")
@@ -178,8 +180,8 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
 @router.get("/token")
 async def get_code(
     request: Request,
-    authorization: Annotated[str | None, Header()] = Depends(),
-    db: Session = Depends(get_db)
+    authorization: Annotated[str | None, Header()],
+    db: Session = Depends(get_db),
 ):
     """
     OIDC 認可コードを取得するエンドポイント。
