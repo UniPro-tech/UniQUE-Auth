@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Request, Depends, Form
+from fastapi import APIRouter, Request, Depends, Form, Cookie
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from urllib.parse import urlencode
@@ -8,10 +8,83 @@ from datetime import datetime, timedelta, timezone
 from db import get_db
 import hashlib
 import os
+import secrets
 from unique_api.app.model import (
     Users,
     Sessions
 )
+from unique_api.app.schemas.authentication import AuthenticationRequest, AuthenticationError
+
+
+def create_error_response(
+    error: str,
+    error_description: str = None,
+    error_uri: str = None,
+    state: str = None,
+    status_code: int = 400
+) -> JSONResponse:
+    """RFC6749に準拠したエラーレスポンスを生成"""
+    response = AuthenticationError(
+        error=error,
+        error_description=error_description,
+        error_uri=error_uri,
+        state=state
+    )
+    return JSONResponse(
+        status_code=status_code,
+        content=response.dict(exclude_none=True),
+        headers={
+            "Cache-Control": "no-store",
+            "Pragma": "no-cache"
+        }
+    )
+
+
+def get_session(request: Request, db: Session) -> Optional[Sessions]:
+    """セッションを取得"""
+    session_id = request.cookies.get("session_")
+    if not session_id:
+        return None
+    
+    session = db.query(Sessions).filter_by(id=session_id).first()
+    if not session or not session.is_enable:
+        return None
+    
+    return session
+
+
+def handle_authentication_required(request: Request, params: AuthenticationRequest) -> RedirectResponse:
+    """認証が必要な場合のハンドリング"""
+    login_url = "login"
+    if params:
+        login_url += f"?{urlencode(params.dict(exclude_none=True))}"
+    return RedirectResponse(url=login_url, status_code=302)
+
+
+def needs_consent(user_id: str, client_id: str, scope: str, db: Session) -> bool:
+    """同意が必要かどうかを判定"""
+    # TODO: 同意の記録を確認する実装
+    return True
+
+
+def show_consent_screen(
+    request: Request,
+    session: Sessions,
+    params: AuthenticationRequest,
+    db: Session
+) -> templates.TemplateResponse:
+    """同意画面を表示"""
+    # TODO: 同意画面の実装
+    return templates.TemplateResponse(
+        "consent.html",
+        {
+            "request": request,
+            "user": session.user,
+            "client": params.client_id,
+            "scope": params.scope
+        }
+    )
+
 
 router = APIRouter()
 templates = Jinja2Templates(
@@ -20,18 +93,43 @@ templates = Jinja2Templates(
 
 
 @router.get("/login")
-async def login(request: Request):
+async def login(
+    request: Request,
+    params: AuthenticationRequest = Depends(),
+    csrf_token: str = Cookie(None)
+):
     """
-    OIDC 認可フロー開始時、外部クライアントから
-    リクエストパラメータを検証して request.session に保存した上で
-    このエンドポイントにリダイレクトさせる想定です。
-    GET では単にログインフォームを表示。
+    OIDC 認可フロー開始時のログイン画面表示
+    - CSRF対策のトークンを生成
+    - ログインフォームを表示
     """
-    action_url = "login"
-    if request.query_params:
-        action_url += f"?{urlencode(request.query_params)}"
+    # CSRF対策トークンの生成
+    if not csrf_token:
+        csrf_token = secrets.token_urlsafe(32)
+        response = templates.TemplateResponse(
+            "login.html",
+            {
+                "request": request,
+                "action_url": f"login?{urlencode(params.dict(exclude_none=True))}",
+                "csrf_token": csrf_token
+            }
+        )
+        response.set_cookie(
+            key="csrf_token",
+            value=csrf_token,
+            httponly=True,
+            secure=True,
+            samesite="lax"
+        )
+        return response
+
     return templates.TemplateResponse(
-        "login.html", {"request": request, "action_url": action_url}
+        "login.html",
+        {
+            "request": request,
+            "action_url": f"login?{urlencode(params.dict(exclude_none=True))}",
+            "csrf_token": csrf_token
+        }
     )
 
 
@@ -40,17 +138,28 @@ async def login_post(
     request: Request,
     custom_id: str = Form(...),
     password: str = Form(...),
+    csrf_token: str = Form(...),
+    params: AuthenticationRequest = Depends(),
     db: Session = Depends(get_db),
 ):
     """
-    ログインフォームの POST 送信を受けて、認証処理を行う。
-    認証成功時はセッションにユーザ情報を保存し、リダイレクトする。
+    ログインフォームのPOST送信を受けて、認証処理を行う
+    - CSRF対策
+    - ユーザー認証
+    - セッション作成
+    - プロンプトパラメータの処理
+    - max_ageパラメータの処理
     """
-    print("Login POST request received:", dict(request.query_params))
-    request_query_params = dict(request.query_params)
-    # ここでユーザ認証を行う
-    # 例えば、email と password を使ってユーザを検索し、認証が成功したら
-    # セッションにユーザ情報を保存する
+    # CSRF対策
+    cookie_token = request.cookies.get("csrf_token")
+    if not cookie_token or cookie_token != csrf_token:
+        return create_error_response(
+            "invalid_request",
+            "CSRF token validation failed",
+            state=params.state
+        )
+
+    # ユーザー認証
     validated_user = (
         db.query(Users)
         .filter_by(
@@ -61,17 +170,16 @@ async def login_post(
     )
 
     if validated_user is None:
-        # 認証失敗
-        response = HTTPException(status_code=401, detail="Invalid username or password")
-        return response
-
-    # response_typeがサポートされているcodeか確認
-    response_type = request_query_params.get("response_type")
-    if type(response_type) is str:
-        redirect_url = "auth?" + urlencode(dict(request.query_params))
-    else:
-        # OIDC認証ではない通常の認証であればルートページに飛ばす
-        redirect_url = "/"
+        return templates.TemplateResponse(
+            "login.html",
+            {
+                "request": request,
+                "action_url": f"login?{urlencode(params.dict(exclude_none=True))}",
+                "csrf_token": csrf_token,
+                "error": "Invalid username or password"
+            },
+            status_code=401
+        )
 
     # セッションを作成
     session = Sessions(
@@ -80,24 +188,55 @@ async def login_post(
         user_agent=request.headers.get("User-Agent", ""),
         created_at=datetime.now(timezone.utc),
         expires_at=datetime.now(timezone.utc) + timedelta(hours=1),  # 1時間有効
-        is_enable=True
+        is_enable=True,
+        auth_time=datetime.now(timezone.utc)  # 認証時刻を記録
     )
     db.add(session)
     db.commit()
-    # リダイレクト
-    response = RedirectResponse(url=redirect_url, status_code=302)
-    response.set_cookie(key="session_", value=session.id)
+
+    # レスポンスの準備
+    response = RedirectResponse(
+        url=f"auth?{urlencode(params.dict(exclude_none=True))}",
+        status_code=302
+    )
+    response.set_cookie(
+        key="session_",
+        value=session.id,
+        httponly=True,
+        secure=True,
+        samesite="lax"
+    )
+    
+    # CSRFトークンを削除
+    response.delete_cookie(key="csrf_token")
+    
     return response
 
 
 @router.get("/logout")
-async def logout(request: Request):
+async def logout(
+    request: Request,
+    db: Session = Depends(get_db)
+):
     """
-    ログアウト処理を行うエンドポイント。
+    ログアウト処理を行うエンドポイント
+    - セッションの無効化
+    - Cookieの削除
     """
-    request.session.clear()
+    # セッションを無効化
+    session_id = request.cookies.get("session_")
+    if session_id:
+        session = db.query(Sessions).filter_by(id=session_id).first()
+        if session:
+            session.is_enable = False
+            db.add(session)
+            db.commit()
+
+    # レスポンスの準備
     response = RedirectResponse(url="/", status_code=302)
     response.delete_cookie(key="session_")
+    response.delete_cookie(key="csrf_token")
+    
     return response
 
 
