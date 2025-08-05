@@ -30,7 +30,7 @@ from unique_api.app.services.authorization import (
     get_or_create_auth,
     create_oidc_authorization,
 )
-from unique_api.app.services.oauth_utils import validate_redirect_uri
+from unique_api.app.services.oauth_utils import validate_redirect_uri, verify_client_secret
 
 
 router = APIRouter()
@@ -83,7 +83,9 @@ async def auth(
         if is_scope_authorized(params.scope, scopes):
             print("Existing auth found:", existing_auth.id)
             auth: Auths = get_or_create_auth(db, user.id, app.id)
-            oidc_auth: OidcAuthorizations = create_oidc_authorization(db, auth, params.scope)
+            oidc_auth: OidcAuthorizations = create_oidc_authorization(
+                db, auth, params.scope
+            )
 
             request.session.clear()
             print(f"http://localhost:8000/code?code={oidc_auth.code.token}")
@@ -225,9 +227,14 @@ async def token_endpoint(
 
         # クライアント認証の検証
         try:
+<<<<<<< HEAD
             client_id = base64.b64decode(auth_header.split(" ")[1]).decode("utf-8").split(":")[0]
             app = db.query(Apps).filter_by(client_id=client_id).first()
             if not app.verify_client_secret(auth_header):
+=======
+            verify_secret, app = verify_client_secret(db, auth_header)
+            if not verify_secret:
+>>>>>>> origin/main
                 return JSONResponse(
                     status_code=401,
                     content={"error": "invalid_client"},
