@@ -227,14 +227,8 @@ async def token_endpoint(
 
         # クライアント認証の検証
         try:
-<<<<<<< HEAD
-            client_id = base64.b64decode(auth_header.split(" ")[1]).decode("utf-8").split(":")[0]
-            app = db.query(Apps).filter_by(client_id=client_id).first()
-            if not app.verify_client_secret(auth_header):
-=======
             verify_secret, app = verify_client_secret(db, auth_header)
             if not verify_secret:
->>>>>>> origin/main
                 return JSONResponse(
                     status_code=401,
                     content={"error": "invalid_client"},
