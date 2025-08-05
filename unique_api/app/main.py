@@ -8,9 +8,7 @@ from db import engine, Base, get_db
 from unique_api.app.router.authorization import router as authorization_router
 from unique_api.app.router.authentication import router as authentication_router
 
-
-# .envファイルを読み込む
-load_dotenv()
+load_dotenv('.env')
 
 # データベースをリセット
 # Base.metadata.drop_all(bind=engine)
