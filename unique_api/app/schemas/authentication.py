@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
 
@@ -17,19 +17,19 @@ class AuthenticationRequest(BaseModel):
     login_hint: Optional[str] = Field(None, description="OPTIONAL. Hint to the Authorization Server about the login identifier")
     acr_values: Optional[str] = Field(None, description="OPTIONAL. Authentication Context Class Reference values")
 
-    @validator('scope')
+    @field_validator('scope')
     def validate_openid_scope(cls, v):
         if 'openid' not in v.split():
             raise ValueError("scope must contain 'openid'")
         return v
 
-    @validator('response_type')
+    @field_validator('response_type')
     def validate_response_type(cls, v):
         if v != 'code':
             raise ValueError("response_type must be 'code' for Authorization Code Flow")
         return v
 
-    @validator('prompt')
+    @field_validator('prompt')
     def validate_prompt(cls, v):
         if v:
             values = v.split()

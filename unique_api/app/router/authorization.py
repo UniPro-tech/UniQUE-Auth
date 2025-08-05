@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Request, HTTPException, Depends, Header
+from fastapi import APIRouter, Request, HTTPException, Depends, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from urllib.parse import urlencode
 from datetime import timedelta, datetime, timezone
-from typing import Annotated
 from db import get_db
 import hashlib
 import ulid
@@ -192,7 +191,7 @@ async def token_endpoint(
 ):
     """
     OIDC Token Endpoint - RFC6749 Section 3.2に準拠
-    
+
     環境変数:
     - REQUIRE_TLS: "true" (デフォルト) の場合、TLSを強制。"false"の場合、TLS検証をスキップ
     - REQUIRE_CLIENT_AUTH: "true" (デフォルト) の場合、クライアント認証を強制。"false"の場合、認証をスキップ
@@ -226,7 +225,8 @@ async def token_endpoint(
 
         # クライアント認証の検証
         try:
-            app = db.query(Apps).filter_by(id=auth.app_id).first()
+            client_id = base64.b64decode(auth_header.split(" ")[1]).decode("utf-8").split(":")[0]
+            app = db.query(Apps).filter_by(client_id=client_id).first()
             if not app.verify_client_secret(auth_header):
                 return JSONResponse(
                     status_code=401,
@@ -295,7 +295,7 @@ async def token_endpoint(
                     "Pragma": "no-cache"
                 }
             )
-        
+
         # code_challengeの検証
         if code_obj.code_challenge_method == "S256":
             verifier_challenge = hashlib.sha256(code_verifier.encode()).digest()
