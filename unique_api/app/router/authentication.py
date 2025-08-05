@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Request, Depends, Form, Cookie
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, JSONResponse
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 from db import get_db
 import hashlib
 import os
@@ -45,11 +45,11 @@ def get_session(request: Request, db: Session) -> Optional[Sessions]:
     session_id = request.cookies.get("session_")
     if not session_id:
         return None
-    
+
     session = db.query(Sessions).filter_by(id=session_id).first()
     if not session or not session.is_enable:
         return None
-    
+
     return session
 
 
@@ -72,7 +72,7 @@ def show_consent_screen(
     session: Sessions,
     params: AuthenticationRequest,
     db: Session
-) -> templates.TemplateResponse:
+):
     """同意画面を表示"""
     # TODO: 同意画面の実装
     return templates.TemplateResponse(
@@ -189,7 +189,6 @@ async def login_post(
         created_at=datetime.now(timezone.utc),
         expires_at=datetime.now(timezone.utc) + timedelta(hours=1),  # 1時間有効
         is_enable=True,
-        auth_time=datetime.now(timezone.utc)  # 認証時刻を記録
     )
     db.add(session)
     db.commit()
@@ -206,10 +205,10 @@ async def login_post(
         secure=True,
         samesite="lax"
     )
-    
+
     # CSRFトークンを削除
     response.delete_cookie(key="csrf_token")
-    
+
     return response
 
 
@@ -236,7 +235,7 @@ async def logout(
     response = RedirectResponse(url="/", status_code=302)
     response.delete_cookie(key="session_")
     response.delete_cookie(key="csrf_token")
-    
+
     return response
 
 
