@@ -8,7 +8,6 @@ from db import get_db
 import hashlib
 import ulid
 import os
-import jwt
 import base64
 from unique_api.app.model import (
     AccessTokens,
