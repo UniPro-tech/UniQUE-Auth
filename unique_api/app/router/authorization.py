@@ -29,7 +29,8 @@ from unique_api.app.services.authorization import (
     get_or_create_auth,
     create_oidc_authorization,
 )
-from unique_api.app.services.oauth_utils import validate_redirect_uri, verify_client_secret
+from unique_api.app.services.oauth_utils import validate_redirect_uri
+from unique_api.app.services.client_auth import verify_client_secret_basic, verify_client_secret_post
 from unique_api.app.services.token import (
     create_access_token,
     create_refresh_token,
@@ -195,6 +196,8 @@ async def token_endpoint(
     code: str = Form(...),
     redirect_uri: str = Form(...),
     code_verifier: str | None = Form(None),
+    client_id: str | None = Form(None),
+    client_secret: str | None = Form(None),
     db: Session = Depends(get_db)
 ):
     """
@@ -220,21 +223,13 @@ async def token_endpoint(
     require_client_auth = os.getenv("REQUIRE_CLIENT_AUTH", "true").lower() == "true"
     if require_client_auth:
         auth_header = request.headers.get("Authorization")
-        if not auth_header or not auth_header.startswith("Basic "):
-            return JSONResponse(
-                status_code=401,
-                content={"error": "invalid_client"},
-                headers={
-                    "Cache-Control": "no-store",
-                    "Pragma": "no-cache",
-                    "WWW-Authenticate": "Basic"
-                }
-            )
+        client_id = Form(None)
+        client_secret = Form(None)
 
-        # クライアント認証の検証
-        try:
-            verify_secret, app = verify_client_secret(db, auth_header)
-            if not verify_secret:
+        # Basic認証の検証
+        if auth_header and auth_header.startswith("Basic "):
+            verified, app = verify_client_secret_basic(auth_header, db)
+            if not verified:
                 return JSONResponse(
                     status_code=401,
                     content={"error": "invalid_client"},
@@ -244,7 +239,19 @@ async def token_endpoint(
                         "WWW-Authenticate": "Basic"
                     }
                 )
-        except Exception:
+        # POSTパラメータの検証
+        elif client_id and client_secret:
+            verified, app = verify_client_secret_post(client_id, client_secret, db)
+            if not verified:
+                return JSONResponse(
+                    status_code=401,
+                    content={"error": "invalid_client"},
+                    headers={
+                        "Cache-Control": "no-store",
+                        "Pragma": "no-cache"
+                    }
+                )
+        else:
             return JSONResponse(
                 status_code=401,
                 content={"error": "invalid_client"},
