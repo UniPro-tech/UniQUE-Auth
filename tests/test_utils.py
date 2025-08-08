@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import jwt
 import base64
 import hashlib
@@ -32,7 +32,7 @@ def validate_id_token(
 ) -> None:
     """Validate ID Token claims"""
     now = datetime.now(timezone.utc)
-    
+
     # 必須クレームの存在チェック
     assert "iss" in id_token
     assert "sub" in id_token
@@ -57,7 +57,7 @@ def validate_id_token(
     # オプショナルクレームの検証
     if expected_nonce:
         assert id_token["nonce"] == expected_nonce
-    
+
     if expected_at_hash:
         assert id_token["at_hash"] == expected_at_hash
 

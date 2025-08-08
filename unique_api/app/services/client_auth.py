@@ -42,7 +42,7 @@ def verify_client_secret_basic(
         # シークレットの検証
         expected_hash = app.client_secret
         actual_hash = hashlib.sha256(client_secret.encode()).hexdigest()
-        
+
         return hmac.compare_digest(expected_hash, actual_hash), app
 
     except Exception:
@@ -66,7 +66,7 @@ def verify_client_secret_post(
         # シークレットの検証
         expected_hash = app.client_secret
         actual_hash = hashlib.sha256(client_secret.encode()).hexdigest()
-        
+
         return hmac.compare_digest(expected_hash, actual_hash), app
 
     except Exception:

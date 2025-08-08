@@ -37,7 +37,7 @@ def test_authorization_code_flow_basic(client, test_user, test_app):
     assert response.status_code == 302
     callback_url = response.headers["location"]
     assert callback_url.startswith("http://localhost:3000/callback")
-    
+
     # 認可コードの取得
     query_params = parse_qs(urlparse(callback_url).query)
     assert "code" in query_params
@@ -186,13 +186,13 @@ def test_authorization_code_flow_error_cases(client, test_user, test_app):
     }
     response = client.get("/auth", params=auth_params)
     assert response.status_code == 302
-    
+
     response = client.post("/login", data={
         "custom_id": test_user.custom_id,
         "password": "test_password"
     }, params=auth_params)
     assert response.status_code == 302
-    
+
     response = client.post("/auth")
     assert response.status_code == 302
     callback_url = response.headers["location"]
