@@ -41,6 +41,7 @@ dependencies = [
     "sqlmodel>=0.0.24",
     "ulid-py>=1.1.0",
     "pydantic-settings>=2.10.1",
+    "pytest>=8.4.1",
 ]
 
 [build-system]
