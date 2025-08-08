@@ -1,5 +1,4 @@
 from urllib.parse import urlparse, parse_qs
-import pytest
 from .test_utils import (
     create_test_client_credentials,
     decode_id_token,
