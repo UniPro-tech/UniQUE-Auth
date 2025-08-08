@@ -409,8 +409,7 @@ async def token_endpoint(
         acr=code_obj.acr,
         amr=code_obj.amr,
         at_hash=at_hash,
-        azp=auth.app_id if isinstance(app.aud, list) and len(app.aud) > 1 else None,
-        max_age=params.max_age if hasattr(params, 'max_age') else None
+        azp=auth.app_id if isinstance(app.aud, list) and len(app.aud) > 1 else None
     )
 
     # IDトークンの保存

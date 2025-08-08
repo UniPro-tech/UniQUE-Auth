@@ -29,25 +29,31 @@ def create_id_token(
     amr: Optional[str] = None,
     at_hash: Optional[str] = None,
     azp: Optional[str] = None,
-    max_age: Optional[int] = None,
 ) -> str:
     """
     Create an ID Token as per OpenID Connect spec
+
+    Parameters:
+    - sub: Subject Identifier
+    - aud: Audience(s)
+    - auth_time: Time when the authentication occurred
+    - nonce: String value used to associate a Client session with an ID Token
+    - acr: Authentication Context Class Reference
+    - amr: Authentication Methods References
+    - at_hash: Access Token hash value
+    - azp: Authorized party (required when the ID Token has a single audience value and that audience is different from the authorized party)
     """
     now = datetime.utcnow()
     expires_delta = timedelta(minutes=settings.ID_TOKEN_EXPIRE_MINUTES)
 
     claims = {
-        "iss": settings.ISSUER,
-        "sub": sub,
-        "aud": aud,
-        "exp": int((now + expires_delta).timestamp()),
-        "iat": int(now.timestamp()),
+        "iss": settings.ISSUER,  # REQUIRED. Issuer Identifier
+        "sub": sub,              # REQUIRED. Subject Identifier
+        "aud": aud,              # REQUIRED. Audience(s)
+        "exp": int((now + expires_delta).timestamp()),  # REQUIRED. Expiration time
+        "iat": int(now.timestamp()),                    # REQUIRED. Time at which the JWT was issued
+        "auth_time": auth_time,  # Time when the authentication occurred
     }
-
-    # Add required claims based on conditions
-    if auth_time is not None or max_age is not None:
-        claims["auth_time"] = auth_time
     
     if nonce is not None:
         claims["nonce"] = nonce
