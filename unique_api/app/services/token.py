@@ -54,7 +54,7 @@ def create_id_token(
         "iat": int(now.timestamp()),                    # REQUIRED. Time at which the JWT was issued
         "auth_time": auth_time,  # Time when the authentication occurred
     }
-    
+
     if nonce is not None:
         claims["nonce"] = nonce
 
