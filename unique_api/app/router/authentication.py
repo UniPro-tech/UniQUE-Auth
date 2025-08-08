@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from db import get_db
+from unique_api.app.db import get_db
 import hashlib
 import os
 import secrets
