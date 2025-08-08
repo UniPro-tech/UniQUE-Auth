@@ -4,11 +4,10 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from urllib.parse import urlencode
 from datetime import timedelta, datetime, timezone
-from db import get_db
+from unique_api.app.db import get_db
 import hashlib
 import ulid
 import os
-import jwt
 import base64
 from unique_api.app.model import (
     AccessTokens,
