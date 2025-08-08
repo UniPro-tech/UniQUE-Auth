@@ -7,12 +7,11 @@ import hashlib
 from datetime import datetime, timezone
 from unique_api.app.main import app
 from unique_api.app.model import (
-    Base,
     Users,
     Apps,
     RedirectUris,
 )
-from db import get_db
+from unique_api.app.db import get_db, Base
 
 
 # テスト用のデータベース設定
