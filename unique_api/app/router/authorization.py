@@ -21,7 +21,7 @@ from unique_api.app.model import (
     Code,
     Sessions,
 )
-from unique_api.app.schema import AuthenticationRequest
+from unique_api.app.schemas.authentication import AuthenticationRequest
 from unique_api.app.crud.auth import get_existing_auth
 from unique_api.app.services.authorization import (
     extract_authorized_scopes,
