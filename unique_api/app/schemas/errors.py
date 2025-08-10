@@ -1,11 +1,12 @@
 from enum import Enum
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Dict
 from fastapi.responses import JSONResponse
 
 
 class OAuthErrorCode(str, Enum):
     """OAuth 2.0 エラーコード (RFC6749)"""
+    # 共通エラーコード
     INVALID_REQUEST = "invalid_request"
     UNAUTHORIZED_CLIENT = "unauthorized_client"
     ACCESS_DENIED = "access_denied"
@@ -13,6 +14,11 @@ class OAuthErrorCode(str, Enum):
     INVALID_SCOPE = "invalid_scope"
     SERVER_ERROR = "server_error"
     TEMPORARILY_UNAVAILABLE = "temporarily_unavailable"
+    
+    # Token Endpoint固有のエラーコード
+    INVALID_CLIENT = "invalid_client"
+    INVALID_GRANT = "invalid_grant"
+    UNSUPPORTED_GRANT_TYPE = "unsupported_grant_type"
 
 
 class OIDCErrorCode(str, Enum):
@@ -41,7 +47,8 @@ def create_error_response(
     error_description: Optional[str] = None,
     error_uri: Optional[str] = None,
     state: Optional[str] = None,
-    status_code: int = 400
+    status_code: int = 400,
+    headers: Optional[Dict[str, str]] = None
 ) -> JSONResponse:
     """RFC6749とOpenID Connect Core 1.0に準拠したエラーレスポンスを生成"""
     response = ErrorResponse(
@@ -50,11 +57,49 @@ def create_error_response(
         error_uri=error_uri,
         state=state
     )
+    
+    # 基本的なヘッダー
+    response_headers = {
+        "Cache-Control": "no-store",
+        "Pragma": "no-cache"
+    }
+    
+    # 追加のヘッダーがある場合は追加
+    if headers:
+        response_headers.update(headers)
+    
     return JSONResponse(
         status_code=status_code,
         content=response.dict(exclude_none=True),
-        headers={
-            "Cache-Control": "no-store",
-            "Pragma": "no-cache"
-        }
+        headers=response_headers
+    )
+
+
+def create_token_error_response(
+    error: str,
+    error_description: Optional[str] = None,
+    error_uri: Optional[str] = None,
+    status_code: int = 400,
+    www_authenticate: Optional[str] = None
+) -> JSONResponse:
+    """RFC6749のToken Endpoint用エラーレスポンスを生成"""
+    headers = {
+        "Cache-Control": "no-store",
+        "Pragma": "no-cache"
+    }
+    
+    # WWW-Authenticateヘッダーが必要な場合は追加
+    if www_authenticate:
+        headers["WWW-Authenticate"] = www_authenticate
+    
+    response = ErrorResponse(
+        error=error,
+        error_description=error_description,
+        error_uri=error_uri
+    )
+    
+    return JSONResponse(
+        status_code=status_code,
+        content=response.dict(exclude_none=True),
+        headers=headers
     )

@@ -31,6 +31,7 @@ from unique_api.app.services.authorization import (
     create_oidc_authorization,
 )
 from unique_api.app.services.oauth_utils import validate_redirect_uri, verify_client_secret
+from unique_api.app.schemas.errors import create_token_error_response, OAuthErrorCode
 
 
 router = APIRouter()
@@ -201,13 +202,9 @@ async def token_endpoint(
     # TLS要件のチェック
     require_tls = os.getenv("REQUIRE_TLS", "true").lower() == "true"
     if require_tls and not request.url.scheme == "https":
-        return JSONResponse(
-            status_code=400,
-            content={"error": "invalid_request", "error_description": "HTTPS required"},
-            headers={
-                "Cache-Control": "no-store",
-                "Pragma": "no-cache"
-            }
+        return create_token_error_response(
+            error=OAuthErrorCode.INVALID_REQUEST,
+            error_description="HTTPS required"
         )
 
     # クライアント認証のチェック
@@ -215,86 +212,56 @@ async def token_endpoint(
     if require_client_auth:
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Basic "):
-            return JSONResponse(
+            return create_token_error_response(
+                error=OAuthErrorCode.INVALID_CLIENT,
                 status_code=401,
-                content={"error": "invalid_client"},
-                headers={
-                    "Cache-Control": "no-store",
-                    "Pragma": "no-cache",
-                    "WWW-Authenticate": "Basic"
-                }
+                www_authenticate="Basic"
             )
 
         # クライアント認証の検証
         try:
             verify_secret, app = verify_client_secret(db, auth_header)
             if not verify_secret:
-                return JSONResponse(
+                return create_token_error_response(
+                    error=OAuthErrorCode.INVALID_CLIENT,
                     status_code=401,
-                    content={"error": "invalid_client"},
-                    headers={
-                        "Cache-Control": "no-store",
-                        "Pragma": "no-cache",
-                        "WWW-Authenticate": "Basic"
-                    }
+                    www_authenticate="Basic"
                 )
         except Exception:
-            return JSONResponse(
+            return create_token_error_response(
+                error=OAuthErrorCode.INVALID_CLIENT,
                 status_code=401,
-                content={"error": "invalid_client"},
-                headers={
-                    "Cache-Control": "no-store",
-                    "Pragma": "no-cache",
-                    "WWW-Authenticate": "Basic"
-                }
+                www_authenticate="Basic"
             )
 
     # grant_typeの検証
     if grant_type != "authorization_code":
-        return JSONResponse(
-            status_code=400,
-            content={"error": "unsupported_grant_type"},
-            headers={
-                "Cache-Control": "no-store",
-                "Pragma": "no-cache"
-            }
+        return create_token_error_response(
+            error=OAuthErrorCode.UNSUPPORTED_GRANT_TYPE
         )
 
     # Authorization Codeの検証
     code_obj: Code = db.query(Code).filter_by(token=code).first()
     if not code_obj or not code_obj.is_enable:
-        return JSONResponse(
-            status_code=400,
-            content={"error": "invalid_grant"},
-            headers={
-                "Cache-Control": "no-store",
-                "Pragma": "no-cache"
-            }
+        return create_token_error_response(
+            error=OAuthErrorCode.INVALID_GRANT
         )
 
     # Codeの有効期限チェック
     now = datetime.now(timezone.utc)
     code_exp = code_obj.exp.replace(tzinfo=timezone.utc) if code_obj.exp.tzinfo is None else code_obj.exp
     if now > code_exp:
-        return JSONResponse(
-            status_code=400,
-            content={"error": "invalid_grant"},
-            headers={
-                "Cache-Control": "no-store",
-                "Pragma": "no-cache"
-            }
+        return create_token_error_response(
+            error=OAuthErrorCode.INVALID_GRANT,
+            error_description="Authorization code has expired"
         )
 
     # PKCE検証
     if code_obj.code_challenge is not None:
         if not code_verifier:
-            return JSONResponse(
-                status_code=400,
-                content={"error": "invalid_request", "error_description": "code_verifier required"},
-                headers={
-                    "Cache-Control": "no-store",
-                    "Pragma": "no-cache"
-                }
+            return create_token_error_response(
+                error=OAuthErrorCode.INVALID_REQUEST,
+                error_description="code_verifier required"
             )
 
         # code_challengeの検証
@@ -305,13 +272,9 @@ async def token_endpoint(
             verifier_challenge = code_verifier
 
         if verifier_challenge != code_obj.code_challenge:
-            return JSONResponse(
-                status_code=400,
-                content={"error": "invalid_grant", "error_description": "code_verifier mismatch"},
-                headers={
-                    "Cache-Control": "no-store",
-                    "Pragma": "no-cache"
-                }
+            return create_token_error_response(
+                error=OAuthErrorCode.INVALID_GRANT,
+                error_description="code_verifier mismatch"
             )
 
     # OIDCの認可情報を取得
@@ -319,13 +282,9 @@ async def token_endpoint(
         db.query(OidcAuthorizations).filter_by(code_id=code_obj.id).first()
     )
     if not oidc_auth:
-        return JSONResponse(
-            status_code=400,
-            content={"error": "invalid_grant"},
-            headers={
-                "Cache-Control": "no-store",
-                "Pragma": "no-cache"
-            }
+        return create_token_error_response(
+            error=OAuthErrorCode.INVALID_GRANT,
+            error_description="Invalid authorization code"
         )
 
     auth = db.query(Auths).filter_by(id=oidc_auth.auth_id).first()
@@ -336,13 +295,9 @@ async def token_endpoint(
     # redirect_uriの検証
     redirect_uris = [uri.uri for uri in app.redirect_uris]
     if redirect_uri not in redirect_uris:
-        return JSONResponse(
-            status_code=400,
-            content={"error": "invalid_request"},
-            headers={
-                "Cache-Control": "no-store",
-                "Pragma": "no-cache"
-            }
+        return create_token_error_response(
+            error=OAuthErrorCode.INVALID_REQUEST,
+            error_description="redirect_uri mismatch"
         )
 
     # Codeを使用済みにする
