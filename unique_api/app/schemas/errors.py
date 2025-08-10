@@ -14,7 +14,7 @@ class OAuthErrorCode(str, Enum):
     INVALID_SCOPE = "invalid_scope"
     SERVER_ERROR = "server_error"
     TEMPORARILY_UNAVAILABLE = "temporarily_unavailable"
-    
+
     # Token Endpoint固有のエラーコード
     INVALID_CLIENT = "invalid_client"
     INVALID_GRANT = "invalid_grant"
@@ -57,17 +57,17 @@ def create_error_response(
         error_uri=error_uri,
         state=state
     )
-    
+
     # 基本的なヘッダー
     response_headers = {
         "Cache-Control": "no-store",
         "Pragma": "no-cache"
     }
-    
+
     # 追加のヘッダーがある場合は追加
     if headers:
         response_headers.update(headers)
-    
+
     return JSONResponse(
         status_code=status_code,
         content=response.dict(exclude_none=True),
@@ -87,17 +87,17 @@ def create_token_error_response(
         "Cache-Control": "no-store",
         "Pragma": "no-cache"
     }
-    
+
     # WWW-Authenticateヘッダーが必要な場合は追加
     if www_authenticate:
         headers["WWW-Authenticate"] = www_authenticate
-    
+
     response = ErrorResponse(
         error=error,
         error_description=error_description,
         error_uri=error_uri
     )
-    
+
     return JSONResponse(
         status_code=status_code,
         content=response.dict(exclude_none=True),

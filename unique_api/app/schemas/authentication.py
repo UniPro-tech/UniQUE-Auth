@@ -39,6 +39,3 @@ class AuthenticationRequest(BaseModel):
             if 'none' in values and len(values) > 1:
                 raise ValueError("'none' cannot be combined with other values")
         return v
-
-
-
