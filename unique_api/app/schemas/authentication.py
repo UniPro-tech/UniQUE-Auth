@@ -41,8 +41,4 @@ class AuthenticationRequest(BaseModel):
         return v
 
 
-class AuthenticationError(BaseModel):
-    error: str = Field(..., description="Error code")
-    error_description: Optional[str] = Field(None, description="Human-readable ASCII encoded error description")
-    error_uri: Optional[str] = Field(None, description="URI of a web page with additional information about the error")
-    state: Optional[str] = Field(None, description="State value from the authentication request")
+
