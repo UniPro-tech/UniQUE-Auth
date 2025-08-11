@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, Form, Cookie
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
@@ -13,31 +13,11 @@ from unique_api.app.model import (
     Users,
     Sessions
 )
-from unique_api.app.schemas.authentication import AuthenticationRequest, AuthenticationError
-
-
-def create_error_response(
-    error: str,
-    error_description: str = None,
-    error_uri: str = None,
-    state: str = None,
-    status_code: int = 400
-) -> JSONResponse:
-    """RFC6749に準拠したエラーレスポンスを生成"""
-    response = AuthenticationError(
-        error=error,
-        error_description=error_description,
-        error_uri=error_uri,
-        state=state
-    )
-    return JSONResponse(
-        status_code=status_code,
-        content=response.dict(exclude_none=True),
-        headers={
-            "Cache-Control": "no-store",
-            "Pragma": "no-cache"
-        }
-    )
+from unique_api.app.schemas.authentication import AuthenticationRequest
+from unique_api.app.schemas.errors import (
+    create_error_response,
+    OAuthErrorCode
+)
 
 
 def get_session(request: Request, db: Session) -> Optional[Sessions]:
@@ -154,8 +134,8 @@ async def login_post(
     cookie_token = request.cookies.get("csrf_token")
     if not cookie_token or cookie_token != csrf_token:
         return create_error_response(
-            "invalid_request",
-            "CSRF token validation failed",
+            error=OAuthErrorCode.INVALID_REQUEST,
+            error_description="CSRF token validation failed",
             state=params.state
         )
 
@@ -170,14 +150,10 @@ async def login_post(
     )
 
     if validated_user is None:
-        return templates.TemplateResponse(
-            "login.html",
-            {
-                "request": request,
-                "action_url": f"login?{urlencode(params.dict(exclude_none=True))}",
-                "csrf_token": csrf_token,
-                "error": "Invalid username or password"
-            },
+        return create_error_response(
+            error=OAuthErrorCode.ACCESS_DENIED,
+            error_description="Invalid username or password",
+            state=params.state,
             status_code=401
         )
 
@@ -268,15 +244,19 @@ async def signup_post(
     # ユーザ名のメンバーの登録可否
     existing_member = db.query(Users).filter_by(custom_id=custom_id).first()
     if not existing_member:
-        return templates.TemplateResponse(
-            "signup.html", {"request": request, "error": "Member is not registered"}
+        return create_error_response(
+            error=OAuthErrorCode.INVALID_REQUEST,
+            error_description="Member is not registered",
+            status_code=400
         )
 
     # ユーザ名の重複チェック
     existing_user = db.query(Users).filter_by(custom_id=custom_id).first()
     if existing_user:
-        return templates.TemplateResponse(
-            "signup.html", {"request": request, "error": "User already exists"}
+        return create_error_response(
+            error=OAuthErrorCode.INVALID_REQUEST,
+            error_description="User already exists",
+            status_code=400
         )
 
     # 新規ユーザの作成
@@ -326,8 +306,10 @@ async def join_post(
     # ユーザ名の重複チェック
     existing_member = db.query(Users).filter_by(custom_id=custom_id).first()
     if existing_member:
-        return templates.TemplateResponse(
-            "signup.html", {"request": request, "error": "User already exists"}
+        return create_error_response(
+            error=OAuthErrorCode.INVALID_REQUEST,
+            error_description="User already exists",
+            status_code=400
         )
 
     # 新規ユーザの作成
