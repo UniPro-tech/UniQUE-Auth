@@ -1,6 +1,4 @@
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
-from unique_api.app.model.app import Apps
 from typing import List
 from pydantic import AnyHttpUrl
 import base64
@@ -19,7 +17,7 @@ def validate_redirect_uri(
     return str(requested_uri)
 
 
-def verify_client_secret(db: Session, authorization: str | None) -> tuple[bool, Apps | None]:
+def token_authorization(authorization: str | None) -> tuple[str, str | None]:
     """
     クライアントシークレットを検証するメソッド。
     authorization ヘッダーが "Basic {base64エンコードされたクライアントID:クライアントシークレット}" 形式であることを確認します。
@@ -33,10 +31,6 @@ def verify_client_secret(db: Session, authorization: str | None) -> tuple[bool, 
         decoded = base64.b64decode(auth_value).decode("utf-8")
         client_id, client_secret = decoded.split(":", 1)
         # クライアントIDとクライアントシークレットを比較
-        app = db.query(Apps).filter_by(client_id=client_id).first()
-        return (
-            client_id == app.client_id and client_secret == app.client_secret,
-            app
-        )
+        return client_id, client_secret
     except (ValueError, IndexError):
-        return False, None
+        return None

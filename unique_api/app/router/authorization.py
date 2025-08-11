@@ -29,7 +29,7 @@ from unique_api.app.services.authorization import (
     get_or_create_auth,
     create_oidc_authorization,
 )
-from unique_api.app.services.oauth_utils import validate_redirect_uri, verify_client_secret
+from unique_api.app.services.oauth_utils import validate_redirect_uri, token_authorization
 from unique_api.app.schemas.errors import create_token_error_response, OAuthErrorCode
 from unique_api.app.services.token import (
     create_access_token,
@@ -177,10 +177,14 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     )
 
     request.session.clear()
+
+    credentials = f"{app.client_id}:{app.client_secret}"
+    encoded_credentials = base64.b64encode(credentials.encode()).decode()
     print(
         "Token can be obtained with:\n"
         f"curl -X POST http://localhost:8000/token \\\n"
         "  -H 'Content-Type: application/x-www-form-urlencoded' \\\n"
+        f"  -H 'Authorization: Basic {encoded_credentials}'\\\n"
         f"  -d 'grant_type=authorization_code&code={oidc_auth.code.token}&redirect_uri={auth_request['redirect_uri']}'"
     )
     return RedirectResponse(
@@ -196,8 +200,6 @@ async def token_endpoint(
     code: str = Form(...),
     redirect_uri: str = Form(...),
     code_verifier: str | None = Form(None),
-    client_id: str | None = Form(None),
-    client_secret: str | None = Form(None),
     db: Session = Depends(get_db)
 ):
     """
@@ -228,8 +230,9 @@ async def token_endpoint(
 
         # クライアント認証の検証
         try:
-            verify_secret, app = verify_client_secret(db, auth_header)
-            if not verify_secret:
+            client_id, client_secret = token_authorization(auth_header)
+            app = db.query(Apps).filter_by(client_id=client_id).first()
+            if not app or app.client_secret != client_secret:
                 return create_token_error_response(
                     error=OAuthErrorCode.INVALID_CLIENT,
                     status_code=401,
