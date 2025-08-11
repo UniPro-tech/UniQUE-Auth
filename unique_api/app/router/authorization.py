@@ -29,10 +29,8 @@ from unique_api.app.services.authorization import (
     get_or_create_auth,
     create_oidc_authorization,
 )
-
 from unique_api.app.services.oauth_utils import validate_redirect_uri, verify_client_secret
 from unique_api.app.schemas.errors import create_token_error_response, OAuthErrorCode
-from unique_api.app.services.oauth_utils import validate_redirect_uri
 from unique_api.app.services.token import (
     create_access_token,
     create_refresh_token,
