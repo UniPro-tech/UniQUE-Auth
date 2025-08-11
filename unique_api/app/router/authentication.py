@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, Form, Cookie
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
@@ -16,8 +16,7 @@ from unique_api.app.model import (
 from unique_api.app.schemas.authentication import AuthenticationRequest
 from unique_api.app.schemas.errors import (
     create_error_response,
-    OAuthErrorCode,
-    OIDCErrorCode
+    OAuthErrorCode
 )
 
 
