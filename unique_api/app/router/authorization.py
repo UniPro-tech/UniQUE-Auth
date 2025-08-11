@@ -4,11 +4,10 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from urllib.parse import urlencode
 from datetime import timedelta, datetime, timezone
-from db import get_db
+from unique_api.app.db import get_db
 import hashlib
 import ulid
 import os
-import jwt
 import base64
 from unique_api.app.model import (
     AccessTokens,
@@ -30,8 +29,17 @@ from unique_api.app.services.authorization import (
     get_or_create_auth,
     create_oidc_authorization,
 )
+
 from unique_api.app.services.oauth_utils import validate_redirect_uri, verify_client_secret
 from unique_api.app.schemas.errors import create_token_error_response, OAuthErrorCode
+from unique_api.app.services.oauth_utils import validate_redirect_uri
+from unique_api.app.services.token import (
+    create_access_token,
+    create_refresh_token,
+    create_id_token,
+    generate_at_hash
+)
+from unique_api.app.config import settings
 
 
 router = APIRouter()
@@ -190,6 +198,8 @@ async def token_endpoint(
     code: str = Form(...),
     redirect_uri: str = Form(...),
     code_verifier: str | None = Form(None),
+    client_id: str | None = Form(None),
+    client_secret: str | None = Form(None),
     db: Session = Depends(get_db)
 ):
     """
@@ -307,18 +317,11 @@ async def token_endpoint(
 
     # アクセストークンの生成
     now = datetime.now(timezone.utc)
-    access_token_jwt = jwt.encode(
-        {
-            "iss": "https://auth.uniproject.jp",
-            "sub": user.id,
-            "aud": app.aud,
-            "client_id": auth.app_id,
-            "scope": consent.scope,
-            "exp": int((now + timedelta(minutes=60)).timestamp()),
-            "iat": int(now.timestamp())
-        },
-        "your-secret-key",
-        algorithm="HS256",
+    access_token_jwt = create_access_token(
+        sub=user.id,
+        client_id=auth.app_id,
+        scope=consent.scope,
+        aud=app.aud
     )
 
     # アクセストークンの保存
@@ -327,24 +330,17 @@ async def token_endpoint(
         type="access",
         scope=consent.scope,
         issued_at=now,
-        exp=now + timedelta(minutes=60),
+        exp=now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         client_id=auth.app_id,
         user_id=user.id,
         revoked=False,
     )
 
     # リフレッシュトークンの生成
-    refresh_token_jwt = jwt.encode(
-        {
-            "iss": "https://auth.uniproject.jp",
-            "sub": user.id,
-            "client_id": auth.app_id,
-            "aud": app.aud,
-            "exp": int((now + timedelta(days=30)).timestamp()),
-            "iat": int(now.timestamp())
-        },
-        "your-secret-key",
-        algorithm="HS256",
+    refresh_token_jwt = create_refresh_token(
+        sub=user.id,
+        client_id=auth.app_id,
+        aud=app.aud
     )
 
     # リフレッシュトークンの保存
@@ -352,32 +348,26 @@ async def token_endpoint(
         hash=hashlib.sha256(refresh_token_jwt.encode()).hexdigest(),
         type="refresh",
         issued_at=now,
-        exp=now + timedelta(days=30),
+        exp=now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
         client_id=auth.app_id,
         user_id=user.id,
         revoked=False,
     )
 
+    # at_hashの生成
+    at_hash = generate_at_hash(access_token_jwt)
+
     # IDトークンの生成
     id_token_id = str(ulid.new())
-    id_token_jwt = jwt.encode(
-        {
-            "iss": "https://auth.uniproject.jp",
-            "sub": user.id,
-            "aud": app.aud,
-            "client_id": auth.app_id,
-            "scope": consent.scope,
-            "exp": int((now + timedelta(minutes=60)).timestamp()),
-            "iat": int(now.timestamp()),
-            "auth_time": int(code_obj.created_at.timestamp()),
-            "nonce": code_obj.nonce,
-            "acr": code_obj.acr,
-            "amr": code_obj.amr,
-            "jti": id_token_id,
-            "at_hash": hashlib.sha256(access_token_jwt.encode()).hexdigest()[:16],  # Access Token Hash
-        },
-        "your-secret-key",
-        algorithm="HS256",
+    id_token_jwt = create_id_token(
+        sub=user.id,
+        aud=app.aud,
+        auth_time=int(code_obj.created_at.timestamp()),
+        nonce=code_obj.nonce,
+        acr=code_obj.acr,
+        amr=code_obj.amr,
+        at_hash=at_hash,
+        azp=auth.app_id if isinstance(app.aud, list) and len(app.aud) > 1 else None
     )
 
     # IDトークンの保存
@@ -386,7 +376,7 @@ async def token_endpoint(
         hash=hashlib.sha256(id_token_jwt.encode()).hexdigest(),
         type="id",
         issued_at=now,
-        exp=now + timedelta(minutes=60),
+        exp=now + timedelta(minutes=settings.ID_TOKEN_EXPIRE_MINUTES),
         client_id=auth.app_id,
         user_id=user.id,
         aud=app.aud,
