@@ -5,6 +5,7 @@ const api = axios.create({
   withCredentials: true, // クッキーを送信するために必要
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
 });
 

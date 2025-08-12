@@ -87,12 +87,24 @@ async def login(
     # CSRF対策トークンの生成
     if not csrf_token:
         csrf_token = secrets.token_urlsafe(32)
+
+    # クライアントがJSONを要求している場合
+    if "application/json" in request.headers.get("accept", ""):
         response = JSONResponse(
             content={
                 "csrf_token": csrf_token,
                 "action_url": f"login?{urlencode(params.dict(exclude_none=True))}",
             }
         )
+    else:
+        # ブラウザからのアクセスの場合はフロントエンドにリダイレクト
+        response = RedirectResponse(
+            url=f"http://localhost:5173/login?{urlencode(params.dict(exclude_none=True))}",
+            status_code=302
+        )
+
+    # CSRFトークンをクッキーにセット
+    if not csrf_token:
         response.set_cookie(
             key="csrf_token",
             value=csrf_token,
@@ -100,14 +112,8 @@ async def login(
             secure=True,
             samesite="lax"
         )
-        return response
 
-    return JSONResponse(
-        content={
-            "csrf_token": csrf_token,
-            "action_url": f"login?{urlencode(params.dict(exclude_none=True))}",
-        }
-    )
+    return response
 
 
 @router.post("/login")
