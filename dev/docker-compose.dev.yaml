@@ -26,6 +26,25 @@ services:
     networks:
       - unique
 
+  frontend:
+    image: node:20-alpine
+    container_name: unique_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../frontend:/app
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8000
+    working_dir: /app
+    command: >
+      /bin/sh -c "npm install && \
+      npm run dev -- --host 0.0.0.0"
+    networks:
+      - unique
+    depends_on:
+      - unique_api
+
   api-dbsrv-01:
     image: mysql:8.4
     container_name: unique_db
