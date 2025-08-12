@@ -86,12 +86,10 @@ async def login(
     # CSRF対策トークンの生成
     if not csrf_token:
         csrf_token = secrets.token_urlsafe(32)
-        response = templates.TemplateResponse(
-            "login.html",
-            {
-                "request": request,
+        response = JSONResponse(
+            content={
+                "csrf_token": csrf_token,
                 "action_url": f"login?{urlencode(params.dict(exclude_none=True))}",
-                "csrf_token": csrf_token
             }
         )
         response.set_cookie(
@@ -103,12 +101,10 @@ async def login(
         )
         return response
 
-    return templates.TemplateResponse(
-        "login.html",
-        {
-            "request": request,
+    return JSONResponse(
+        content={
+            "csrf_token": csrf_token,
             "action_url": f"login?{urlencode(params.dict(exclude_none=True))}",
-            "csrf_token": csrf_token
         }
     )
 
@@ -116,9 +112,6 @@ async def login(
 @router.post("/login")
 async def login_post(
     request: Request,
-    custom_id: str = Form(...),
-    password: str = Form(...),
-    csrf_token: str = Form(...),
     params: AuthenticationRequest = Depends(),
     db: Session = Depends(get_db),
 ):
@@ -130,6 +123,18 @@ async def login_post(
     - プロンプトパラメータの処理
     - max_ageパラメータの処理
     """
+    data = await request.json()
+    custom_id = data.get("custom_id")
+    password = data.get("password")
+    csrf_token = data.get("csrf_token")
+
+    if not all([custom_id, password, csrf_token]):
+        return create_error_response(
+            error=OAuthErrorCode.INVALID_REQUEST,
+            error_description="Missing required fields",
+            state=params.state
+        )
+
     # CSRF対策
     cookie_token = request.cookies.get("csrf_token")
     if not cookie_token or cookie_token != csrf_token:
@@ -170,9 +175,12 @@ async def login_post(
     db.commit()
 
     # レスポンスの準備
-    response = RedirectResponse(
-        url=f"auth?{urlencode(params.dict(exclude_none=True))}",
-        status_code=302
+    redirect_url = f"auth?{urlencode(params.dict(exclude_none=True))}"
+    response = JSONResponse(
+        content={
+            "success": True,
+            "redirect_url": redirect_url,
+        }
     )
     response.set_cookie(
         key="session_",
@@ -208,7 +216,12 @@ async def logout(
             db.commit()
 
     # レスポンスの準備
-    response = RedirectResponse(url="/", status_code=302)
+    response = JSONResponse(
+        content={
+            "success": True,
+            "message": "Logged out successfully"
+        }
+    )
     response.delete_cookie(key="session_")
     response.delete_cookie(key="csrf_token")
 
