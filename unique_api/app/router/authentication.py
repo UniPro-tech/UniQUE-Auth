@@ -14,6 +14,7 @@ from unique_api.app.model import (
     Sessions
 )
 from unique_api.app.schemas.authentication import AuthenticationRequest
+from unique_api.app.schemas.login import LoginRequest
 from unique_api.app.schemas.errors import (
     create_error_response,
     OAuthErrorCode
@@ -109,8 +110,6 @@ async def login(
     )
 
 
-from unique_api.app.schemas.login import LoginRequest
-
 @router.post("/login")
 async def login_post(
     request: Request,
@@ -141,8 +140,7 @@ async def login_post(
         .filter_by(
             custom_id=login_data.custom_id,
             password_hash=hashlib.sha256(login_data.password.encode()).hexdigest(),
-        )
-        .first()
+        ).first()
     )
 
     if validated_user is None:
