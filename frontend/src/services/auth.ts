@@ -1,9 +1,9 @@
 import api from './api';
 import type { LoginRequest, LoginResponse, AuthorizationData, AuthorizationRequest } from '../types';
 
-export const login = async (data: LoginRequest): Promise<LoginResponse> => {
+export const login = async (data: LoginRequest, queryString: string): Promise<LoginResponse> => {
   try {
-    const response = await api.post('/login', data);
+    const response = await api.post(`/login${queryString}`, data);
     return {
       success: true,
       redirect_url: response.data.redirect_url,
@@ -16,8 +16,8 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
   }
 };
 
-export const getCsrfToken = async (): Promise<string> => {
-  const response = await api.get('/login');
+export const getCsrfToken = async (queryString: string = ''): Promise<string> => {
+  const response = await api.get(`/login${queryString}`);
   return response.data.csrf_token;
 };
 

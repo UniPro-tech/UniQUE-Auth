@@ -24,22 +24,25 @@ export function LoginPage() {
   useEffect(() => {
     const fetchCsrfToken = async () => {
       try {
-        const token = await getCsrfToken();
+        const token = await getCsrfToken(location.search);
         setCsrfToken(token);
       } catch (error) {
         setError('CSRFトークンの取得に失敗しました');
       }
     };
     fetchCsrfToken();
-  }, []);
+  }, [location.search]);
 
   const handleSubmit = async (values: { custom_id: string; password: string }) => {
     try {
       setError(null);
-      const response = await login({
-        ...values,
-        csrf_token: csrfToken,
-      });
+      const response = await login(
+        {
+          ...values,
+          csrf_token: csrfToken,
+        },
+        location.search // URLのクエリパラメータを渡す
+      );
 
       if (response.success && response.redirect_url) {
         // 認可画面またはリダイレクト先に遷移
