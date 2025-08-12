@@ -32,10 +32,11 @@ app = FastAPI(lifespan=lifespan)
 # CORSの設定
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Viteのデフォルトポート
+    allow_origins=["http://localhost:5173", "http://localhost:8000"],  # フロントエンドとバックエンドのオリジン
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 app.add_middleware(

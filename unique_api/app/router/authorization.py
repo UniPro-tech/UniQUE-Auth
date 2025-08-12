@@ -59,25 +59,36 @@ async def auth(
     # セッションからユーザ情報を取得
     session_id = request.cookies.get("session_")
     if session_id is None:
-        return JSONResponse(
-            status_code=401,
-            content={
-                "error": "login_required",
-                "error_description": "User authentication required",
-                "login_url": f"login?{urlencode(params.model_dump(exclude_none=True))}"
-            }
+        # クライアントがJSONを要求している場合
+        if "application/json" in request.headers.get("accept", ""):
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "error": "login_required",
+                    "error_description": "User authentication required",
+                    "login_url": f"/login?{urlencode(params.model_dump(exclude_none=True))}"
+                }
+            )
+        # それ以外の場合はリダイレクト
+        return RedirectResponse(
+            url=f"/login?{urlencode(params.model_dump(exclude_none=True))}",
+            status_code=302
         )
 
     session = db.query(Sessions).filter_by(id=session_id).first()
-    # セッションが保持されていない場合はloginにリダイレクト
     if not session:
-        return JSONResponse(
-            status_code=401,
-            content={
-                "error": "login_required",
-                "error_description": "Invalid or expired session",
-                "login_url": f"login?{urlencode(params.model_dump(exclude_none=True))}"
-            }
+        if "application/json" in request.headers.get("accept", ""):
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "error": "login_required",
+                    "error_description": "Invalid or expired session",
+                    "login_url": f"/login?{urlencode(params.model_dump(exclude_none=True))}"
+                }
+            )
+        return RedirectResponse(
+            url=f"/login?{urlencode(params.model_dump(exclude_none=True))}",
+            status_code=302
         )
 
     user = db.query(Users).filter_by(id=session.user_id).first()
@@ -113,11 +124,16 @@ async def auth(
             )
 
             request.session.clear()
-            return JSONResponse(
-                content={
-                    "success": True,
-                    "redirect_url": f"{params.redirect_uri}?code={oidc_auth.code.token}&state={params.state}"
-                }
+            if "application/json" in request.headers.get("accept", ""):
+                return JSONResponse(
+                    content={
+                        "success": True,
+                        "redirect_url": f"{params.redirect_uri}?code={oidc_auth.code.token}&state={params.state}"
+                    }
+                )
+            return RedirectResponse(
+                url=f"{params.redirect_uri}?code={oidc_auth.code.token}&state={params.state}",
+                status_code=302
             )
 
     # 認可されていない場合は認可画面を表示
@@ -145,7 +161,15 @@ async def auth(
         "user": {"name": user.custom_id, "id": user.id},
     }
 
-    return JSONResponse(content=auth_data)
+    # クライアントがJSONを要求している場合
+    if "application/json" in request.headers.get("accept", ""):
+        return JSONResponse(content=auth_data)
+
+    # それ以外の場合はフロントエンドにリダイレクト
+    return RedirectResponse(
+        url=f"http://localhost:5173/auth?{urlencode(params.model_dump(exclude_none=True))}",
+        status_code=302
+    )
 
 
 @router.post("/auth")
