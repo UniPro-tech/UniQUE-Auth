@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, Form, Cookie
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
@@ -109,9 +109,12 @@ async def login(
     )
 
 
+from unique_api.app.schemas.login import LoginRequest
+
 @router.post("/login")
 async def login_post(
     request: Request,
+    login_data: LoginRequest,
     params: AuthenticationRequest = Depends(),
     db: Session = Depends(get_db),
 ):
@@ -123,21 +126,9 @@ async def login_post(
     - プロンプトパラメータの処理
     - max_ageパラメータの処理
     """
-    data = await request.json()
-    custom_id = data.get("custom_id")
-    password = data.get("password")
-    csrf_token = data.get("csrf_token")
-
-    if not all([custom_id, password, csrf_token]):
-        return create_error_response(
-            error=OAuthErrorCode.INVALID_REQUEST,
-            error_description="Missing required fields",
-            state=params.state
-        )
-
     # CSRF対策
     cookie_token = request.cookies.get("csrf_token")
-    if not cookie_token or cookie_token != csrf_token:
+    if not cookie_token or cookie_token != login_data.csrf_token:
         return create_error_response(
             error=OAuthErrorCode.INVALID_REQUEST,
             error_description="CSRF token validation failed",
@@ -148,8 +139,8 @@ async def login_post(
     validated_user = (
         db.query(Users)
         .filter_by(
-            custom_id=custom_id,
-            password_hash=hashlib.sha256(password.encode()).hexdigest(),
+            custom_id=login_data.custom_id,
+            password_hash=hashlib.sha256(login_data.password.encode()).hexdigest(),
         )
         .first()
     )
