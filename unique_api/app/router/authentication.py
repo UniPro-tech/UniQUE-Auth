@@ -99,19 +99,18 @@ async def login(
     else:
         # ブラウザからのアクセスの場合はフロントエンドにリダイレクト
         response = RedirectResponse(
-            url=f"http://localhost:5173/login?{urlencode(params.dict(exclude_none=True))}",
+            url=f"http://localhost:5173/login?{urlencode(params.model_dump(exclude_none=True))}",
             status_code=302
         )
 
     # CSRFトークンをクッキーにセット
-    if not csrf_token:
-        response.set_cookie(
-            key="csrf_token",
-            value=csrf_token,
-            httponly=True,
-            secure=True,
-            samesite="lax"
-        )
+    response.set_cookie(
+        key="csrf_token",
+        value=csrf_token,
+        httponly=True,
+        secure=True,
+        samesite="lax"
+    )
 
     return response
 
