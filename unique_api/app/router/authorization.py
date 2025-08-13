@@ -231,6 +231,16 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     )
 
     request.session.clear()
+    #  デバック用として使用するcurlコマンドを出力
+    credentials = f"{app.client_id}:{app.client_secret}"
+    encoded_credentials = base64.b64encode(credentials.encode()).decode()
+    print(
+        "Token can be obtained with:\n"
+        f"curl -X POST http://localhost:8000/token \\\n"
+        "  -H 'Content-Type: application/x-www-form-urlencoded' \\\n"
+        f"  -H 'Authorization: Basic {encoded_credentials}'\\\n"
+        f"  -d 'grant_type=authorization_code&code={oidc_auth.code.token}&redirect_uri={auth_request['redirect_uri']}'"
+    )
     return JSONResponse(
         content={
             "success": True,
