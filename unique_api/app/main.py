@@ -32,7 +32,7 @@ app = FastAPI(lifespan=lifespan)
 # CORSの設定
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:8000"],  # フロントエンドとバックエンドのオリジン
+    allow_origins=["http://localhost"],  # nginxのオリジン
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

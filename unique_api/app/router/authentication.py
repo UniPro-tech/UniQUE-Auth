@@ -99,7 +99,7 @@ async def login(
     else:
         # ブラウザからのアクセスの場合はフロントエンドにリダイレクト
         response = RedirectResponse(
-            url=f"http://localhost:5173/login?{urlencode(params.model_dump(exclude_none=True))}",
+            url=f"/login?{urlencode(params.dict(exclude_none=True))}",
             status_code=302
         )
 
