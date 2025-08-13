@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { TextInput, PasswordInput, Button, Paper, Title, Text, Container } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { login, getCsrfToken } from '../services/auth';
@@ -8,7 +8,6 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [csrfToken, setCsrfToken] = useState<string>('');
   const location = useLocation();
-  const navigate = useNavigate();
 
   const form = useForm({
     initialValues: {
