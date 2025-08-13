@@ -78,4 +78,4 @@ services:
 
 networks:
   unique:
-    name: unique_network
+    name: unique
