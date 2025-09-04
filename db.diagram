@@ -26,6 +26,7 @@ Table "apps" {
   "name" varchar(255) [not null]
   "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
   "is_enable" bool [not null, default: true]
+  "is_system" bool [not null, default: false]
 }
 
 Table "redirect_uris" {
