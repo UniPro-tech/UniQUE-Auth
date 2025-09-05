@@ -320,7 +320,7 @@ async def token_endpoint(
     now = datetime.now(timezone.utc)
     access_token_jwt = create_access_token(
         sub=user.id,
-        client_id=auth.app_id,
+        client_id=app.client_id,
         scope=consent.scope,
         aud=app.aud
     )
@@ -332,7 +332,7 @@ async def token_endpoint(
         scope=consent.scope,
         issued_at=now,
         exp=now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
-        client_id=auth.app_id,
+        client_id=app.client_id,
         user_id=user.id,
         revoked=False,
     )
@@ -340,7 +340,7 @@ async def token_endpoint(
     # リフレッシュトークンの生成
     refresh_token_jwt = create_refresh_token(
         sub=user.id,
-        client_id=auth.app_id,
+        client_id=app.client_id,
         aud=app.aud
     )
 
@@ -350,7 +350,7 @@ async def token_endpoint(
         type="refresh",
         issued_at=now,
         exp=now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
-        client_id=auth.app_id,
+        client_id=app.client_id,
         user_id=user.id,
         revoked=False,
     )
@@ -368,7 +368,7 @@ async def token_endpoint(
         acr=code_obj.acr,
         amr=code_obj.amr,
         at_hash=at_hash,
-        azp=auth.app_id if isinstance(app.aud, list) and len(app.aud) > 1 else None
+        azp=app.client_id if isinstance(app.aud, list) and len(app.aud) > 1 else None
     )
 
     # IDトークンの保存
@@ -378,7 +378,7 @@ async def token_endpoint(
         type="id",
         issued_at=now,
         exp=now + timedelta(minutes=settings.ID_TOKEN_EXPIRE_MINUTES),
-        client_id=auth.app_id,
+        client_id=app.client_id,
         user_id=user.id,
         aud=app.aud,
         nonce=code_obj.nonce,
