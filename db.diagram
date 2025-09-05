@@ -11,7 +11,7 @@ Table "users" {
   "is_system" BOOLEAN [not null, default: FALSE]
   "created_at" DATETIME [default: `CURRENT_TIMESTAMP`]
   "updated_at" DATETIME
-  "is_enable" BOOLEAN [default: TRUE]
+  "status" ENUM ("suspended","active","arvhiced")
 
   Indexes {
     custom_id [name: "idx_users_custom_id"]
@@ -142,6 +142,7 @@ Table "sessions" {
 Table "roles" {
   "id" varchar(255) [pk]
   "custom_id" varchar(255) [unique]
+  "name" varchar(255)
   "permissions" int [not null, default: 0]
   "created_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
   "updated_at" timestamp
