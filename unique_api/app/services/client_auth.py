@@ -6,6 +6,8 @@ from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 from ..model import Apps
 
+CLIENT_ID_PREFIX = "client_"
+
 
 class ClientAuthMethod(str, Enum):
     """
@@ -71,3 +73,25 @@ def verify_client_secret_post(
 
     except Exception:
         return False, None
+
+
+"""
+基本的にアプリケーション内はapp_idで管理する
+外部に公開する際にclient_idに変換して使用する
+"""
+
+
+def app_id_to_client_id(app_id: str) -> str:
+    """
+    アプリケーションID(uuid)からクライアントIDを生成
+    """
+    return CLIENT_ID_PREFIX + app_id
+
+
+def client_id_to_app_id(client_id: str) -> Optional[str]:
+    """
+    クライアントIDからアプリケーションID(uuid)を取得
+    """
+    if client_id.startswith(CLIENT_ID_PREFIX):
+        return client_id[len(CLIENT_ID_PREFIX):]
+    return None

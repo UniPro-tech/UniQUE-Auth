@@ -19,12 +19,10 @@ if TYPE_CHECKING:
 
 class Apps(Base):
     __tablename__ = "apps"
-    __table_args__ = (Index("client_id", "client_id", unique=True),)
 
     id: Mapped[str] = mapped_column(
         String(255, "utf8mb4_unicode_ci"), primary_key=True, default=generate_ulid
     )
-    client_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     aud: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     client_secret: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     name: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))

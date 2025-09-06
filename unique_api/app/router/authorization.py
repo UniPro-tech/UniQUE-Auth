@@ -29,6 +29,7 @@ from unique_api.app.services.authorization import (
     get_or_create_auth,
     create_oidc_authorization,
 )
+from unique_api.app.services.client_auth import client_id_to_app_id, app_id_to_client_id
 from unique_api.app.services.oauth_utils import validate_redirect_uri, token_authorization
 from unique_api.app.schemas.errors import create_token_error_response, OAuthErrorCode
 from unique_api.app.services.token import (
@@ -74,7 +75,7 @@ async def auth(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    app = db.query(Apps).filter_by(client_id=params.client_id).first()
+    app = db.query(Apps).filter_by(id=client_id_to_app_id(params.client_id)).first()
     if not app:
         raise HTTPException(status_code=404, detail="Client not found")
 
@@ -104,7 +105,7 @@ async def auth(
     # 認可されていない場合は認可画面を表示
     # リクエストパラメータをセッションストレージに署名付きで保存する
     request.session["auth_request"] = {
-        "client_id": app.client_id,
+        "client_id": app_id_to_client_id(app.id),
         "redirect_uri": validated_redirect_uri,
         "scope": params.scope,
         "state": params.state,
@@ -120,7 +121,7 @@ async def auth(
     auth_data = {
         "app": {
             "name": app.name,
-            "client_id": app.client_id,
+            "client_id": app_id_to_client_id(app.id),
             "redirect_uris": validated_redirect_uri,
             "scope": params.scope,
         },
@@ -157,7 +158,7 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    app = db.query(Apps).filter_by(client_id=auth_request["client_id"]).first()
+    app = db.query(Apps).filter_by(id=client_id_to_app_id(auth_request["client_id"])).first()
     if app is None:
         raise HTTPException(status_code=404, detail="Client not found")
 
@@ -178,7 +179,7 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
 
     request.session.clear()
 
-    credentials = f"{app.client_id}:{app.client_secret}"
+    credentials = f"{app_id_to_client_id(app.id)}:{app.client_secret}"
     encoded_credentials = base64.b64encode(credentials.encode()).decode()
     print(
         "Token can be obtained with:\n"
@@ -231,7 +232,7 @@ async def token_endpoint(
         # クライアント認証の検証
         try:
             client_id, client_secret = token_authorization(auth_header)
-            app = db.query(Apps).filter_by(client_id=client_id).first()
+            app = db.query(Apps).filter_by(id=client_id_to_app_id(client_id)).first()
             if not app or app.client_secret != client_secret:
                 return create_token_error_response(
                     error=OAuthErrorCode.INVALID_CLIENT,
@@ -320,7 +321,7 @@ async def token_endpoint(
     now = datetime.now(timezone.utc)
     access_token_jwt = create_access_token(
         sub=user.id,
-        client_id=app.client_id,
+        client_id=app_id_to_client_id(app.id),
         scope=consent.scope,
         aud=app.aud
     )
@@ -332,7 +333,7 @@ async def token_endpoint(
         scope=consent.scope,
         issued_at=now,
         exp=now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
-        client_id=app.client_id,
+        client_id=app_id_to_client_id(app.id),
         user_id=user.id,
         revoked=False,
     )
@@ -340,7 +341,7 @@ async def token_endpoint(
     # リフレッシュトークンの生成
     refresh_token_jwt = create_refresh_token(
         sub=user.id,
-        client_id=app.client_id,
+        client_id=app_id_to_client_id(app.id),
         aud=app.aud
     )
 
@@ -350,7 +351,7 @@ async def token_endpoint(
         type="refresh",
         issued_at=now,
         exp=now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
-        client_id=app.client_id,
+        client_id=app_id_to_client_id(app.id),
         user_id=user.id,
         revoked=False,
     )
@@ -368,7 +369,7 @@ async def token_endpoint(
         acr=code_obj.acr,
         amr=code_obj.amr,
         at_hash=at_hash,
-        azp=app.client_id if isinstance(app.aud, list) and len(app.aud) > 1 else None
+        azp=app_id_to_client_id(app.id) if isinstance(app.aud, list) and len(app.aud) > 1 else None
     )
 
     # IDトークンの保存
@@ -378,7 +379,7 @@ async def token_endpoint(
         type="id",
         issued_at=now,
         exp=now + timedelta(minutes=settings.ID_TOKEN_EXPIRE_MINUTES),
-        client_id=app.client_id,
+        client_id=app_id_to_client_id(app.id),
         user_id=user.id,
         aud=app.aud,
         nonce=code_obj.nonce,
