@@ -24,7 +24,7 @@ CREATE TABLE `apps` (
   `name` varchar(255) NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `is_enable` BOOLEAN NOT NULL DEFAULT true
+  `is_enable` BOOLEAN DEFAULT true
 );
 
 CREATE TABLE `redirect_uris` (
