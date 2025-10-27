@@ -1,27 +1,30 @@
 CREATE TABLE `users` (
     `id` varchar(255) PRIMARY KEY,
-    `custom_id` VARCHAR(255) UNIQUE,
+    `custom_id` VARCHAR(255) UNIQUE NOT NULL,
     `name` VARCHAR(255) NOT NULL,
     `password_hash` VARCHAR(255) NULL,
-    `email` VARCHAR(255) UNIQUE,
+    `email` VARCHAR(255) UNIQUE NOT NULL,
     `external_email` VARCHAR(255) NOT NULL,
-    `period` VARCHAR(255) NOT NULL,
+    `period` VARCHAR(255) NULL,
     `joined_at` DATETIME NULL,
     `is_system` BOOLEAN NOT NULL DEFAULT FALSE,
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` DATETIME,
-    `is_enable` BOOLEAN DEFAULT TRUE
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `is_enable` BOOLEAN DEFAULT TRUE,
+    `is_suspended` BOOLEAN DEFAULT FALSE,
+    `suspended_until` DATETIME NULL,
+    `suspended_reason` TEXT NULL
 );
 
 CREATE INDEX idx_users_custom_id ON users(custom_id);
 CREATE TABLE `apps` (
   `id` varchar(255) PRIMARY KEY,
-  `client_id` varchar(255) UNIQUE NOT NULL,
   `aud` varchar(255) UNIQUE NOT NULL,
   `client_secret` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-  `is_enable` bool NOT NULL DEFAULT true
+  `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_enable` BOOLEAN NOT NULL DEFAULT true
 );
 
 CREATE TABLE `redirect_uris` (
@@ -36,7 +39,7 @@ CREATE TABLE `auths` (
   `auth_user_id` varchar(255) NOT NULL,
   `app_id` varchar(255) NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-  `is_enable` bool NOT NULL DEFAULT true
+  `is_enable` BOOLEAN NOT NULL DEFAULT true
 );
 
 CREATE TABLE `oidc_authorizations` (
@@ -54,7 +57,7 @@ CREATE TABLE `token_sets` (
   `access_token_id` varchar(255) NOT NULL,
   `refresh_token_id` varchar(255) NOT NULL,
   `id_token_id` varchar(255) NOT NULL,
-  `is_enable` bool NOT NULL DEFAULT true,
+  `is_enable` BOOLEAN NOT NULL DEFAULT true,
   UNIQUE (`access_token_id`),
   UNIQUE (`refresh_token_id`),
   UNIQUE (`id_token_id`),
@@ -71,7 +74,7 @@ CREATE TABLE `code` (
   `amr` varchar(255) NULL,  -- JSONでもよい
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `exp` timestamp,
-  `is_enable` bool NOT NULL DEFAULT true
+  `is_enable` BOOLEAN NOT NULL DEFAULT true
 );
 
 CREATE TABLE `access_tokens` (
@@ -83,7 +86,7 @@ CREATE TABLE `access_tokens` (
   `exp` timestamp NOT NULL,
   `client_id` varchar(255) NOT NULL COMMENT 'アプリケーションID',
   `user_id` varchar(255) NOT NULL,
-  `revoked` bool NOT NULL DEFAULT false
+  `revoked` BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE TABLE `refresh_tokens` (
@@ -94,7 +97,7 @@ CREATE TABLE `refresh_tokens` (
   `exp` timestamp NOT NULL,
   `client_id` varchar(255) NOT NULL COMMENT 'アプリケーションID',
   `user_id` varchar(255) NOT NULL,
-  `revoked` bool NOT NULL DEFAULT false
+  `revoked` BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE TABLE `id_tokens` (
@@ -110,13 +113,13 @@ CREATE TABLE `id_tokens` (
   `acr` varchar(255) NULL,
   `amr` varchar(255) NULL,  -- JSONでもよい
   `user_id` varchar(255) NOT NULL,
-  `revoked` bool NOT NULL DEFAULT false
+  `revoked` BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE TABLE `consents` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
   `scope` varchar(255),
-  `is_enable` bool
+  `is_enable` BOOLEAN
 );
 
 CREATE TABLE `sessions` (
@@ -126,18 +129,18 @@ CREATE TABLE `sessions` (
   `user_agent` varchar(255) NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `expires_at` timestamp,
-  `is_enable` bool NOT NULL DEFAULT true
+  `is_enable` BOOLEAN NOT NULL DEFAULT true
 );
 
 CREATE TABLE `roles` (
   `id` varchar(255) PRIMARY KEY,
-  `custom_id` varchar(255) UNIQUE,
+  `custom_id` varchar(255) UNIQUE NOT NULL,
   `name` varchar(255) NULL,
   `permission` int NOT NULL DEFAULT 0,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  `updated_at` timestamp,
-  `is_enable` bool NOT NULL DEFAULT true,
-  `is_system` bool NOT NULL DEFAULT false
+  `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+  `is_enable` BOOLEAN DEFAULT true,
+  `is_system` BOOLEAN DEFAULT false
 );
 
 CREATE TABLE `discords` (
