@@ -66,7 +66,6 @@ def test_app(test_db):
     # テストアプリケーションを作成
     app = Apps(
         name="Test App",
-        name="test_client_id",
         client_secret=hashlib.sha256(
             "test_client_secret".encode()).hexdigest(),
         aud="test_client_id",
