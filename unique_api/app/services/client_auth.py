@@ -14,11 +14,12 @@ class ClientAuthMethod(str, Enum):
     OIDCプロバイダーがサポートするクライアント認証方式
     https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication
     """
+
     CLIENT_SECRET_BASIC = "client_secret_basic"  # HTTP Basic認証
-    CLIENT_SECRET_POST = "client_secret_post"    # POSTパラメータ
-    CLIENT_SECRET_JWT = "client_secret_jwt"      # 共有鍵によるJWT
-    PRIVATE_KEY_JWT = "private_key_jwt"          # 秘密鍵によるJWT
-    NONE = "none"                                # パブリッククライアント用
+    CLIENT_SECRET_POST = "client_secret_post"  # POSTパラメータ
+    CLIENT_SECRET_JWT = "client_secret_jwt"  # 共有鍵によるJWT
+    PRIVATE_KEY_JWT = "private_key_jwt"  # 秘密鍵によるJWT
+    NONE = "none"  # パブリッククライアント用
 
 
 def verify_client_secret_basic(

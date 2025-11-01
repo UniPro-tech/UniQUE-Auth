@@ -7,6 +7,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from unique_api.app.db import Base
+
 if TYPE_CHECKING:
     from unique_api.app.model.app import Apps
     from unique_api.app.model.user import Users

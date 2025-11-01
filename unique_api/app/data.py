@@ -23,8 +23,7 @@ def create_test_data(db: Session):
         .first()
     )
     if not redirect_uri:
-        redirect_uri = RedirectUris(
-            app_id=app.id, uri="https://example.com/callback")
+        redirect_uri = RedirectUris(app_id=app.id, uri="https://example.com/callback")
         db.add(redirect_uri)
 
     # ユーザーの作成 (存在しない場合のみ)

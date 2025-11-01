@@ -9,7 +9,7 @@ from unique_api.app.router.authorization import router as authorization_router
 from unique_api.app.router.authentication import router as authentication_router
 from unique_api.app.router.metadata import router as metadata_router
 
-load_dotenv('.env')
+load_dotenv(".env")
 
 # データベースをリセット
 # Base.metadata.drop_all(bind=engine)
@@ -20,6 +20,7 @@ Base.metadata.create_all(bind=engine)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from unique_api.app.data import create_test_data
+
     db = next(get_db())
     create_test_data(db)
     yield

@@ -13,6 +13,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from unique_api.app.db import Base
 from unique_api.app.model.util import generate_ulid
+
 if TYPE_CHECKING:
     from unique_api.app.model.auth import Auths
     from unique_api.app.model.intermediate import UserApp, UserRole

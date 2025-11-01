@@ -15,7 +15,7 @@ def generate_at_hash(access_token: str, algorithm: str = settings.JWT_ALGORITHM)
     }.get(algorithm, hashlib.sha256)
 
     token_hash = hash_func(access_token.encode()).digest()
-    half_hash = token_hash[:len(token_hash) // 2]
+    half_hash = token_hash[: len(token_hash) // 2]
     at_hash = base64.urlsafe_b64encode(half_hash).decode().rstrip("=")
     return at_hash
 
@@ -48,10 +48,12 @@ def create_id_token(
 
     claims = {
         "iss": settings.ISSUER,  # REQUIRED. Issuer Identifier
-        "sub": sub,              # REQUIRED. Subject Identifier
-        "aud": aud,              # REQUIRED. Audience(s)
-        "exp": int((now + expires_delta).timestamp()),  # REQUIRED. Expiration time
-        "iat": int(now.timestamp()),                    # REQUIRED. Time at which the JWT was issued
+        "sub": sub,  # REQUIRED. Subject Identifier
+        "aud": aud,  # REQUIRED. Audience(s)
+        # REQUIRED. Expiration time
+        "exp": int((now + expires_delta).timestamp()),
+        # REQUIRED. Time at which the JWT was issued
+        "iat": int(now.timestamp()),
         "auth_time": auth_time,  # Time when the authentication occurred
     }
 
@@ -71,11 +73,7 @@ def create_id_token(
     if isinstance(aud, list) and len(aud) > 1 and azp is not None:
         claims["azp"] = azp
 
-    return jwt.encode(
-        claims,
-        settings.JWT_SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM
-    )
+    return jwt.encode(claims, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
 def create_access_token(
@@ -97,14 +95,10 @@ def create_access_token(
         "client_id": client_id,
         "scope": scope,
         "exp": int((now + expires_delta).timestamp()),
-        "iat": int(now.timestamp())
+        "iat": int(now.timestamp()),
     }
 
-    return jwt.encode(
-        claims,
-        settings.JWT_SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM
-    )
+    return jwt.encode(claims, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
 def create_refresh_token(
@@ -124,11 +118,7 @@ def create_refresh_token(
         "aud": aud,
         "client_id": client_id,
         "exp": int((now + expires_delta).timestamp()),
-        "iat": int(now.timestamp())
+        "iat": int(now.timestamp()),
     }
 
-    return jwt.encode(
-        claims,
-        settings.JWT_SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM
-    )
+    return jwt.encode(claims, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
