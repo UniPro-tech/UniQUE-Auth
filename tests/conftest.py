@@ -66,7 +66,6 @@ def test_app(test_db):
     app = Apps(
         name="Test App",
         client_secret=hashlib.sha256("test_client_secret".encode()).hexdigest(),
-        aud="test_client_id",
         created_at=datetime.now(timezone.utc),
     )
     redirect_uri = RedirectUris(uri="http://localhost:3000/callback")

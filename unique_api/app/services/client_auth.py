@@ -6,8 +6,6 @@ from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 from ..model import Apps
 
-CLIENT_ID_PREFIX = "client_"
-
 
 class ClientAuthMethod(str, Enum):
     """

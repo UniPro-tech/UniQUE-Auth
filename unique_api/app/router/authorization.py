@@ -339,7 +339,7 @@ async def token_endpoint(
     )
 
     # リフレッシュトークンの生成
-    refresh_token_jwt = create_refresh_token(sub=user.id, client_id=app.id, aud=app.id)
+    refresh_token_jwt = create_refresh_token(sub=user.id, client_id=app.id)
 
     # リフレッシュトークンの保存
     refresh_token = RefreshTokens(
@@ -377,7 +377,6 @@ async def token_endpoint(
         exp=now + timedelta(minutes=settings.ID_TOKEN_EXPIRE_MINUTES),
         client_id=app.id,
         user_id=user.id,
-        aud=app.id,
         nonce=code_obj.nonce,
         auth_time=code_obj.created_at,
         acr=code_obj.acr,

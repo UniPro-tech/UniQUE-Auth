@@ -106,7 +106,6 @@ CREATE TABLE `id_tokens` (
   `issued_at` timestamp NOT NULL,
   `exp` timestamp NOT NULL,
   `client_id` varchar(255) NOT NULL COMMENT 'アプリケーションID',
-  `aud` varchar(255) NOT NULL,
   `nonce` varchar(255) NULL,
   `auth_time` timestamp NULL,
   `acr` varchar(255) NULL,

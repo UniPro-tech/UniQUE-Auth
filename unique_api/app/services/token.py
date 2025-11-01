@@ -92,7 +92,6 @@ def create_access_token(
         "iss": settings.ISSUER,
         "sub": sub,
         "aud": aud,
-        "client_id": client_id,
         "scope": scope,
         "exp": int((now + expires_delta).timestamp()),
         "iat": int(now.timestamp()),
@@ -104,7 +103,6 @@ def create_access_token(
 def create_refresh_token(
     sub: str,
     client_id: str,
-    aud: Union[str, List[str]],
 ) -> str:
     """
     Create a Refresh Token
@@ -115,8 +113,7 @@ def create_refresh_token(
     claims = {
         "iss": settings.ISSUER,
         "sub": sub,
-        "aud": aud,
-        "client_id": client_id,
+        "aud": client_id,
         "exp": int((now + expires_delta).timestamp()),
         "iat": int(now.timestamp()),
     }

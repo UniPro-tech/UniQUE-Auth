@@ -199,7 +199,6 @@ class IDTokens(Base):
         String(255, "utf8mb4_unicode_ci"), comment="アプリケーションID"
     )
     user_id: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
-    aud: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     nonce: Mapped[Optional[str]] = mapped_column(
         String(255, "utf8mb4_unicode_ci"), nullable=True
     )
