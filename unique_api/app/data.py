@@ -6,13 +6,12 @@ import hashlib
 
 def create_test_data(db: Session):
     # アプリケーションの作成 (存在しない場合のみ)
-    app = db.query(Apps).filter_by(client_id="admin_app").first()
+    app = db.query(Apps).filter_by(name="admin_app").first()
     if not app:
         app = Apps(
-            client_id="admin_app",
             client_secret="password",
             aud="auth.admin.uniproject.jp",
-            name="アドミンアプリケーション",
+            name="admin_app",
             is_enable=False,
         )
         db.add(app)
@@ -25,7 +24,8 @@ def create_test_data(db: Session):
         .first()
     )
     if not redirect_uri:
-        redirect_uri = RedirectUris(app_id=app.id, uri="https://example.com/callback")
+        redirect_uri = RedirectUris(
+            app_id=app.id, uri="https://example.com/callback")
         db.add(redirect_uri)
 
     # ユーザーの作成 (存在しない場合のみ)
@@ -47,5 +47,5 @@ def create_test_data(db: Session):
     db.commit()  # リダイレクトURIを保存
     # テストユーザーで認可する際のテストURLを生成
     print(
-        f"http://localhost:8000/auth?response_type=code&scope=openid+profile+email&client_id={app.client_id}&state=af0ifjsldkj&redirect_uri={redirect_uri.uri}"
+        f"http://localhost:8000/auth?response_type=code&scope=openid+profile+email&client_id={app.id}&state=af0ifjsldkj&redirect_uri={redirect_uri.uri}"
     )

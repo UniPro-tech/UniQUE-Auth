@@ -12,7 +12,7 @@ def test_authorization_code_flow_basic(client, test_user, test_app):
     # 1. 認可リクエスト
     auth_params = {
         "response_type": "code",
-        "client_id": test_app.client_id,
+        "client_id": test_app.id,
         "redirect_uri": "http://localhost:3000/callback",
         "scope": "openid",
         "state": "test_state",
@@ -51,7 +51,7 @@ def test_authorization_code_flow_basic(client, test_user, test_app):
     }
     headers = {
         "Authorization": create_test_client_credentials(
-            test_app.client_id,
+            test_app.id,
             "test_client_secret"
         )
     }
@@ -85,7 +85,7 @@ def test_authorization_code_flow_with_pkce(client, test_user, test_app):
     # 1. 認可リクエスト（PKCE付き）
     auth_params = {
         "response_type": "code",
-        "client_id": test_app.client_id,
+        "client_id": test_app.id,
         "redirect_uri": "http://localhost:3000/callback",
         "scope": "openid",
         "state": "test_state",
@@ -122,7 +122,7 @@ def test_authorization_code_flow_with_pkce(client, test_user, test_app):
     }
     headers = {
         "Authorization": create_test_client_credentials(
-            test_app.client_id,
+            test_app.id,
             "test_client_secret"
         )
     }
@@ -154,7 +154,7 @@ def test_authorization_code_flow_error_cases(client, test_user, test_app):
     assert response.status_code == 404
 
     # 2. 無効なリダイレクトURI
-    auth_params["client_id"] = test_app.client_id
+    auth_params["client_id"] = test_app.id
     auth_params["redirect_uri"] = "http://invalid.example.com"
     response = client.get("/auth", params=auth_params)
     assert response.status_code == 400
@@ -167,7 +167,7 @@ def test_authorization_code_flow_error_cases(client, test_user, test_app):
     }
     headers = {
         "Authorization": create_test_client_credentials(
-            test_app.client_id,
+            test_app.id,
             "test_client_secret"
         )
     }
@@ -178,7 +178,7 @@ def test_authorization_code_flow_error_cases(client, test_user, test_app):
     # 4. 無効なクライアント認証
     auth_params = {
         "response_type": "code",
-        "client_id": test_app.client_id,
+        "client_id": test_app.id,
         "redirect_uri": "http://localhost:3000/callback",
         "scope": "openid",
         "state": "test_state"
@@ -205,7 +205,7 @@ def test_authorization_code_flow_error_cases(client, test_user, test_app):
     }
     headers = {
         "Authorization": create_test_client_credentials(
-            test_app.client_id,
+            test_app.id,
             "invalid_secret"
         )
     }

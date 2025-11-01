@@ -21,7 +21,8 @@ engine = create_engine(
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(
+    autocommit=False, autoflush=False, bind=engine)
 
 
 def override_get_db():
@@ -65,8 +66,9 @@ def test_app(test_db):
     # テストアプリケーションを作成
     app = Apps(
         name="Test App",
-        client_id="test_client_id",
-        client_secret=hashlib.sha256("test_client_secret".encode()).hexdigest(),
+        name="test_client_id",
+        client_secret=hashlib.sha256(
+            "test_client_secret".encode()).hexdigest(),
         aud="test_client_id",
         created_at=datetime.now(timezone.utc)
     )

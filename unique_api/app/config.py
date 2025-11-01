@@ -6,7 +6,8 @@ class Settings(BaseSettings):
     # OIDC Provider Configuration
     ISSUER: str = "https://auth.uniproject.jp"
     JWT_ALGORITHM: str = "HS256"
-    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key")  # 本番環境では必ず環境変数で設定する
+    JWT_SECRET_KEY: str = os.getenv(
+        "JWT_SECRET_KEY", "your-secret-key")  # 本番環境では必ず環境変数で設定する
 
     # Token Configuration
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60

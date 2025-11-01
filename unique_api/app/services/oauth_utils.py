@@ -9,7 +9,8 @@ def validate_redirect_uri(
     registered_uris: List[str]
 ) -> str:
     if requested_uri is None:
-        raise HTTPException(status_code=400, detail="Redirect URI not provided")
+        raise HTTPException(
+            status_code=400, detail="Redirect URI not provided")
 
     if str(requested_uri) not in registered_uris:
         raise HTTPException(status_code=400, detail="Redirect URI not allowed")

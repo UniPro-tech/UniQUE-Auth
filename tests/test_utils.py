@@ -64,7 +64,8 @@ def validate_id_token(
 
 def generate_pkce_params() -> tuple[str, str]:
     """Generate PKCE code_verifier and code_challenge"""
-    code_verifier = base64.urlsafe_b64encode(hashlib.sha256(b"test_verifier").digest()).decode().rstrip("=")
+    code_verifier = base64.urlsafe_b64encode(hashlib.sha256(
+        b"test_verifier").digest()).decode().rstrip("=")
     code_challenge = base64.urlsafe_b64encode(
         hashlib.sha256(code_verifier.encode()).digest()
     ).decode().rstrip("=")

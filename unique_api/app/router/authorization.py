@@ -75,13 +75,15 @@ async def auth(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    app = db.query(Apps).filter_by(id=client_id_to_app_id(params.client_id)).first()
+    app = db.query(Apps).filter_by(
+        id=client_id_to_app_id(params.client_id)).first()
     if not app:
         raise HTTPException(status_code=404, detail="Client not found")
 
     # リダイレクト URI の検証
     redirect_uris = [uri.uri for uri in app.redirect_uris]
-    validated_redirect_uri = validate_redirect_uri(params.redirect_uri, redirect_uris)
+    validated_redirect_uri = validate_redirect_uri(
+        params.redirect_uri, redirect_uris)
 
     # すでに認可されているか確認
     existing_auth = get_existing_auth(db, user.id, app.client_id)
@@ -144,7 +146,8 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     # セッションからリクエスト情報を取得
     auth_request = request.session.get("auth_request")
     if auth_request is None:
-        raise HTTPException(status_code=400, detail="No auth request found in session")
+        raise HTTPException(
+            status_code=400, detail="No auth request found in session")
     # セッションチェック♪
     session_id = request.cookies.get("session_")
     if session_id is None:
@@ -158,7 +161,8 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    app = db.query(Apps).filter_by(id=client_id_to_app_id(auth_request["client_id"])).first()
+    app = db.query(Apps).filter_by(
+        id=client_id_to_app_id(auth_request["client_id"])).first()
     if app is None:
         raise HTTPException(status_code=404, detail="Client not found")
 
@@ -219,7 +223,8 @@ async def token_endpoint(
         )
 
     # クライアント認証のチェック
-    require_client_auth = os.getenv("REQUIRE_CLIENT_AUTH", "true").lower() == "true"
+    require_client_auth = os.getenv(
+        "REQUIRE_CLIENT_AUTH", "true").lower() == "true"
     if require_client_auth:
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Basic "):
@@ -232,7 +237,8 @@ async def token_endpoint(
         # クライアント認証の検証
         try:
             client_id, client_secret = token_authorization(auth_header)
-            app = db.query(Apps).filter_by(id=client_id_to_app_id(client_id)).first()
+            app = db.query(Apps).filter_by(
+                id=client_id_to_app_id(client_id)).first()
             if not app or app.client_secret != client_secret:
                 return create_token_error_response(
                     error=OAuthErrorCode.INVALID_CLIENT,
@@ -261,7 +267,8 @@ async def token_endpoint(
 
     # Codeの有効期限チェック
     now = datetime.now(timezone.utc)
-    code_exp = code_obj.exp.replace(tzinfo=timezone.utc) if code_obj.exp.tzinfo is None else code_obj.exp
+    code_exp = code_obj.exp.replace(
+        tzinfo=timezone.utc) if code_obj.exp.tzinfo is None else code_obj.exp
     if now > code_exp:
         return create_token_error_response(
             error=OAuthErrorCode.INVALID_GRANT,
@@ -278,8 +285,10 @@ async def token_endpoint(
 
         # code_challengeの検証
         if code_obj.code_challenge_method == "S256":
-            verifier_challenge = hashlib.sha256(code_verifier.encode()).digest()
-            verifier_challenge = base64.urlsafe_b64encode(verifier_challenge).decode().rstrip("=")
+            verifier_challenge = hashlib.sha256(
+                code_verifier.encode()).digest()
+            verifier_challenge = base64.urlsafe_b64encode(
+                verifier_challenge).decode().rstrip("=")
         else:  # plain
             verifier_challenge = code_verifier
 
@@ -369,7 +378,8 @@ async def token_endpoint(
         acr=code_obj.acr,
         amr=code_obj.amr,
         at_hash=at_hash,
-        azp=app_id_to_client_id(app.id) if isinstance(app.aud, list) and len(app.aud) > 1 else None
+        azp=app_id_to_client_id(app.id) if isinstance(
+            app.aud, list) and len(app.aud) > 1 else None
     )
 
     # IDトークンの保存
