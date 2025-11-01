@@ -72,7 +72,7 @@ def test_authorization_code_flow_basic(client, test_user, test_app):
     validate_id_token(
         id_token,
         expected_sub=test_user.id,
-        expected_aud=test_app.aud,
+        expected_aud=test_app.id,
         expected_nonce="test_nonce"
     )
 
@@ -135,7 +135,7 @@ def test_authorization_code_flow_with_pkce(client, test_user, test_app):
     validate_id_token(
         id_token,
         expected_sub=test_user.id,
-        expected_aud=test_app.aud,
+        expected_aud=test_app.id,
         expected_nonce="test_nonce"
     )
 

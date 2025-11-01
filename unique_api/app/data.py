@@ -10,7 +10,6 @@ def create_test_data(db: Session):
     if not app:
         app = Apps(
             client_secret="password",
-            aud="auth.admin.uniproject.jp",
             name="admin_app",
             is_enable=False,
         )
