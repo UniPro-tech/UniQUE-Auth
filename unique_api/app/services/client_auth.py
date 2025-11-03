@@ -82,6 +82,7 @@ def verify_client_secret_post(
 
 CLIENT_ID_PREFIX = "unique-app-"  # クライアントIDのプレフィックス 削除予定
 
+
 @deprecated("削除予定です。app_id を使用してください。")
 def app_id_to_client_id(app_id: str) -> str:
     """
