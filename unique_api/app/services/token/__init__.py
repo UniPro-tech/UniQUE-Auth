@@ -4,16 +4,21 @@ import base64
 import jwt
 from typing import Optional, Union, List
 from unique_api.app.config import settings
+from typing_extensions import deprecated
+from abc import ABC, abstractmethod
 
 
+@deprecated("削除予定です。make_token_hasher を使用してください。")
 def generate_at_hash(access_token: str, algorithm: str = settings.JWT_ALGORITHM) -> str:
     """Generate at_hash claim value as per OIDC spec"""
     hash_func = {
         "HS256": hashlib.sha256,
         "HS384": hashlib.sha384,
         "HS512": hashlib.sha512,
+        "RS256": hashlib.sha256,
+        "RS384": hashlib.sha384,
+        "RS512": hashlib.sha512,
     }.get(algorithm, hashlib.sha256)
-
     token_hash = hash_func(access_token.encode()).digest()
     half_hash = token_hash[:len(token_hash) // 2]
     at_hash = base64.urlsafe_b64encode(half_hash).decode().rstrip("=")
@@ -132,3 +137,29 @@ def create_refresh_token(
         settings.JWT_SECRET_KEY,
         algorithm=settings.JWT_ALGORITHM
     )
+
+
+class Tokenbase(ABC):
+    """
+    Tokenbaseの基底クラス
+    Token操作の共通インターフェースを定義
+    - tokentype: トークンタイプを返す抽象プロパティ
+    - generate_token: トークンを生成する抽象メソッド
+    - token_validate: トークンを検証する抽象メソッド
+    """
+
+    @property
+    @abstractmethod
+    def tokentype(self) -> str:
+        """トークンタイプを返す抽象プロパティ"""
+        pass
+
+    @abstractmethod
+    def generate_token(self) -> str:
+        """トークンを生成する抽象メソッド"""
+        pass
+
+    @abstractmethod
+    def token_validate(self, token: str) -> bool:
+        """トークンを検証する抽象メソッド"""
+        pass
