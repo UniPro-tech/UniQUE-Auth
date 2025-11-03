@@ -15,7 +15,7 @@ class TokenHashBase(ABC):
         pass
 
     @abstractmethod
-    def sign(self, payload: Dict[str, Any]) -> str:
+    def sign(self, payload: Dict[str, Any], header: Dict[str, Any]) -> str:
         """署名してトークン(JWT等)を返す"""
         pass
 
@@ -111,6 +111,14 @@ def make_token_hasher(
 ) -> TokenHashBase:
     """
     指定したアルゴリズムに応じたトークンハッシュ化オブジェクトを生成するファクトリ関数
+    algorithm:
+        HS256, RS256 など
+    secret_key:
+        HMAC 用のシークレットキー
+    private_key_path:
+        RSA/ECDSA/EdDSA 用の秘密鍵ファイル
+    public_key_path:
+        RSA/ECDSA/EdDSA 用の公開鍵ファイル
     """
     if algorithm.startswith("HS"):
         if not secret_key:
