@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 
 
 @deprecated("削除予定です。make_token_hasher を使用してください。")
-def generate_at_hash(access_token: str, algorithm: str = settings.JWT_ALGORITHM) -> str:
+def generate_at_hash(access_token: str, algorithm: str = "HS256") -> str:
     """Generate at_hash claim value as per OIDC spec"""
     hash_func = {
         "HS256": hashlib.sha256,
@@ -126,7 +126,7 @@ def create_refresh_token(
     return jwt.encode(claims, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
-class Tokenbase(ABC):
+class TokenBase(ABC):
     """
     Tokenbaseの基底クラス
     Token操作の共通インターフェースを定義
@@ -150,3 +150,25 @@ class Tokenbase(ABC):
     def token_validate(self, token: str) -> bool:
         """トークンを検証する抽象メソッド"""
         pass
+
+
+class AccessToken(TokenBase):
+    def __init__(self, sub: str, client_id: str, scope: str, aud: Union[str, List[str]], algorithm: str = settings.JWT_ALGORITHM):
+        self.sub = sub
+        self.client_id = client_id
+        self.scope = scope
+        self.aud = aud
+        self._alg = algorithm
+
+    @property
+    def tokentype(self) -> str:
+        return self._alg
+
+    def generate_token(self) -> str:
+        return create_access_token(
+            sub=self.sub,
+            client_id=self.client_id,
+            scope=self.scope,
+            aud=self.aud,
+        )
+

@@ -353,7 +353,7 @@ async def token_endpoint(
     )
 
     # at_hashの生成
-    at_hash = generate_at_hash(access_token_jwt)
+    at_hash = generate_at_hash(access_token_jwt, algorithm="HS256")
 
     # IDトークンの生成
     id_token_id = str(ulid.new())

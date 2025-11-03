@@ -4,7 +4,6 @@ import jwt
 import hmac
 from typing import Optional, Dict, Any
 from abc import ABC, abstractmethod
-from unique_api.app.config import settings
 
 
 class TokenHashBase(ABC):
@@ -42,9 +41,9 @@ class HMACTokenHash(TokenHashBase):
     def algorithm(self) -> str:
         return self._alg
 
-    def sign(self, payload: Dict[str, Any]) -> str:
+    def sign(self, payload: Dict[str, Any], heder: Dict[str, Any]) -> str:
         # JWT 形式で返す（必要でなければ別メソッドで生の MAC を返す）
-        return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        return jwt.encode(payload, self.secret_key, algorithm=self.algorithm, headers=heder)
 
     def verify(self, token: str, *, audience: Optional[str] = None) -> Dict[str, Any]:
         # jwt.decode が署名・exp 等を検証してデコード済み claims を返す
@@ -90,10 +89,10 @@ class RSATokenHash(TokenHashBase):
     def algorithm(self) -> str:
         return self._alg
 
-    def sign(self, payload: Dict[str, Any]) -> str:
+    def sign(self, payload: Dict[str, Any], header: Dict[str, Any]) -> str:
         if not self.private_key:
             raise ValueError("private_key is required for signing")
-        return jwt.encode(payload, self.private_key, algorithm=self._alg)
+        return jwt.encode(payload, self.private_key, algorithm=self._alg, headers=header)
 
     def verify(self, token: str, *, audience: Optional[str] = None) -> Dict[str, Any]:
         if not self.public_key:
@@ -107,8 +106,8 @@ class RSATokenHash(TokenHashBase):
 def make_token_hasher(
     algorithm: str,
     secret_key: Optional[str] = None,
-    private_key_path: Optional[str] = settings.RSA_PRIVATE_KEY_PATH,
-    public_key_path: Optional[str] = settings.RSA_PUBLIC_KEY_PATH,
+    private_key_path: Optional[str] = None,
+    public_key_path: Optional[str] = None,
 ) -> TokenHashBase:
     """
     指定したアルゴリズムに応じたトークンハッシュ化オブジェクトを生成するファクトリ関数
