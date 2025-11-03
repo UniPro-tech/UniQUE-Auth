@@ -12,6 +12,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from unique_api.app.db import Base
 from unique_api.app.model.util import generate_ulid
+
 if TYPE_CHECKING:
     from unique_api.app.model.intermediate import UserApp
     from unique_api.app.model.auth import Auths
@@ -23,7 +24,6 @@ class Apps(Base):
     id: Mapped[str] = mapped_column(
         String(255, "utf8mb4_unicode_ci"), primary_key=True, default=generate_ulid
     )
-    aud: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     client_secret: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     name: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     is_enable: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'1'"))

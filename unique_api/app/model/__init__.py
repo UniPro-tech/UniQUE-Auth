@@ -8,7 +8,7 @@ from .auth import (
     TokenSets,
     AccessTokens,
     RefreshTokens,
-    IDTokens
+    IDTokens,
 )
 from .role import Roles
 from .intermediate import UserApp, UserRole

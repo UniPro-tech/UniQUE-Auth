@@ -29,14 +29,16 @@ from unique_api.app.services.authorization import (
     get_or_create_auth,
     create_oidc_authorization,
 )
-from unique_api.app.services.client_auth import client_id_to_app_id, app_id_to_client_id
-from unique_api.app.services.oauth_utils import validate_redirect_uri, token_authorization
+from unique_api.app.services.oauth_utils import (
+    validate_redirect_uri,
+    token_authorization,
+)
 from unique_api.app.schemas.errors import create_token_error_response, OAuthErrorCode
 from unique_api.app.services.token import (
     create_access_token,
     create_refresh_token,
     create_id_token,
-    generate_at_hash
+    generate_at_hash,
 )
 from unique_api.app.config import settings
 
@@ -75,15 +77,13 @@ async def auth(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    app = db.query(Apps).filter_by(
-        id=client_id_to_app_id(params.client_id)).first()
+    app = db.query(Apps).filter_by(id=params.client_id).first()
     if not app:
         raise HTTPException(status_code=404, detail="Client not found")
 
     # リダイレクト URI の検証
     redirect_uris = [uri.uri for uri in app.redirect_uris]
-    validated_redirect_uri = validate_redirect_uri(
-        params.redirect_uri, redirect_uris)
+    validated_redirect_uri = validate_redirect_uri(params.redirect_uri, redirect_uris)
 
     # すでに認可されているか確認
     existing_auth = get_existing_auth(db, user.id, app.client_id)
@@ -107,7 +107,7 @@ async def auth(
     # 認可されていない場合は認可画面を表示
     # リクエストパラメータをセッションストレージに署名付きで保存する
     request.session["auth_request"] = {
-        "client_id": app_id_to_client_id(app.id),
+        "client_id": app.id,
         "redirect_uri": validated_redirect_uri,
         "scope": params.scope,
         "state": params.state,
@@ -123,7 +123,7 @@ async def auth(
     auth_data = {
         "app": {
             "name": app.name,
-            "client_id": app_id_to_client_id(app.id),
+            "client_id": app.id,
             "redirect_uris": validated_redirect_uri,
             "scope": params.scope,
         },
@@ -146,8 +146,7 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     # セッションからリクエスト情報を取得
     auth_request = request.session.get("auth_request")
     if auth_request is None:
-        raise HTTPException(
-            status_code=400, detail="No auth request found in session")
+        raise HTTPException(status_code=400, detail="No auth request found in session")
     # セッションチェック♪
     session_id = request.cookies.get("session_")
     if session_id is None:
@@ -161,8 +160,7 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    app = db.query(Apps).filter_by(
-        id=client_id_to_app_id(auth_request["client_id"])).first()
+    app = db.query(Apps).filter_by(id=auth_request["client_id"]).first()
     if app is None:
         raise HTTPException(status_code=404, detail="Client not found")
 
@@ -183,7 +181,7 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
 
     request.session.clear()
 
-    credentials = f"{app_id_to_client_id(app.id)}:{app.client_secret}"
+    credentials = f"{app.id}:{app.client_secret}"
     encoded_credentials = base64.b64encode(credentials.encode()).decode()
     print(
         "Token can be obtained with:\n"
@@ -205,7 +203,7 @@ async def token_endpoint(
     code: str = Form(...),
     redirect_uri: str = Form(...),
     code_verifier: str | None = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     OIDC Token Endpoint - RFC6749 Section 3.2に準拠
@@ -218,61 +216,57 @@ async def token_endpoint(
     require_tls = os.getenv("REQUIRE_TLS", "true").lower() == "true"
     if require_tls and not request.url.scheme == "https":
         return create_token_error_response(
-            error=OAuthErrorCode.INVALID_REQUEST,
-            error_description="HTTPS required"
+            error=OAuthErrorCode.INVALID_REQUEST, error_description="HTTPS required"
         )
 
     # クライアント認証のチェック
-    require_client_auth = os.getenv(
-        "REQUIRE_CLIENT_AUTH", "true").lower() == "true"
+    require_client_auth = os.getenv("REQUIRE_CLIENT_AUTH", "true").lower() == "true"
     if require_client_auth:
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Basic "):
             return create_token_error_response(
                 error=OAuthErrorCode.INVALID_CLIENT,
                 status_code=401,
-                www_authenticate="Basic"
+                www_authenticate="Basic",
             )
 
         # クライアント認証の検証
         try:
             client_id, client_secret = token_authorization(auth_header)
-            app = db.query(Apps).filter_by(
-                id=client_id_to_app_id(client_id)).first()
+            app = db.query(Apps).filter_by(id=client_id).first()
             if not app or app.client_secret != client_secret:
                 return create_token_error_response(
                     error=OAuthErrorCode.INVALID_CLIENT,
                     status_code=401,
-                    www_authenticate="Basic"
+                    www_authenticate="Basic",
                 )
         except Exception:
             return create_token_error_response(
                 error=OAuthErrorCode.INVALID_CLIENT,
                 status_code=401,
-                www_authenticate="Basic"
+                www_authenticate="Basic",
             )
 
     # grant_typeの検証
     if grant_type != "authorization_code":
-        return create_token_error_response(
-            error=OAuthErrorCode.UNSUPPORTED_GRANT_TYPE
-        )
+        return create_token_error_response(error=OAuthErrorCode.UNSUPPORTED_GRANT_TYPE)
 
     # Authorization Codeの検証
     code_obj: Code = db.query(Code).filter_by(token=code).first()
     if not code_obj or not code_obj.is_enable:
-        return create_token_error_response(
-            error=OAuthErrorCode.INVALID_GRANT
-        )
+        return create_token_error_response(error=OAuthErrorCode.INVALID_GRANT)
 
     # Codeの有効期限チェック
     now = datetime.now(timezone.utc)
-    code_exp = code_obj.exp.replace(
-        tzinfo=timezone.utc) if code_obj.exp.tzinfo is None else code_obj.exp
+    code_exp = (
+        code_obj.exp.replace(tzinfo=timezone.utc)
+        if code_obj.exp.tzinfo is None
+        else code_obj.exp
+    )
     if now > code_exp:
         return create_token_error_response(
             error=OAuthErrorCode.INVALID_GRANT,
-            error_description="Authorization code has expired"
+            error_description="Authorization code has expired",
         )
 
     # PKCE検証
@@ -280,22 +274,22 @@ async def token_endpoint(
         if not code_verifier:
             return create_token_error_response(
                 error=OAuthErrorCode.INVALID_REQUEST,
-                error_description="code_verifier required"
+                error_description="code_verifier required",
             )
 
         # code_challengeの検証
         if code_obj.code_challenge_method == "S256":
-            verifier_challenge = hashlib.sha256(
-                code_verifier.encode()).digest()
-            verifier_challenge = base64.urlsafe_b64encode(
-                verifier_challenge).decode().rstrip("=")
+            verifier_challenge = hashlib.sha256(code_verifier.encode()).digest()
+            verifier_challenge = (
+                base64.urlsafe_b64encode(verifier_challenge).decode().rstrip("=")
+            )
         else:  # plain
             verifier_challenge = code_verifier
 
         if verifier_challenge != code_obj.code_challenge:
             return create_token_error_response(
                 error=OAuthErrorCode.INVALID_GRANT,
-                error_description="code_verifier mismatch"
+                error_description="code_verifier mismatch",
             )
 
     # OIDCの認可情報を取得
@@ -305,7 +299,7 @@ async def token_endpoint(
     if not oidc_auth:
         return create_token_error_response(
             error=OAuthErrorCode.INVALID_GRANT,
-            error_description="Invalid authorization code"
+            error_description="Invalid authorization code",
         )
 
     auth = db.query(Auths).filter_by(id=oidc_auth.auth_id).first()
@@ -318,7 +312,7 @@ async def token_endpoint(
     if redirect_uri not in redirect_uris:
         return create_token_error_response(
             error=OAuthErrorCode.INVALID_REQUEST,
-            error_description="redirect_uri mismatch"
+            error_description="redirect_uri mismatch",
         )
 
     # Codeを使用済みにする
@@ -329,10 +323,7 @@ async def token_endpoint(
     # アクセストークンの生成
     now = datetime.now(timezone.utc)
     access_token_jwt = create_access_token(
-        sub=user.id,
-        client_id=app_id_to_client_id(app.id),
-        scope=consent.scope,
-        aud=app.aud
+        sub=user.id, client_id=app.id, scope=consent.scope, aud=app.id
     )
 
     # アクセストークンの保存
@@ -342,17 +333,13 @@ async def token_endpoint(
         scope=consent.scope,
         issued_at=now,
         exp=now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
-        client_id=app_id_to_client_id(app.id),
+        client_id=app.id,
         user_id=user.id,
         revoked=False,
     )
 
     # リフレッシュトークンの生成
-    refresh_token_jwt = create_refresh_token(
-        sub=user.id,
-        client_id=app_id_to_client_id(app.id),
-        aud=app.aud
-    )
+    refresh_token_jwt = create_refresh_token(sub=user.id, client_id=app.id)
 
     # リフレッシュトークンの保存
     refresh_token = RefreshTokens(
@@ -360,7 +347,7 @@ async def token_endpoint(
         type="refresh",
         issued_at=now,
         exp=now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
-        client_id=app_id_to_client_id(app.id),
+        client_id=app.id,
         user_id=user.id,
         revoked=False,
     )
@@ -372,14 +359,13 @@ async def token_endpoint(
     id_token_id = str(ulid.new())
     id_token_jwt = create_id_token(
         sub=user.id,
-        aud=app.aud,
+        aud=app.id,
         auth_time=int(code_obj.created_at.timestamp()),
         nonce=code_obj.nonce,
         acr=code_obj.acr,
         amr=code_obj.amr,
         at_hash=at_hash,
-        azp=app_id_to_client_id(app.id) if isinstance(
-            app.aud, list) and len(app.aud) > 1 else None
+        azp=app.id if isinstance(app.id, list) and len(app.id) > 1 else None,
     )
 
     # IDトークンの保存
@@ -389,9 +375,8 @@ async def token_endpoint(
         type="id",
         issued_at=now,
         exp=now + timedelta(minutes=settings.ID_TOKEN_EXPIRE_MINUTES),
-        client_id=app_id_to_client_id(app.id),
+        client_id=app.id,
         user_id=user.id,
-        aud=app.aud,
         nonce=code_obj.nonce,
         auth_time=code_obj.created_at,
         acr=code_obj.acr,
@@ -419,7 +404,7 @@ async def token_endpoint(
         "expires_in": 3600,  # 1時間
         "refresh_token": refresh_token_jwt,
         "id_token": id_token_jwt,
-        "scope": consent.scope
+        "scope": consent.scope,
     }
 
     return JSONResponse(
@@ -427,6 +412,6 @@ async def token_endpoint(
         headers={
             "Cache-Control": "no-store",
             "Pragma": "no-cache",
-            "Content-Type": "application/json"
-        }
+            "Content-Type": "application/json",
+        },
     )

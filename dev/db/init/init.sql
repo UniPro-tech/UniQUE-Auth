@@ -19,7 +19,6 @@ CREATE TABLE `users` (
 CREATE INDEX idx_users_custom_id ON users(custom_id);
 CREATE TABLE `apps` (
   `id` varchar(255) PRIMARY KEY,
-  `aud` varchar(255) UNIQUE NOT NULL,
   `client_secret` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
@@ -107,7 +106,6 @@ CREATE TABLE `id_tokens` (
   `issued_at` timestamp NOT NULL,
   `exp` timestamp NOT NULL,
   `client_id` varchar(255) NOT NULL COMMENT 'アプリケーションID',
-  `aud` varchar(255) NOT NULL,
   `nonce` varchar(255) NULL,
   `auth_time` timestamp NULL,
   `acr` varchar(255) NULL,

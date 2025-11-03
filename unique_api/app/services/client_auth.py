@@ -6,19 +6,18 @@ from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 from ..model import Apps
 
-CLIENT_ID_PREFIX = "client_"
-
 
 class ClientAuthMethod(str, Enum):
     """
     OIDCプロバイダーがサポートするクライアント認証方式
     https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication
     """
+
     CLIENT_SECRET_BASIC = "client_secret_basic"  # HTTP Basic認証
-    CLIENT_SECRET_POST = "client_secret_post"    # POSTパラメータ
-    CLIENT_SECRET_JWT = "client_secret_jwt"      # 共有鍵によるJWT
-    PRIVATE_KEY_JWT = "private_key_jwt"          # 秘密鍵によるJWT
-    NONE = "none"                                # パブリッククライアント用
+    CLIENT_SECRET_POST = "client_secret_post"  # POSTパラメータ
+    CLIENT_SECRET_JWT = "client_secret_jwt"  # 共有鍵によるJWT
+    PRIVATE_KEY_JWT = "private_key_jwt"  # 秘密鍵によるJWT
+    NONE = "none"  # パブリッククライアント用
 
 
 def verify_client_secret_basic(
@@ -73,25 +72,3 @@ def verify_client_secret_post(
 
     except Exception:
         return False, None
-
-
-"""
-基本的にアプリケーション内はapp_idで管理する
-外部に公開する際にclient_idに変換して使用する
-"""
-
-
-def app_id_to_client_id(app_id: str) -> str:
-    """
-    アプリケーションID(uuid)からクライアントIDを生成
-    """
-    return CLIENT_ID_PREFIX + app_id
-
-
-def client_id_to_app_id(client_id: str) -> Optional[str]:
-    """
-    クライアントIDからアプリケーションID(uuid)を取得
-    """
-    if client_id.startswith(CLIENT_ID_PREFIX):
-        return client_id[len(CLIENT_ID_PREFIX):]
-    return None

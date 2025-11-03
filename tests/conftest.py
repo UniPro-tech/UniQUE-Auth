@@ -21,8 +21,7 @@ engine = create_engine(
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
-TestingSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def override_get_db():
@@ -53,7 +52,7 @@ def test_user(test_db):
     user = Users(
         custom_id="test_user",
         password_hash=hashlib.sha256("test_password".encode()).hexdigest(),
-        created_at=datetime.now(timezone.utc)
+        created_at=datetime.now(timezone.utc),
     )
     test_db.add(user)
     test_db.commit()
@@ -66,15 +65,10 @@ def test_app(test_db):
     # テストアプリケーションを作成
     app = Apps(
         name="Test App",
-        name="test_client_id",
-        client_secret=hashlib.sha256(
-            "test_client_secret".encode()).hexdigest(),
-        aud="test_client_id",
-        created_at=datetime.now(timezone.utc)
+        client_secret=hashlib.sha256("test_client_secret".encode()).hexdigest(),
+        created_at=datetime.now(timezone.utc),
     )
-    redirect_uri = RedirectUris(
-        uri="http://localhost:3000/callback"
-    )
+    redirect_uri = RedirectUris(uri="http://localhost:3000/callback")
     app.redirect_uris.append(redirect_uri)
     test_db.add(app)
     test_db.commit()

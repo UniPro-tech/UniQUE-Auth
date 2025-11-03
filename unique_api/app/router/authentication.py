@@ -9,15 +9,9 @@ from unique_api.app.db import get_db
 import hashlib
 import os
 import secrets
-from unique_api.app.model import (
-    Users,
-    Sessions
-)
+from unique_api.app.model import Users, Sessions
 from unique_api.app.schemas.authentication import AuthenticationRequest
-from unique_api.app.schemas.errors import (
-    create_error_response,
-    OAuthErrorCode
-)
+from unique_api.app.schemas.errors import create_error_response, OAuthErrorCode
 
 
 def get_session(request: Request, db: Session) -> Optional[Sessions]:
@@ -33,7 +27,9 @@ def get_session(request: Request, db: Session) -> Optional[Sessions]:
     return session
 
 
-def handle_authentication_required(request: Request, params: AuthenticationRequest) -> RedirectResponse:
+def handle_authentication_required(
+    request: Request, params: AuthenticationRequest
+) -> RedirectResponse:
     """認証が必要な場合のハンドリング"""
     login_url = "login"
     if params:
@@ -48,10 +44,7 @@ def needs_consent(user_id: str, client_id: str, scope: str, db: Session) -> bool
 
 
 def show_consent_screen(
-    request: Request,
-    session: Sessions,
-    params: AuthenticationRequest,
-    db: Session
+    request: Request, session: Sessions, params: AuthenticationRequest, db: Session
 ):
     """同意画面を表示"""
     # TODO: 同意画面の実装
@@ -61,8 +54,8 @@ def show_consent_screen(
             "request": request,
             "user": session.user,
             "client": params.client_id,
-            "scope": params.scope
-        }
+            "scope": params.scope,
+        },
     )
 
 
@@ -76,7 +69,7 @@ templates = Jinja2Templates(
 async def login(
     request: Request,
     params: AuthenticationRequest = Depends(),
-    csrf_token: str = Cookie(None)
+    csrf_token: str = Cookie(None),
 ):
     """
     OIDC 認可フロー開始時のログイン画面表示
@@ -99,7 +92,7 @@ async def login(
             value=csrf_token,
             httponly=True,
             secure=True,
-            samesite="lax"
+            samesite="lax",
         )
         return response
 
@@ -136,7 +129,7 @@ async def login_post(
         return create_error_response(
             error=OAuthErrorCode.INVALID_REQUEST,
             error_description="CSRF token validation failed",
-            state=params.state
+            state=params.state,
         )
 
     # ユーザー認証
@@ -154,7 +147,7 @@ async def login_post(
             error=OAuthErrorCode.ACCESS_DENIED,
             error_description="Invalid username or password",
             state=params.state,
-            status_code=401
+            status_code=401,
         )
 
     # セッションを作成
@@ -175,11 +168,7 @@ async def login_post(
         status_code=302
     )
     response.set_cookie(
-        key="session_",
-        value=session.id,
-        httponly=True,
-        secure=True,
-        samesite="lax"
+        key="session_", value=session.id, httponly=True, secure=True, samesite="lax"
     )
 
     # CSRFトークンを削除
@@ -189,10 +178,7 @@ async def login_post(
 
 
 @router.get("/logout")
-async def logout(
-    request: Request,
-    db: Session = Depends(get_db)
-):
+async def logout(request: Request, db: Session = Depends(get_db)):
     """
     ログアウト処理を行うエンドポイント
     - セッションの無効化
@@ -247,7 +233,7 @@ async def signup_post(
         return create_error_response(
             error=OAuthErrorCode.INVALID_REQUEST,
             error_description="Member is not registered",
-            status_code=400
+            status_code=400,
         )
 
     # ユーザ名の重複チェック
@@ -256,7 +242,7 @@ async def signup_post(
         return create_error_response(
             error=OAuthErrorCode.INVALID_REQUEST,
             error_description="User already exists",
-            status_code=400
+            status_code=400,
         )
 
     # 新規ユーザの作成
@@ -309,7 +295,7 @@ async def join_post(
         return create_error_response(
             error=OAuthErrorCode.INVALID_REQUEST,
             error_description="User already exists",
-            status_code=400
+            status_code=400,
         )
 
     # 新規ユーザの作成

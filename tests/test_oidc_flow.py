@@ -3,7 +3,7 @@ from .test_utils import (
     create_test_client_credentials,
     decode_id_token,
     validate_id_token,
-    generate_pkce_params
+    generate_pkce_params,
 )
 
 
@@ -16,17 +16,14 @@ def test_authorization_code_flow_basic(client, test_user, test_app):
         "redirect_uri": "http://localhost:3000/callback",
         "scope": "openid",
         "state": "test_state",
-        "nonce": "test_nonce"
+        "nonce": "test_nonce",
     }
     response = client.get("/auth", params=auth_params)
     assert response.status_code == 302
     assert response.headers["location"].startswith("/login")
 
     # 2. ログイン
-    login_data = {
-        "custom_id": test_user.custom_id,
-        "password": "test_password"
-    }
+    login_data = {"custom_id": test_user.custom_id, "password": "test_password"}
     response = client.post("/login", data=login_data, params=auth_params)
     assert response.status_code == 302
     assert response.headers["location"].startswith("/auth")
@@ -47,12 +44,11 @@ def test_authorization_code_flow_basic(client, test_user, test_app):
     token_data = {
         "grant_type": "authorization_code",
         "code": code,
-        "redirect_uri": "http://localhost:3000/callback"
+        "redirect_uri": "http://localhost:3000/callback",
     }
     headers = {
         "Authorization": create_test_client_credentials(
-            test_app.id,
-            "test_client_secret"
+            test_app.id, "test_client_secret"
         )
     }
     response = client.post("/token", data=token_data, headers=headers)
@@ -72,8 +68,8 @@ def test_authorization_code_flow_basic(client, test_user, test_app):
     validate_id_token(
         id_token,
         expected_sub=test_user.id,
-        expected_aud=test_app.aud,
-        expected_nonce="test_nonce"
+        expected_aud=test_app.id,
+        expected_nonce="test_nonce",
     )
 
 
@@ -91,17 +87,14 @@ def test_authorization_code_flow_with_pkce(client, test_user, test_app):
         "state": "test_state",
         "nonce": "test_nonce",
         "code_challenge": code_challenge,
-        "code_challenge_method": "S256"
+        "code_challenge_method": "S256",
     }
     response = client.get("/auth", params=auth_params)
     assert response.status_code == 302
     assert response.headers["location"].startswith("/login")
 
     # 2. ログイン
-    login_data = {
-        "custom_id": test_user.custom_id,
-        "password": "test_password"
-    }
+    login_data = {"custom_id": test_user.custom_id, "password": "test_password"}
     response = client.post("/login", data=login_data, params=auth_params)
     assert response.status_code == 302
     assert response.headers["location"].startswith("/auth")
@@ -118,12 +111,11 @@ def test_authorization_code_flow_with_pkce(client, test_user, test_app):
         "grant_type": "authorization_code",
         "code": code,
         "redirect_uri": "http://localhost:3000/callback",
-        "code_verifier": code_verifier
+        "code_verifier": code_verifier,
     }
     headers = {
         "Authorization": create_test_client_credentials(
-            test_app.id,
-            "test_client_secret"
+            test_app.id, "test_client_secret"
         )
     }
     response = client.post("/token", data=token_data, headers=headers)
@@ -135,8 +127,8 @@ def test_authorization_code_flow_with_pkce(client, test_user, test_app):
     validate_id_token(
         id_token,
         expected_sub=test_user.id,
-        expected_aud=test_app.aud,
-        expected_nonce="test_nonce"
+        expected_aud=test_app.id,
+        expected_nonce="test_nonce",
     )
 
 
@@ -148,7 +140,7 @@ def test_authorization_code_flow_error_cases(client, test_user, test_app):
         "client_id": "invalid_client_id",
         "redirect_uri": "http://localhost:3000/callback",
         "scope": "openid",
-        "state": "test_state"
+        "state": "test_state",
     }
     response = client.get("/auth", params=auth_params)
     assert response.status_code == 404
@@ -163,12 +155,11 @@ def test_authorization_code_flow_error_cases(client, test_user, test_app):
     token_data = {
         "grant_type": "authorization_code",
         "code": "invalid_code",
-        "redirect_uri": "http://localhost:3000/callback"
+        "redirect_uri": "http://localhost:3000/callback",
     }
     headers = {
         "Authorization": create_test_client_credentials(
-            test_app.id,
-            "test_client_secret"
+            test_app.id, "test_client_secret"
         )
     }
     response = client.post("/token", data=token_data, headers=headers)
@@ -181,15 +172,16 @@ def test_authorization_code_flow_error_cases(client, test_user, test_app):
         "client_id": test_app.id,
         "redirect_uri": "http://localhost:3000/callback",
         "scope": "openid",
-        "state": "test_state"
+        "state": "test_state",
     }
     response = client.get("/auth", params=auth_params)
     assert response.status_code == 302
 
-    response = client.post("/login", data={
-        "custom_id": test_user.custom_id,
-        "password": "test_password"
-    }, params=auth_params)
+    response = client.post(
+        "/login",
+        data={"custom_id": test_user.custom_id, "password": "test_password"},
+        params=auth_params,
+    )
     assert response.status_code == 302
 
     response = client.post("/auth")
@@ -201,13 +193,10 @@ def test_authorization_code_flow_error_cases(client, test_user, test_app):
     token_data = {
         "grant_type": "authorization_code",
         "code": code,
-        "redirect_uri": "http://localhost:3000/callback"
+        "redirect_uri": "http://localhost:3000/callback",
     }
     headers = {
-        "Authorization": create_test_client_credentials(
-            test_app.id,
-            "invalid_secret"
-        )
+        "Authorization": create_test_client_credentials(test_app.id, "invalid_secret")
     }
     response = client.post("/token", data=token_data, headers=headers)
     assert response.status_code == 401

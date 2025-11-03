@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 class OAuthErrorCode(str, Enum):
     """OAuth 2.0 エラーコード (RFC6749)"""
+
     # 共通エラーコード
     INVALID_REQUEST = "invalid_request"
     UNAUTHORIZED_CLIENT = "unauthorized_client"
@@ -23,6 +24,7 @@ class OAuthErrorCode(str, Enum):
 
 class OIDCErrorCode(str, Enum):
     """OpenID Connect Core 1.0 追加エラーコード"""
+
     INTERACTION_REQUIRED = "interaction_required"
     LOGIN_REQUIRED = "login_required"
     ACCOUNT_SELECTION_REQUIRED = "account_selection_required"
@@ -36,10 +38,19 @@ class OIDCErrorCode(str, Enum):
 
 class ErrorResponse(BaseModel):
     """RFC6749とOpenID Connect Core 1.0に準拠したエラーレスポンス"""
+
     error: str = Field(..., description="REQUIRED. Error code")
-    error_description: Optional[str] = Field(None, description="OPTIONAL. Human-readable ASCII encoded error description")
-    error_uri: Optional[str] = Field(None, description="OPTIONAL. URI of a web page with additional information about the error")
-    state: Optional[str] = Field(None, description="REQUIRED if state parameter was present in the client authorization request")
+    error_description: Optional[str] = Field(
+        None, description="OPTIONAL. Human-readable ASCII encoded error description"
+    )
+    error_uri: Optional[str] = Field(
+        None,
+        description="OPTIONAL. URI of a web page with additional information about the error",
+    )
+    state: Optional[str] = Field(
+        None,
+        description="REQUIRED if state parameter was present in the client authorization request",
+    )
 
 
 def create_error_response(
@@ -48,21 +59,18 @@ def create_error_response(
     error_uri: Optional[str] = None,
     state: Optional[str] = None,
     status_code: int = 400,
-    headers: Optional[Dict[str, str]] = None
+    headers: Optional[Dict[str, str]] = None,
 ) -> JSONResponse:
     """RFC6749とOpenID Connect Core 1.0に準拠したエラーレスポンスを生成"""
     response = ErrorResponse(
         error=error,
         error_description=error_description,
         error_uri=error_uri,
-        state=state
+        state=state,
     )
 
     # 基本的なヘッダー
-    response_headers = {
-        "Cache-Control": "no-store",
-        "Pragma": "no-cache"
-    }
+    response_headers = {"Cache-Control": "no-store", "Pragma": "no-cache"}
 
     # 追加のヘッダーがある場合は追加
     if headers:
@@ -71,7 +79,7 @@ def create_error_response(
     return JSONResponse(
         status_code=status_code,
         content=response.dict(exclude_none=True),
-        headers=response_headers
+        headers=response_headers,
     )
 
 
@@ -80,26 +88,21 @@ def create_token_error_response(
     error_description: Optional[str] = None,
     error_uri: Optional[str] = None,
     status_code: int = 400,
-    www_authenticate: Optional[str] = None
+    www_authenticate: Optional[str] = None,
 ) -> JSONResponse:
     """RFC6749のToken Endpoint用エラーレスポンスを生成"""
-    headers = {
-        "Cache-Control": "no-store",
-        "Pragma": "no-cache"
-    }
+    headers = {"Cache-Control": "no-store", "Pragma": "no-cache"}
 
     # WWW-Authenticateヘッダーが必要な場合は追加
     if www_authenticate:
         headers["WWW-Authenticate"] = www_authenticate
 
     response = ErrorResponse(
-        error=error,
-        error_description=error_description,
-        error_uri=error_uri
+        error=error, error_description=error_description, error_uri=error_uri
     )
 
     return JSONResponse(
         status_code=status_code,
         content=response.dict(exclude_none=True),
-        headers=headers
+        headers=headers,
     )
