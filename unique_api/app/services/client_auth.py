@@ -73,31 +73,3 @@ def verify_client_secret_post(
 
     except Exception:
         return False, None
-
-
-"""
-基本的にアプリケーション内はapp_idで管理する
-外部に公開する際にclient_idに変換して使用する
-"""
-
-CLIENT_ID_PREFIX = "unique-app-"  # クライアントIDのプレフィックス 削除予定
-
-
-@deprecated("削除予定です。app_id を使用してください。")
-def app_id_to_client_id(app_id: str) -> str:
-    """
-    削除対象：ID トークンの場合、この aud クレームの値は、ID トークンの発行を依頼したクライアントアプリケーションのクライアント ID となります。
-    app_id = client_id = aud
-    アプリケーションID(uuid)からクライアントIDを生成
-    """
-    return CLIENT_ID_PREFIX + app_id
-
-
-@deprecated("削除予定です。app_id を使用してください。")
-def client_id_to_app_id(client_id: str) -> Optional[str]:
-    """
-    クライアントIDからアプリケーションID(uuid)を取得
-    """
-    if client_id.startswith(CLIENT_ID_PREFIX):
-        return client_id[len(CLIENT_ID_PREFIX):]
-    return None
