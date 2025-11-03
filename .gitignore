@@ -164,3 +164,7 @@ cython_debug/
 
 # test用のDBの追跡防止
 *.db
+
+# 鍵ファイルの追跡防止
+*.pem
+*.key
