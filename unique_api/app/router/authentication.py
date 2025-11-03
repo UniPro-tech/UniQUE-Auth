@@ -90,7 +90,7 @@ async def login(
             "login.html",
             {
                 "request": request,
-                "action_url": f"login?{urlencode(params.dict(exclude_none=True))}",
+                "action_url": f"login?{urlencode(params.model_dump(exclude_none=True))}",
                 "csrf_token": csrf_token
             }
         )
@@ -107,7 +107,7 @@ async def login(
         "login.html",
         {
             "request": request,
-            "action_url": f"login?{urlencode(params.dict(exclude_none=True))}",
+            "action_url": f"login?{urlencode(params.model_dump(exclude_none=True))}",
             "csrf_token": csrf_token
         }
     )
@@ -171,7 +171,7 @@ async def login_post(
 
     # レスポンスの準備
     response = RedirectResponse(
-        url=f"auth?{urlencode(params.dict(exclude_none=True))}",
+        url=f"auth?{urlencode(params.model_dump(exclude_none=True))}",
         status_code=302
     )
     response.set_cookie(
