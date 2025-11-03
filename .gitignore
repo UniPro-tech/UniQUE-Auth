@@ -168,3 +168,6 @@ cython_debug/
 # 鍵ファイルの追跡防止
 *.pem
 *.key
+
+# test.pyの追跡防止
+test.py
