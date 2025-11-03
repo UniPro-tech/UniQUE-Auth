@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     # ---------- JWT Configuration ----------
     # JWT署名アルゴリズム (HS256 or RS256)によって設定箇所が変わります。
     # HS256 用の場合は JWT_SECRET_KEY を、 RS256 用の場合は RSA_PRIVATE_KEY_PATH と RSA_PUBLIC_KEY_PATH を設定してください。
-    JWT_ALGORITHM: str = "HS256"
+    JWT_ALGORITHM: str = "RS256"  # "HS256" or "RS256"
 
     JWT_SECRET_KEY: str = os.getenv(
         "JWT_SECRET_KEY", "your-secret-key"

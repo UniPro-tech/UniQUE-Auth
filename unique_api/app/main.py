@@ -8,12 +8,20 @@ from unique_api.app.db import engine, Base, get_db
 from unique_api.app.router.authorization import router as authorization_router
 from unique_api.app.router.authentication import router as authentication_router
 from unique_api.app.router.metadata import router as metadata_router
+from unique_api.app.config import settings
+from unique_api.app.services.token.hash import make_token_hasher
 
 load_dotenv(".env")
 
 # データベースをリセット
 # Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
+hash_maker = make_token_hasher(
+    algorithm=settings.JWT_ALGORITHM,
+    secret_key=settings.JWT_SECRET_KEY,
+    private_key_path=settings.RSA_PRIVATE_KEY_PATH,
+    public_key_path=settings.RSA_PUBLIC_KEY_PATH,
+)
 
 
 # 立ち上がったらテスト用のデータを作成する
