@@ -4,6 +4,7 @@ import jwt
 import hmac
 from typing import Optional, Dict, Any
 from abc import ABC, abstractmethod
+from unique_api.app.config import settings
 
 
 class TokenHashBase(ABC):
@@ -106,8 +107,8 @@ class RSATokenHash(TokenHashBase):
 def make_token_hasher(
     algorithm: str,
     secret_key: Optional[str] = None,
-    private_key: Optional[str] = None,
-    public_key: Optional[str] = None,
+    private_key_path: Optional[str] = settings.RSA_PRIVATE_KEY_PATH,
+    public_key_path: Optional[str] = settings.RSA_PUBLIC_KEY_PATH,
 ) -> TokenHashBase:
     """
     指定したアルゴリズムに応じたトークンハッシュ化オブジェクトを生成するファクトリ関数
@@ -117,9 +118,7 @@ def make_token_hasher(
             raise ValueError("secret_key required for HS*")
         return HMACTokenHash(secret_key=secret_key, algorithm=algorithm)
     if algorithm.startswith(("RS", "PS", "ES", "Ed")):
-        if not (private_key and public_key):
+        if not (private_key_path and public_key_path):
             raise ValueError("private_key and public_key required for RSA/ECDSA/EdDSA")
-        return RSATokenHash(
-            private_key=private_key, public_key=public_key, algorithm=algorithm
-        )
+        return RSATokenHash(private_key=private_key_path, public_key=public_key_path, algorithm=algorithm)
     raise ValueError("Unsupported algorithm")
