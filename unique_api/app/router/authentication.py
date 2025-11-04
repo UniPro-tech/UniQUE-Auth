@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends, Form, Cookie
+from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -8,7 +8,6 @@ from typing import Optional
 from unique_api.app.db import get_db
 import hashlib
 import os
-import secrets
 from unique_api.app.model import Users, Sessions
 from unique_api.app.schemas.authentication import AuthenticationRequest
 from unique_api.app.schemas.errors import create_error_response, OAuthErrorCode
@@ -65,72 +64,21 @@ templates = Jinja2Templates(
 )
 
 
-@router.get("/login")
-async def login(
-    request: Request,
-    params: AuthenticationRequest = Depends(),
-    csrf_token: str = Cookie(None),
-):
-    """
-    OIDC 認可フロー開始時のログイン画面表示
-    - CSRF対策のトークンを生成
-    - ログインフォームを表示
-    """
-    # CSRF対策トークンの生成
-    if not csrf_token:
-        csrf_token = secrets.token_urlsafe(32)
-        response = templates.TemplateResponse(
-            "login.html",
-            {
-                "request": request,
-                "action_url": f"login?{urlencode(params.model_dump(exclude_none=True))}",
-                "csrf_token": csrf_token,
-            },
-        )
-        response.set_cookie(
-            key="csrf_token",
-            value=csrf_token,
-            httponly=True,
-            secure=True,
-            samesite="lax",
-        )
-        return response
-
-    return templates.TemplateResponse(
-        "login.html",
-        {
-            "request": request,
-            "action_url": f"login?{urlencode(params.model_dump(exclude_none=True))}",
-            "csrf_token": csrf_token,
-        },
-    )
-
-
-@router.post("/login")
-async def login_post(
-    request: Request,
-    custom_id: str = Form(...),
-    password: str = Form(...),
-    csrf_token: str = Form(...),
-    params: AuthenticationRequest = Depends(),
+@router.post("/authentication")
+async def authentication_post(
+    request: AuthenticationRequest,
     db: Session = Depends(get_db),
 ):
     """
     ログインフォームのPOST送信を受けて、認証処理を行う
-    - CSRF対策
     - ユーザー認証
     - セッション作成
     - プロンプトパラメータの処理
     - max_ageパラメータの処理
     """
-    # CSRF対策
-    cookie_token = request.cookies.get("csrf_token")
-    if not cookie_token or cookie_token != csrf_token:
-        return create_error_response(
-            error=OAuthErrorCode.INVALID_REQUEST,
-            error_description="CSRF token validation failed",
-            state=params.state,
-        )
+
+    custom_id = request.username
+    password = request.password
 
     # ユーザー認証
     validated_user = (
@@ -143,12 +91,7 @@ async def login_post(
     )
 
     if validated_user is None:
-        return create_error_response(
-            error=OAuthErrorCode.ACCESS_DENIED,
-            error_description="Invalid username or password",
-            state=params.state,
-            status_code=401,
-        )
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
     # セッションを作成
     session = Sessions(
@@ -162,16 +105,10 @@ async def login_post(
     db.add(session)
     db.commit()
 
-    # レスポンスの準備
-    response = RedirectResponse(
-        url=f"auth?{urlencode(params.model_dump(exclude_none=True))}", status_code=302
-    )
-    response.set_cookie(
-        key="session_", value=session.id, httponly=True, secure=True, samesite="lax"
-    )
-
-    # CSRFトークンを削除
-    response.delete_cookie(key="csrf_token")
+    response = {
+        "message": "Authentication successful",
+        "session_id": session.id,
+    }
 
     return response
 
