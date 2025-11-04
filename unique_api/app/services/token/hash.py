@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 
 class TokenHashBase(ABC):
     """トークンのハッシュ化復号化を行うための抽象基底クラス"""
+
     @property
     @abstractmethod
     def algorithm(self) -> str:
@@ -27,9 +28,12 @@ class TokenHashBase(ABC):
 # ---------------- HMAC 実装 ----------------
 class HMACTokenHash(TokenHashBase):
     """HMACベースのトークンハッシュ化クラス"""
+
     def __init__(self, secret_key: str, algorithm: str = "HS256"):
         if not algorithm.startswith("HS"):
-            raise ValueError("HMACTokenHash only supports HMAC algorithms (HS256, HS384, HS512)")
+            raise ValueError(
+                "HMACTokenHash only supports HMAC algorithms (HS256, HS384, HS512)"
+            )
         self.secret_key = secret_key
         self._alg = algorithm
 
@@ -43,7 +47,9 @@ class HMACTokenHash(TokenHashBase):
 
     def verify(self, token: str, *, audience: Optional[str] = None) -> Dict[str, Any]:
         # jwt.decode が署名・exp 等を検証してデコード済み claims を返す
-        return jwt.decode(token, self.secret_key, algorithms=[self._alg], audience=audience)
+        return jwt.decode(
+            token, self.secret_key, algorithms=[self._alg], audience=audience
+        )
 
     # 生の HMAC を欲しい場合
     def mac_hex(self, data: str) -> str:
@@ -59,7 +65,13 @@ class HMACTokenHash(TokenHashBase):
 # ---------------- RSA 実装 ----------------
 class RSATokenHash(TokenHashBase):
     """RSAベースのトークンハッシュ化クラス"""
-    def __init__(self, private_key: Optional[str], public_key: Optional[str], algorithm: str = "RS256"):
+
+    def __init__(
+        self,
+        private_key: Optional[str],
+        public_key: Optional[str],
+        algorithm: str = "RS256",
+    ):
         def _load_if_path(k: Optional[str]) -> Optional[str]:
             if k is None:
                 return None
@@ -68,6 +80,7 @@ class RSATokenHash(TokenHashBase):
                 with open(k, "rb") as f:
                     return f.read().decode()  # PEM を文字列で返す
             return k  # そのまま PEM 文字列だと仮定
+
         self.private_key = _load_if_path(private_key)
         self.public_key = _load_if_path(public_key)
         self._alg = algorithm
@@ -84,7 +97,9 @@ class RSATokenHash(TokenHashBase):
     def verify(self, token: str, *, audience: Optional[str] = None) -> Dict[str, Any]:
         if not self.public_key:
             raise ValueError("public_key is required for verification")
-        return jwt.decode(token, self.public_key, algorithms=[self._alg], audience=audience)
+        return jwt.decode(
+            token, self.public_key, algorithms=[self._alg], audience=audience
+        )
 
 
 # ---------------- ファクトリ ----------------
@@ -104,5 +119,7 @@ def make_token_hasher(
     if algorithm.startswith(("RS", "PS", "ES", "Ed")):
         if not (private_key and public_key):
             raise ValueError("private_key and public_key required for RSA/ECDSA/EdDSA")
-        return RSATokenHash(private_key=private_key, public_key=public_key, algorithm=algorithm)
+        return RSATokenHash(
+            private_key=private_key, public_key=public_key, algorithm=algorithm
+        )
     raise ValueError("Unsupported algorithm")

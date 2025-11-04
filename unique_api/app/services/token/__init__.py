@@ -123,11 +123,7 @@ def create_refresh_token(
         "iat": int(now.timestamp()),
     }
 
-    return jwt.encode(
-        claims,
-        settings.JWT_SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM
-    )
+    return jwt.encode(claims, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
 class Tokenbase(ABC):

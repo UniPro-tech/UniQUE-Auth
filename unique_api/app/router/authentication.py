@@ -84,8 +84,8 @@ async def login(
             {
                 "request": request,
                 "action_url": f"login?{urlencode(params.model_dump(exclude_none=True))}",
-                "csrf_token": csrf_token
-            }
+                "csrf_token": csrf_token,
+            },
         )
         response.set_cookie(
             key="csrf_token",
@@ -101,8 +101,8 @@ async def login(
         {
             "request": request,
             "action_url": f"login?{urlencode(params.model_dump(exclude_none=True))}",
-            "csrf_token": csrf_token
-        }
+            "csrf_token": csrf_token,
+        },
     )
 
 
@@ -164,8 +164,7 @@ async def login_post(
 
     # レスポンスの準備
     response = RedirectResponse(
-        url=f"auth?{urlencode(params.model_dump(exclude_none=True))}",
-        status_code=302
+        url=f"auth?{urlencode(params.model_dump(exclude_none=True))}", status_code=302
     )
     response.set_cookie(
         key="session_", value=session.id, httponly=True, secure=True, samesite="lax"
