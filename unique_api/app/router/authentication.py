@@ -26,6 +26,8 @@ async def authentication_post(
 
     custom_id = request.username
     password = request.password
+    ip = request.ip
+    user_agent = request.user_agent
 
     # ユーザー認証
     validated_user = (
@@ -43,8 +45,8 @@ async def authentication_post(
     # セッションを作成
     session = Sessions(
         user_id=validated_user.id,
-        ip_address=request.client.host,  # type: ignore
-        user_agent=request.headers.get("User-Agent", ""),
+        ip_address=ip,
+        user_agent=user_agent,
         created_at=datetime.now(timezone.utc),
         expires_at=datetime.now(timezone.utc) + timedelta(hours=1),  # 1時間有効
         is_enable=True,

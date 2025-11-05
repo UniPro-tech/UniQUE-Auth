@@ -38,6 +38,12 @@ class AuthenticationRequest(BaseModel):
     password: str = Field(
         description="User's password for authentication",
     )
+    ip: str = Field(
+        description="Client's IP address",
+    )
+    user_agent: str = Field(
+        description="Client's User-Agent string",
+    )
     # 60s * 60m * 24h * 7d = 604800s
     max_age: Optional[int] = Field(
         default=60 * 60 * 24 * 7,
