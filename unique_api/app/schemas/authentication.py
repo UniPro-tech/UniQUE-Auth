@@ -46,7 +46,7 @@ class AuthenticationRequest(BaseModel):
     )
     # 60s * 60m * 24h * 7d = 604800s
     max_age: Optional[int] = Field(
-        default=60 * 60 * 24 * 7,
+        default=None,
         description="OPTIONAL. Maximum Authentication Age in seconds",
     )
     remember_me: Optional[bool] = Field(

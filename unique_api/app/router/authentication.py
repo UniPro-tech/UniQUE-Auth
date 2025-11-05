@@ -42,13 +42,18 @@ async def authentication_post(
     if validated_user is None:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    if request.remember_me and request.max_age is None:
+        request.max_age = 60 * 60 * 24 * 30  # 30日
+    elif request.max_age is None:
+        request.max_age = 60 * 60 * 24 * 7  # 7日
+
     # セッションを作成
     session = Sessions(
         user_id=validated_user.id,
         ip_address=ip,
         user_agent=user_agent,
         created_at=datetime.now(timezone.utc),
-        expires_at=datetime.now(timezone.utc) + timedelta(hours=1),  # 1時間有効
+        expires_at=datetime.now(timezone.utc) + timedelta(seconds=request.max_age),
         is_enable=True,
     )
     db.add(session)
