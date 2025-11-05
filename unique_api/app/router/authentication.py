@@ -14,7 +14,17 @@ from unique_api.app.schemas.authentication import (
 router = APIRouter()
 
 
-@router.post("/authentication", response_model=AuthenticationResponse)
+@router.post(
+    "/authentication",
+    responses={
+        200: {"model": AuthenticationResponse},
+        401: {
+            "content": {
+                "application/json": {"example": {"detail": "Invalid credentials"}}
+            },
+        },
+    },
+)
 async def authentication_post(
     request: AuthenticationRequest,
     db: Session = Depends(get_db),
