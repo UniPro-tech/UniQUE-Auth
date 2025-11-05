@@ -6,12 +6,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from unique_api.app.db import get_db
 from unique_api.app.model import Users, Sessions
-from unique_api.app.schemas.authentication import AuthenticationRequest
+from unique_api.app.schemas.authentication import (
+    AuthenticationRequest,
+    AuthenticationResponse,
+)
 
 router = APIRouter()
 
 
-@router.post("/authentication")
+@router.post("/authentication", response_model=AuthenticationResponse)
 async def authentication_post(
     request: AuthenticationRequest,
     db: Session = Depends(get_db),
@@ -60,9 +63,11 @@ async def authentication_post(
     db.add(session)
     db.commit()
 
-    response = {
-        "message": "Authentication successful",
-        "session_id": session.id,
-    }
+    response = AuthenticationResponse(
+        message="Authentication successful",
+        session_id=session.id,
+        max_age=request.max_age,
+        expires_at=session.expires_at.isoformat(),
+    )
 
     return response

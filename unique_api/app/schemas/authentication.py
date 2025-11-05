@@ -65,3 +65,34 @@ class AuthenticationRequest(BaseModel):
         if v is not None and not isinstance(v, bool):
             raise ValueError("remember_me must be a boolean value")
         return v
+
+
+class AuthenticationResponse(BaseModel):
+    """
+    AuthenticationResponse: 認証レスポンスを表すPydanticモデルのドキュメント文字列。
+    説明:
+        認証処理の結果をクライアントに返すためのデータを表します。成功メッセージ、
+        セッションID、セッションの最大有効期間および有効期限を含みます。
+    属性:
+        message (str):
+            認証結果を示すレスポンスメッセージ。
+        session_id (str):
+            認証成功時に作成されたセッションの一意識別子。
+        max_age (int):
+            セッションの最大有効期間を秒単位で示します。
+        expires_at (str):
+            セッションの有効期限をISO 8601形式のタイムスタンプで示します。
+    """
+
+    message: str = Field(
+        description="Response message indicating the result of the authentication",
+    )
+    session_id: str = Field(
+        description="Unique identifier for the created session upon successful authentication",
+    )
+    max_age: int = Field(
+        description="Maximum age of the session in seconds",
+    )
+    expires_at: str = Field(
+        description="ISO 8601 formatted timestamp indicating when the session expires",
+    )
