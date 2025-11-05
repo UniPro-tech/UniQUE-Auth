@@ -35,6 +35,7 @@ async def authentication_post(
         .filter_by(
             custom_id=custom_id,
             password_hash=hashlib.sha256(password.encode()).hexdigest(),
+            is_enable=1,
         )
         .first()
     )
