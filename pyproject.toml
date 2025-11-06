@@ -44,6 +44,7 @@ dependencies = [
     "pytest>=8.4.1",
     "httpx>=0.28.1",
     "cryptography>=46.0.3",
+    "pre-commit>=4.3.0",
 ]
 
 [build-system]
