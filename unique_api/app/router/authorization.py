@@ -35,12 +35,12 @@ from unique_api.app.services.oauth_utils import (
 )
 from unique_api.app.schemas.errors import create_token_error_response, OAuthErrorCode
 from unique_api.app.services.token import (
-    create_access_token,
-    create_refresh_token,
-    create_id_token,
     generate_at_hash,
+    token_maker,
+    TokenPayload
 )
 from unique_api.app.config import settings
+from unique_api.app.main import hash_maker
 
 
 router = APIRouter()
@@ -322,9 +322,17 @@ async def token_endpoint(
 
     # アクセストークンの生成
     now = datetime.now(timezone.utc)
-    access_token_jwt = create_access_token(
-        sub=user.id, client_id=app.id, scope=consent.scope, aud=app.id
+    access_token_data = TokenPayload(
+        iss="unique-api",
+        sub=user.id,
+        aud=app.id,
+        exp=int((now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp()),
+        iat=int(now.timestamp()),
+        jti=str(ulid.new()),
+        scope=consent.scope,
     )
+    access_token_oj = token_maker(hash_maker, "access_token", access_token_data)
+    access_token_jwt = access_token_oj.generate_token()
 
     # アクセストークンの保存
     access_token = AccessTokens(
@@ -339,7 +347,17 @@ async def token_endpoint(
     )
 
     # リフレッシュトークンの生成
-    refresh_token_jwt = create_refresh_token(sub=user.id, client_id=app.id)
+    refresh_token_data = TokenPayload(
+        iss="unique-api",
+        sub=user.id,
+        aud=app.id,
+        exp=int((now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)).timestamp()),
+        iat=int(now.timestamp()),
+        jti=str(ulid.new()),
+        scope=consent.scope,
+    )
+    refresh_token_oj = token_maker(hash_maker, "refresh_token", refresh_token_data)
+    refresh_token_jwt = refresh_token_oj.generate_token()
 
     # リフレッシュトークンの保存
     refresh_token = RefreshTokens(
@@ -357,7 +375,7 @@ async def token_endpoint(
 
     # IDトークンの生成
     id_token_id = str(ulid.new())
-    id_token_jwt = create_id_token(
+    id_token_data = TokenPayload(
         sub=user.id,
         aud=app.id,
         auth_time=int(code_obj.created_at.timestamp()),
@@ -367,6 +385,8 @@ async def token_endpoint(
         at_hash=at_hash,
         azp=app.id if isinstance(app.id, list) and len(app.id) > 1 else None,
     )
+    id_token_oj = token_maker(hash_maker, "id_token", id_token_data)
+    id_token_jwt = id_token_oj.generate_token()
 
     # IDトークンの保存
     id_token = IDTokens(
