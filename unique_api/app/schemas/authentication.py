@@ -3,64 +3,96 @@ from typing import Optional
 
 
 class AuthenticationRequest(BaseModel):
-    response_type: str = Field(
-        ..., description="REQUIRED. Must be 'code' for Authorization Code Flow"
+    """
+    AuthenticationRequest: 認証リクエストを表すPydanticモデルのドキュメント文字列。
+
+    説明:
+        認証処理のためにクライアントから送信されるデータを表します。必須の資格情報と、
+        オプションでセッション継続時間や「ログインを記憶する」フラグを含みます。
+
+    属性:
+        username (str):
+            認証に使用するユーザーの一意識別子（例: ユーザー名やメールアドレス）。
+        password (str):
+            ユーザーのパスワード。
+        max_age (Optional[int]):
+            オプション。認証の最大有効期間を秒単位で指定します。デフォルトは 60 * 60 * 24 * 7 = 604800（7日）。
+            None を許容する場合は無期限扱いにする等の上位ロジックを適用できます。
+        remember_me (Optional[bool]):
+            オプション。次回以降のログインを記憶するかどうかを示すフラグ。デフォルトは False。
+
+    検証 (Validators):
+        validate_max_age:
+            max_age が None でなければ、非負の整数である必要があります。負の値の場合は ValueError を送出します。
+        validate_remember_me:
+            remember_me が None でなければ、bool 型である必要があります。型が不正な場合は ValueError を送出します。
+
+    使用上の注意:
+        - max_age は秒単位で扱うため、分や時間での指定を行う場合は換算が必要です。
+        - フロントエンドから受け取る値の型によっては事前にパースや正規化が必要になることがあります。
+    """
+
+    username: str = Field(
+        description="User's unique identifier for authentication",
     )
-    scope: str = Field(..., description="REQUIRED. Must include 'openid'")
-    client_id: str = Field(..., description="REQUIRED. OAuth 2.0 Client Identifier")
-    redirect_uri: str = Field(
-        ..., description="REQUIRED. Redirection URI to return the response"
+    password: str = Field(
+        description="User's password for authentication",
     )
-    state: Optional[str] = Field(
-        None, description="RECOMMENDED. Opaque value for maintaining state"
+    ip: str = Field(
+        description="Client's IP address",
     )
-    nonce: Optional[str] = Field(
-        None,
-        description="OPTIONAL. String value to associate client session with ID Token",
+    user_agent: str = Field(
+        description="Client's User-Agent string",
     )
-    display: Optional[str] = Field(
-        None, description="OPTIONAL. ASCII string value to specify UI display"
-    )
-    prompt: Optional[str] = Field(
-        None,
-        description="OPTIONAL. Space delimited, case sensitive list of ASCII values",
-    )
+    # 60s * 60m * 24h * 7d = 604800s
     max_age: Optional[int] = Field(
-        None, description="OPTIONAL. Maximum Authentication Age in seconds"
+        default=None,
+        description="OPTIONAL. Maximum Authentication Age in seconds",
     )
-    ui_locales: Optional[str] = Field(
-        None, description="OPTIONAL. End-User's preferred languages and scripts for UI"
-    )
-    id_token_hint: Optional[str] = Field(
-        None, description="OPTIONAL. Previously issued ID Token"
-    )
-    login_hint: Optional[str] = Field(
-        None,
-        description="OPTIONAL. Hint to the Authorization Server about the login identifier",
-    )
-    acr_values: Optional[str] = Field(
-        None, description="OPTIONAL. Authentication Context Class Reference values"
+    remember_me: Optional[bool] = Field(
+        default=False,
+        description="OPTIONAL. Whether to remember the user for future logins",
     )
 
-    @field_validator("scope")
-    def validate_openid_scope(cls, v):
-        if "openid" not in v.split():
-            raise ValueError("scope must contain 'openid'")
+    @field_validator("max_age")
+    def validate_max_age(cls, v):
+        if v is not None and v < 0:
+            raise ValueError("max_age must be a non-negative integer")
         return v
 
-    @field_validator("response_type")
-    def validate_response_type(cls, v):
-        if v != "code":
-            raise ValueError("response_type must be 'code' for Authorization Code Flow")
+    @field_validator("remember_me")
+    def validate_remember_me(cls, v):
+        if v is not None and not isinstance(v, bool):
+            raise ValueError("remember_me must be a boolean value")
         return v
 
-    @field_validator("prompt")
-    def validate_prompt(cls, v):
-        if v:
-            values = v.split()
-            valid_values = {"none", "login", "consent", "select_account"}
-            if not all(val in valid_values for val in values):
-                raise ValueError("invalid prompt value")
-            if "none" in values and len(values) > 1:
-                raise ValueError("'none' cannot be combined with other values")
-        return v
+
+class AuthenticationResponse(BaseModel):
+    """
+    AuthenticationResponse: 認証レスポンスを表すPydanticモデルのドキュメント文字列。
+    説明:
+        認証処理の結果をクライアントに返すためのデータを表します。成功メッセージ、
+        セッションID、セッションの最大有効期間および有効期限を含みます。
+    属性:
+        message (str):
+            認証結果を示すレスポンスメッセージ。
+        session_id (str):
+            認証成功時に作成されたセッションの一意識別子。
+        max_age (int):
+            セッションの最大有効期間を秒単位で示します。
+        expires_at (str):
+            セッションの有効期限をISO 8601形式のタイムスタンプで示します。
+    """
+
+    message: str = Field(
+        description="Response message indicating the result of the authentication",
+    )
+    session_id: str = Field(
+        description="Unique identifier for the created session upon successful authentication",
+    )
+    max_age: int = Field(
+        description="Maximum age of the session in seconds",
+    )
+    expires_at: str = Field(
+        description="ISO 8601 formatted timestamp indicating when the session expires",
+    )
