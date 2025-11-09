@@ -5,7 +5,6 @@ import hmac
 from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 from ..model import Apps
-from typing_extensions import deprecated
 
 
 class ClientAuthMethod(str, Enum):

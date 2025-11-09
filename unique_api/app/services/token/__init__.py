@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import hashlib
 import base64
 import jwt
 from dataclasses import dataclass
 from typing import Optional, Union, List, Dict, Any, TYPE_CHECKING
 from abc import ABC, abstractmethod
-from unique_api.app.main import hash_maker
 
 if TYPE_CHECKING:
     from unique_api.app.services.token.hash import TokenHashBase
@@ -34,7 +35,10 @@ class TokenBase(ABC):
     - generate_token: トークンを生成する抽象メソッド
     - token_validate: トークンを検証する抽象メソッド
     """
-    def __init__(self, hash_maker: TokenHashBase, extra_header: Optional[Dict[str, Any]] = None):
+
+    def __init__(
+        self, hash_maker: TokenHashBase, extra_header: Optional[Dict[str, Any]] = None
+    ):
         self.hash_maker = hash_maker
         self.extra_header = extra_header or {}
 
@@ -70,9 +74,19 @@ class TokenBase(ABC):
 
 
 class AccessToken(TokenBase):
-    def __init__(self, iss: str, sub: str, client_id: str, scope: str,
-                 aud: Union[str, List[str]], exp: int, iat: int, jti: str,
-                 hash_maker: TokenHashBase, extra_header: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self,
+        iss: str,
+        sub: str,
+        client_id: str,
+        scope: str,
+        aud: Union[str, List[str]],
+        exp: int,
+        iat: int,
+        jti: str,
+        hash_maker: TokenHashBase,
+        extra_header: Optional[Dict[str, Any]] = None,
+    ):
         super().__init__(hash_maker, extra_header)
         self.iss = iss
         self.sub = sub
@@ -103,23 +117,30 @@ class AccessToken(TokenBase):
             "amr": self.amr,
         }
         header = self._default_headers()
-        return self.hash_maker.sign(
-            payload=payload,
-            header=header
-        )
+        return self.hash_maker.sign(payload=payload, header=header)
 
     def token_validate(self, token: str) -> bool:
         try:
-            decoded = hash_maker.verify(token, audience=self.aud)
+            decoded = self.hash_maker.verify(token, audience=self.aud)
             return decoded["sub"] == self.sub and decoded.get("scope") == self.scope
         except jwt.PyJWTError:
             return False
 
 
 class RefreshToken(TokenBase):
-    def __init__(self, iss: str, sub: str, client_id: str, aud: str,
-                 exp: int, iat: int, scope: Union[str, Dict[str, Any]], jti: str,
-                 hash_maker: TokenHashBase, extra_header: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self,
+        iss: str,
+        sub: str,
+        client_id: str,
+        aud: str,
+        exp: int,
+        iat: int,
+        scope: Union[str, Dict[str, Any]],
+        jti: str,
+        hash_maker: TokenHashBase,
+        extra_header: Optional[Dict[str, Any]] = None,
+    ):
         super().__init__(hash_maker, extra_header)
         self.iss = iss
         self.sub = sub
@@ -148,24 +169,33 @@ class RefreshToken(TokenBase):
             "auth_time": self.auth_time,
         }
         header = self._default_headers()
-        return self.hash_maker.sign(
-            payload=payload,
-            header=header
-        )
+        return self.hash_maker.sign(payload=payload, header=header)
 
     def token_validate(self, token: str) -> bool:
         try:
-            decoded = hash_maker.verify(token, audience=self.aud)
+            decoded = self.hash_maker.verify(token, audience=self.aud)
             return decoded.get("sub") == self.sub and decoded.get("jti") == self.jti
         except jwt.PyJWTError:
             return False
 
 
 class IDToken(TokenBase):
-    def __init__(self, iss: str, sub: str, aud: Union[str, List[str]], exp: int, iat: int,
-                 auth_time: int, nonce: Optional[str], acr: Optional[str], amr: Optional[List[str]],
-                 at_hash: Optional[str], azp: Optional[str], hash_maker: TokenHashBase,
-                 extra_header: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self,
+        iss: str,
+        sub: str,
+        aud: Union[str, List[str]],
+        exp: int,
+        iat: int,
+        auth_time: int,
+        nonce: Optional[str],
+        acr: Optional[str],
+        amr: Optional[List[str]],
+        at_hash: Optional[str],
+        azp: Optional[str],
+        hash_maker: TokenHashBase,
+        extra_header: Optional[Dict[str, Any]] = None,
+    ):
         super().__init__(hash_maker, extra_header)
         self.iss = iss
         self.sub = sub
@@ -204,14 +234,11 @@ class IDToken(TokenBase):
             payload["azp"] = self.azp
 
         header = self._default_headers()
-        return self.hash_maker.sign(
-            payload=payload,
-            header=header
-        )
+        return self.hash_maker.sign(payload=payload, header=header)
 
     def token_validate(self, token: str) -> bool:
         try:
-            decoded = hash_maker.verify(token, audience=self.aud)
+            decoded = self.hash_maker.verify(token, audience=self.aud)
             return decoded.get("sub") == self.sub
         except jwt.PyJWTError:
             return False
@@ -249,6 +276,7 @@ class TokenPayload:
         アクセストークンハッシュ値
         generate_at_hash 関数で生成可能
     """
+
     sub: str
     client_id: str
     scope: str
@@ -258,7 +286,7 @@ class TokenPayload:
     jti: str = None
     iss: str = None
     amr: List[str] = None
-    nance: str = None
+    nonce: str = None
     acr: str = None
     azp: str = None
     at_hash: str = None
@@ -272,14 +300,15 @@ class TokenHeader:
     alg:
         使用される署名アルゴリズム(HS256, RS256等)
     """
+
     typ: str = "JWT"
     alg: str = None
 
 
 def token_maker(
-    hash_maker: TokenHashBase,
     token_type: str,
     token_payload: TokenPayload,
+    hash_maker: TokenHashBase,
     token_header: Optional[dict] = TokenHeader.__dict__,
 ) -> TokenBase:
     """
@@ -323,7 +352,7 @@ def token_maker(
             exp=token_payload.exp,
             iat=token_payload.iat,
             auth_time=token_payload.iat,
-            nonce=token_payload.nance,
+            nonce=token_payload.nonce,
             acr=token_payload.acr,
             amr=token_payload.amr,
             at_hash=token_payload.at_hash,

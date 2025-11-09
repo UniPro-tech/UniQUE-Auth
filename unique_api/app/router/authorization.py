@@ -34,13 +34,10 @@ from unique_api.app.services.oauth_utils import (
     token_authorization,
 )
 from unique_api.app.schemas.errors import create_token_error_response, OAuthErrorCode
-from unique_api.app.services.token import (
-    generate_at_hash,
-    token_maker,
-    TokenPayload
-)
+from unique_api.app.services.token import generate_at_hash, token_maker, TokenPayload
+
 from unique_api.app.config import settings
-from unique_api.app.main import hash_maker
+from unique_api.app.services.token.hash import make_token_hasher
 
 
 router = APIRouter()
@@ -320,13 +317,21 @@ async def token_endpoint(
     db.add(code_obj)
     db.commit()
 
+    hash_maker = make_token_hasher(
+        algorithm=settings.JWT_ALGORITHM,
+        private_key_path=settings.RSA_PRIVATE_KEY_PATH,
+        public_key_path=settings.RSA_PUBLIC_KEY_PATH,
+    )
+
     # アクセストークンの生成
     now = datetime.now(timezone.utc)
     access_token_data = TokenPayload(
         iss="unique-api",
         sub=user.id,
         aud=app.id,
-        exp=int((now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp()),
+        exp=int(
+            (now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp()
+        ),
         iat=int(now.timestamp()),
         jti=str(ulid.new()),
         scope=consent.scope,
@@ -421,7 +426,9 @@ async def token_endpoint(
     token_response = {
         "access_token": access_token_jwt,
         "token_type": "Bearer",
-        "expires_in": 3600,  # 1時間
+        "expires_in": int(
+            (now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)).timestamp()
+        ),  # 1時間
         "refresh_token": refresh_token_jwt,
         "id_token": id_token_jwt,
         "scope": consent.scope,

@@ -11,12 +11,10 @@ class Settings(BaseSettings):
     # HS256 用の場合は JWT_SECRET_KEY を、 RS256 用の場合は RSA_PRIVATE_KEY_PATH と RSA_PUBLIC_KEY_PATH を設定してください。
     JWT_ALGORITHM: str = "RS256"  # "HS256" or "RS256"
 
-    JWT_SECRET_KEY: str = os.getenv(
-        "JWT_SECRET_KEY", "your-secret-key"
-    )
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key")
 
     RSA_PRIVATE_KEY_PATH: str | None = "rsa_private.pem"  # 例: "path/to
-    RSA_PUBLIC_KEY_PATH: str | None = "rsa_public.pem"   # 例: "path/to/public_key.pem"
+    RSA_PUBLIC_KEY_PATH: str | None = "rsa_public.pem"  # 例: "path/to/public_key.pem"
 
     # ---------- Token Configuration ----------
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60

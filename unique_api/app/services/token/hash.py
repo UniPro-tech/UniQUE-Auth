@@ -43,7 +43,9 @@ class HMACTokenHash(TokenHashBase):
 
     def sign(self, payload: Dict[str, Any], heder: Dict[str, Any]) -> str:
         # JWT 形式で返す（必要でなければ別メソッドで生の MAC を返す）
-        return jwt.encode(payload, self.secret_key, algorithm=self.algorithm, headers=heder)
+        return jwt.encode(
+            payload, self.secret_key, algorithm=self.algorithm, headers=heder
+        )
 
     def verify(self, token: str, *, audience: Optional[str] = None) -> Dict[str, Any]:
         # jwt.decode が署名・exp 等を検証してデコード済み claims を返す
@@ -92,7 +94,9 @@ class RSATokenHash(TokenHashBase):
     def sign(self, payload: Dict[str, Any], header: Dict[str, Any]) -> str:
         if not self.private_key:
             raise ValueError("private_key is required for signing")
-        return jwt.encode(payload, self.private_key, algorithm=self._alg, headers=header)
+        return jwt.encode(
+            payload, self.private_key, algorithm=self._alg, headers=header
+        )
 
     def verify(self, token: str, *, audience: Optional[str] = None) -> Dict[str, Any]:
         if not self.public_key:
@@ -127,5 +131,9 @@ def make_token_hasher(
     if algorithm.startswith(("RS", "PS", "ES", "Ed")):
         if not (private_key_path and public_key_path):
             raise ValueError("private_key and public_key required for RSA/ECDSA/EdDSA")
-        return RSATokenHash(private_key=private_key_path, public_key=public_key_path, algorithm=algorithm)
+        return RSATokenHash(
+            private_key=private_key_path,
+            public_key=public_key_path,
+            algorithm=algorithm,
+        )
     raise ValueError("Unsupported algorithm")
