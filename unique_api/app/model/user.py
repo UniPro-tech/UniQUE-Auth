@@ -37,6 +37,9 @@ class Users(Base):
     is_system: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'0'"))
     custom_id: Mapped[Optional[str]] = mapped_column(String(255, "utf8mb4_unicode_ci"))
     email: Mapped[Optional[str]] = mapped_column(String(255, "utf8mb4_unicode_ci"))
+    email_verified: Mapped[Optional[bool]] = mapped_column(
+        TINYINT(1), server_default=text("'0'")
+    )
     joined_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     created_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, server_default=text("CURRENT_TIMESTAMP")
