@@ -81,7 +81,6 @@ CREATE TABLE
     `code_challenge_method` VARCHAR(255) NULL,
     `acr` VARCHAR(255) NULL,
     `amr` VARCHAR(255) NULL,
-    -- JSONでもよい
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `exp` TIMESTAMP,
     `is_enable` BOOLEAN NOT NULL DEFAULT TRUE
@@ -165,12 +164,12 @@ CREATE TABLE
   `user_app` (`id` INT PRIMARY KEY AUTO_INCREMENT, `app_id` VARCHAR(255), `user_id` VARCHAR(255));
 
 CREATE TABLE
-  IF NOT EXISTS `email_verifications` (
+  `email_verifications` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `user_id` VARCHAR(255) NOT NULL,
     `verification_code` VARCHAR(255) NOT NULL,
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `expires_at` DATETIME NOT NULL,
+    `expires_at` DATETIME NOT NULL
   );
 
 ALTER TABLE `roles` COMMENT = 'ロール情報';
