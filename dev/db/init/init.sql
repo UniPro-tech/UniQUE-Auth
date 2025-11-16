@@ -6,6 +6,7 @@ CREATE TABLE
     `password_hash` VARCHAR(255) NULL,
     `email` VARCHAR(255) UNIQUE NOT NULL,
     `external_email` VARCHAR(255) NOT NULL,
+    `email_verified` BOOLEAN DEFAULT FALSE,
     `period` VARCHAR(255) NULL,
     `birthdate` DATE DEFAULT NULL,
     `joined_at` DATETIME NULL,
@@ -162,6 +163,15 @@ CREATE TABLE
 
 CREATE TABLE
   `user_app` (`id` INT PRIMARY KEY AUTO_INCREMENT, `app_id` VARCHAR(255), `user_id` VARCHAR(255));
+
+CREATE TABLE
+  IF NOT EXISTS `email_verifications` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `user_id` VARCHAR(255) NOT NULL,
+    `verification_code` VARCHAR(255) NOT NULL,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `expires_at` DATETIME NOT NULL,
+  );
 
 ALTER TABLE `roles` COMMENT = 'ロール情報';
 
