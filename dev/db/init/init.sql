@@ -5,6 +5,7 @@ CREATE TABLE `users` (
   `password_hash` VARCHAR(255) NULL,
   `email` VARCHAR(255) UNIQUE NOT NULL,
   `external_email` VARCHAR(255) NOT NULL,
+  `email_verified` BOOLEAN DEFAULT FALSE,
   `period` VARCHAR(255) NULL,
   `joined_at` DATETIME NULL,
   `is_system` BOOLEAN DEFAULT FALSE,
@@ -145,6 +146,13 @@ CREATE TABLE `user_app` (
   `app_id` varchar(255),
   `user_id` varchar(255)
 );
+CREATE TABLE IF NOT EXISTS `email_verifications` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` VARCHAR(255) NOT NULL,
+  `verification_code` VARCHAR(255) NOT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` DATETIME NOT NULL,
+);
 ALTER TABLE `roles` COMMENT = 'ロール情報';
 ALTER TABLE `token_sets`
 ADD FOREIGN KEY (`access_token_id`) REFERENCES `access_tokens` (`id`);
@@ -178,6 +186,8 @@ ALTER TABLE `user_app`
 ADD FOREIGN KEY (`app_id`) REFERENCES `apps` (`id`);
 ALTER TABLE `user_app`
 ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+ALTER TABLE `email_verifications`
+ADD FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE;
 DELIMITER // CREATE FUNCTION to_crockford_b32 (src BIGINT, encoded_len INT) RETURNS TEXT DETERMINISTIC READS SQL DATA BEGIN
 DECLARE result TEXT DEFAULT '';
 DECLARE b32char CHAR(32) DEFAULT '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -235,4 +245,7 @@ END;
 SET GLOBAL event_scheduler = ON;
 CREATE EVENT delete_expired_sessions ON SCHEDULE EVERY 1 HOUR DO
 DELETE FROM sessions
+WHERE expires_at < NOW();
+CREATE EVENT delete_expired_email_verifications ON SCHEDULE EVERY 1 HOUR DO
+DELETE FROM email_verifications
 WHERE expires_at < NOW();
