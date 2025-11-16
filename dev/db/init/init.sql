@@ -175,34 +175,34 @@ CREATE TABLE
 
 ALTER TABLE `roles` COMMENT = 'ロール情報';
 
-ALTER TABLE `token_sets` ADD FOREIGN KEY (`access_token_id`) REFERENCES `access_tokens` (`id`);
+ALTER TABLE `token_sets` ADD FOREIGN KEY (`access_token_id`) REFERENCES `access_tokens` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `token_sets` ADD FOREIGN KEY (`refresh_token_id`) REFERENCES `refresh_tokens` (`id`);
+ALTER TABLE `token_sets` ADD FOREIGN KEY (`refresh_token_id`) REFERENCES `refresh_tokens` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `token_sets` ADD FOREIGN KEY (`id_token_id`) REFERENCES `id_tokens` (`id`);
+ALTER TABLE `token_sets` ADD FOREIGN KEY (`id_token_id`) REFERENCES `id_tokens` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `auths` ADD FOREIGN KEY (`auth_user_id`) REFERENCES `users` (`id`);
+ALTER TABLE `auths` ADD FOREIGN KEY (`auth_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `sessions` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+ALTER TABLE `sessions` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `redirect_uris` ADD FOREIGN KEY (`app_id`) REFERENCES `apps` (`id`);
+ALTER TABLE `redirect_uris` ADD FOREIGN KEY (`app_id`) REFERENCES `apps` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `auths` ADD FOREIGN KEY (`app_id`) REFERENCES `apps` (`id`);
+ALTER TABLE `auths` ADD FOREIGN KEY (`app_id`) REFERENCES `apps` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`auth_id`) REFERENCES `auths` (`id`);
+ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`auth_id`) REFERENCES `auths` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`consent_id`) REFERENCES `consents` (`id`);
+ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`consent_id`) REFERENCES `consents` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`code_id`) REFERENCES `code` (`id`);
+ALTER TABLE `oidc_authorizations` ADD FOREIGN KEY (`code_id`) REFERENCES `code` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `token_sets` ADD FOREIGN KEY (`oidc_authorization_id`) REFERENCES `oidc_authorizations` (`id`);
+ALTER TABLE `token_sets` ADD FOREIGN KEY (`oidc_authorization_id`) REFERENCES `oidc_authorizations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `discords` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+ALTER TABLE `discords` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `user_role` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+ALTER TABLE `user_role` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `user_role` ADD FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`);
+ALTER TABLE `user_role` ADD FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `user_app` ADD FOREIGN KEY (`app_id`) REFERENCES `apps` (`id`);
+ALTER TABLE `user_app` ADD FOREIGN KEY (`app_id`) REFERENCES `apps` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `user_app` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+ALTER TABLE `user_app` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
