@@ -7,6 +7,7 @@ CREATE TABLE
     `email` VARCHAR(255) UNIQUE NOT NULL,
     `external_email` VARCHAR(255) NOT NULL,
     `period` VARCHAR(255) NULL,
+    `birthdate` DATE DEFAULT NULL,
     `joined_at` DATETIME NULL,
     `is_system` BOOLEAN DEFAULT FALSE,
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
