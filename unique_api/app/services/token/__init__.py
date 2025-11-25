@@ -194,6 +194,7 @@ class IDToken(TokenBase):
         at_hash: Optional[str],
         azp: Optional[str],
         hash_maker: TokenHashBase,
+        clalms: Optional[str] = None,
         extra_header: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(hash_maker, extra_header)
@@ -208,13 +209,14 @@ class IDToken(TokenBase):
         self.amr = amr
         self.at_hash = at_hash
         self.azp = azp
+        self.clalms = clalms
 
     @property
     def tokentype(self) -> str:
         return "id_token"
 
     def generate_token(self) -> str:
-        payload = {
+        payload: Dict[str, Any] = {
             "iss": self.iss,
             "sub": self.sub,
             "aud": self.aud,
@@ -222,6 +224,8 @@ class IDToken(TokenBase):
             "iat": self.iat,
             "auth_time": self.auth_time,
         }
+        if self.clalms:
+            payload = self.clalms | payload
         if self.nonce:
             payload["nonce"] = self.nonce
         if self.acr:
@@ -309,6 +313,7 @@ def token_maker(
     token_type: str,
     token_payload: TokenPayload,
     hash_maker: TokenHashBase,
+    clalms: Optional[Dict[str, Any]] = {},
     token_header: Optional[dict] = TokenHeader.__dict__,
 ) -> TokenBase:
     """
@@ -358,6 +363,7 @@ def token_maker(
             at_hash=token_payload.at_hash,
             azp=token_payload.azp,
             hash_maker=hash_maker,
+            clalms=clalms
         )
     else:
         raise ValueError(f"Unsupported token type: {token_type}")

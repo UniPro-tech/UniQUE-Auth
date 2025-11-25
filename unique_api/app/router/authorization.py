@@ -389,8 +389,14 @@ async def token_endpoint(
         amr=code_obj.amr,
         at_hash=at_hash,
         azp=app.id if isinstance(app.id, list) and len(app.id) > 1 else None,
+        
     )
-    id_token_oj = token_maker(hash_maker, "id_token", id_token_data)
+    id_token_oj = token_maker(
+        hash_maker, "id_token",id_token_data,
+        clalms={
+            "email": user.email,
+            "email_verified": True,
+        })
     id_token_jwt = id_token_oj.generate_token()
 
     # IDトークンの保存
@@ -426,9 +432,7 @@ async def token_endpoint(
     token_response = {
         "access_token": access_token_jwt,
         "token_type": "Bearer",
-        "expires_in": int(
-            (now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)).timestamp()
-        ),  # 1時間
+        "expires_in": int((now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)).timestamp()),  # 1時間
         "refresh_token": refresh_token_jwt,
         "id_token": id_token_jwt,
         "scope": consent.scope,
