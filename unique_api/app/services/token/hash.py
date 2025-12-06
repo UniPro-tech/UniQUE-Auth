@@ -15,7 +15,7 @@ class TokenHashBase(ABC):
         pass
 
     @abstractmethod
-    def sign(self, payload: Dict[str, Any]) -> str:
+    def sign(self, payload: Dict[str, Any], header: Dict[str, Any]) -> str:
         """署名してトークン(JWT等)を返す"""
         pass
 
@@ -41,9 +41,11 @@ class HMACTokenHash(TokenHashBase):
     def algorithm(self) -> str:
         return self._alg
 
-    def sign(self, payload: Dict[str, Any]) -> str:
+    def sign(self, payload: Dict[str, Any], heder: Dict[str, Any]) -> str:
         # JWT 形式で返す（必要でなければ別メソッドで生の MAC を返す）
-        return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        return jwt.encode(
+            payload, self.secret_key, algorithm=self.algorithm, headers=heder
+        )
 
     def verify(self, token: str, *, audience: Optional[str] = None) -> Dict[str, Any]:
         # jwt.decode が署名・exp 等を検証してデコード済み claims を返す
@@ -89,10 +91,12 @@ class RSATokenHash(TokenHashBase):
     def algorithm(self) -> str:
         return self._alg
 
-    def sign(self, payload: Dict[str, Any]) -> str:
+    def sign(self, payload: Dict[str, Any], header: Dict[str, Any]) -> str:
         if not self.private_key:
             raise ValueError("private_key is required for signing")
-        return jwt.encode(payload, self.private_key, algorithm=self._alg)
+        return jwt.encode(
+            payload, self.private_key, algorithm=self._alg, headers=header
+        )
 
     def verify(self, token: str, *, audience: Optional[str] = None) -> Dict[str, Any]:
         if not self.public_key:
@@ -106,20 +110,30 @@ class RSATokenHash(TokenHashBase):
 def make_token_hasher(
     algorithm: str,
     secret_key: Optional[str] = None,
-    private_key: Optional[str] = None,
-    public_key: Optional[str] = None,
+    private_key_path: Optional[str] = None,
+    public_key_path: Optional[str] = None,
 ) -> TokenHashBase:
     """
     指定したアルゴリズムに応じたトークンハッシュ化オブジェクトを生成するファクトリ関数
+    algorithm:
+        HS256, RS256 など
+    secret_key:
+        HMAC 用のシークレットキー
+    private_key_path:
+        RSA/ECDSA/EdDSA 用の秘密鍵ファイル
+    public_key_path:
+        RSA/ECDSA/EdDSA 用の公開鍵ファイル
     """
     if algorithm.startswith("HS"):
         if not secret_key:
             raise ValueError("secret_key required for HS*")
         return HMACTokenHash(secret_key=secret_key, algorithm=algorithm)
     if algorithm.startswith(("RS", "PS", "ES", "Ed")):
-        if not (private_key and public_key):
+        if not (private_key_path and public_key_path):
             raise ValueError("private_key and public_key required for RSA/ECDSA/EdDSA")
         return RSATokenHash(
-            private_key=private_key, public_key=public_key, algorithm=algorithm
+            private_key=private_key_path,
+            public_key=public_key_path,
+            algorithm=algorithm,
         )
     raise ValueError("Unsupported algorithm")

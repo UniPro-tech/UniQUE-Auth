@@ -11,6 +11,13 @@ REQUIRE_TLS=FALSE
 REQUIRE_CLIENT_AUTH=FALSE
 ```
 
+RSA鍵を利用する場合は以下のコマンドを実行してください
+```
+ssh-keygen -t RSA -b 2048
+openssl genpkey -algorithm RSA -out rsa_private.pem -pkeyopt rsa_keygen_bits:2048
+```
+
+
 ### Docker
 
 dockercompose で立ててください。

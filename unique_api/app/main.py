@@ -3,11 +3,11 @@ from contextlib import asynccontextmanager
 from starlette.middleware.sessions import SessionMiddleware
 import uvicorn
 from dotenv import load_dotenv
-
 from unique_api.app.db import engine, Base, get_db
 from unique_api.app.router.authorization import router as authorization_router
 from unique_api.app.router.authentication import router as authentication_router
 from unique_api.app.router.metadata import router as metadata_router
+
 
 load_dotenv(".env")
 
