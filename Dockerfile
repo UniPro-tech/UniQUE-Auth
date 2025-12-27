@@ -11,6 +11,8 @@ RUN apk add --no-cache \
 
 COPY . /app/unique_api
 
+WORKDIR /app/unique_api
+
 RUN uv venv .venv
 
 RUN  uv sync --active
