@@ -59,4 +59,4 @@ services:
 
 networks:
   unique:
-    external:  false
+    external: false
