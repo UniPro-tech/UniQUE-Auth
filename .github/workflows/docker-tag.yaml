@@ -8,6 +8,11 @@ concurrency:
   group: docker-build-push
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -62,4 +67,12 @@ jobs:
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
-        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+        run: |
+          images=""
+          for tag in ${TAGS}; do
+            images+="${tag}@${DIGEST} "
+          done
+          cosign sign --yes ${images}
+          cosign verify ${images} \
+          --certificate-identity=https://github.com/UniPro-tech/UniQUE-Auth/.github/workflows/docker-tag.yaml@refs/heads/main \
+          --certificate-oidc-issuer=https://token.actions.githubusercontent.com
