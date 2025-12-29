@@ -363,7 +363,7 @@ def token_maker(
             at_hash=token_payload.at_hash,
             azp=token_payload.azp,
             hash_maker=hash_maker,
-            clalms=clalms
+            clalms=clalms,
         )
     else:
         raise ValueError(f"Unsupported token type: {token_type}")
