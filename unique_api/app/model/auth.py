@@ -123,11 +123,7 @@ class OidcAuthorizations(Base):
 class TokenSets(Base):
     __tablename__ = "token_sets"
     __table_args__ = (
-        ForeignKeyConstraint(
-            ["oidc_authorization_id"],
-            ["oidc_authorizations.id"],
-            name="token_sets_ibfk_1",
-        ),
+        ForeignKeyConstraint(["oidc_authorization_id"], ["oidc_authorizations.id"]),
         Index("oidc_authorization_id", "oidc_authorization_id", unique=True),
     )
 
