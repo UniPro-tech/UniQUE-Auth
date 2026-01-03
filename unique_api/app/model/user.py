@@ -45,7 +45,7 @@ class Users(Base):
     is_enable: Mapped[Optional[int]] = mapped_column(
         TINYINT(1), server_default=text("'1'")
     )
-
+    birthdate: Mapped[Optional[datetime]] = mapped_column(DateTime)
     auths: Mapped[List["Auths"]] = relationship("Auths", back_populates="auth_user")
     discords: Mapped[List["Discords"]] = relationship("Discords", back_populates="user")
     sessions: Mapped[List["Sessions"]] = relationship("Sessions", back_populates="user")
