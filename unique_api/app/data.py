@@ -1,6 +1,7 @@
 # テスト用のデータを注入する
 from sqlalchemy.orm import Session
-from unique_api.app.model import Users, Apps, RedirectUris
+from unique_api.app.model import Users, Apps, RedirectUris, Roles
+from unique_api.app.model.intermediate import UserRole
 import hashlib
 
 
@@ -27,7 +28,7 @@ def create_test_data(db: Session):
         db.add(redirect_uri)
 
     # ユーザーの作成 (存在しない場合のみ)
-    user = db.query(Users).filter_by(custom_id="admin").first()
+    user = db.query(Users).first()
     if not user:
         user = Users(
             custom_id="admin",
@@ -41,6 +42,40 @@ def create_test_data(db: Session):
         )
         db.add(user)
         db.flush()  # ユーザーを先に保存してIDを取得
+
+    # ロールの作成 (存在しない場合のみ)
+    role = db.query(Roles).first()
+    if not role:
+        role = Roles(
+            custom_id="admin",
+            name="admin",
+            permission=(
+                (1 << 0)
+                | (1 << 1)
+                | (1 << 2)
+                | (1 << 3)
+                | (1 << 4)
+                | (1 << 8)
+                | (1 << 9)
+                | (1 << 10)
+                | (1 << 11)
+                | (1 << 12)
+                | (1 << 16)
+                | (1 << 18)
+                | (1 << 19)
+                | (1 << 20)
+                | (1 << 24)
+                | (1 << 25)
+                | (1 << 26)
+                | (1 << 27)
+            ),
+        )
+        db.add(role)
+        db.flush()  # ロールを先に保存してIDを取得
+        # RoleBindingの作成
+        binding = UserRole(user_id=user.id, role_id=role.id)
+        db.add(binding)
+        db.flush()
 
     db.commit()  # リダイレクトURIを保存
     # テストユーザーで認可する際のテストURLを生成

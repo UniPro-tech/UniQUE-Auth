@@ -36,7 +36,9 @@ class Roles(Base):
     is_enable: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'1'"))
     is_system: Mapped[int] = mapped_column(TINYINT(1), server_default=text("'0'"))
     custom_id: Mapped[Optional[str]] = mapped_column(String(255, "utf8mb4_unicode_ci"))
-    updated_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP, server_default=text("CURRENT_TIMESTAMP")
+    )
 
     user_role: Mapped[List["UserRole"]] = relationship(
         "UserRole", back_populates="role"
