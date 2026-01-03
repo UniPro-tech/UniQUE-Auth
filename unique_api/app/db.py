@@ -5,6 +5,14 @@ from sqlalchemy.ext.declarative import declarative_base
 
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
+if not SQLALCHEMY_DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set")
+
+if SQLALCHEMY_DATABASE_URL.startswith("mysql+mysqlconnector://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace(
+        "mysql+mysqlconnector://", "mysql+pymysql://", 1
+    )
+
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
