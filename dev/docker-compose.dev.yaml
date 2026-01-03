@@ -10,6 +10,7 @@ services:
     environment:
       - ENV=development
       - VIRTUAL_ENV=.venv-compose
+      - DATABASE_URL=mysql://api:P@ssw0rd@unique_db:3306/devdb
     working_dir: /app
     command: >
       /bin/sh -c "apk add --no-cache \
@@ -36,10 +37,10 @@ services:
       MYSQL_PASSWORD: P@ssw0rd
       MYSQL_DATABASE: devdb
       MYSQL_TCP_PORT: 3306
+      MYSQL_ROOT_PASSWORD: R00tP@ssw0rd
     volumes:
       - ./db/data:/var/lib/mysql
       - ./db/conf.d/my.cnf:/etc/mysql/conf.d/my.cnf
-      - ./db/init:/docker-entrypoint-initdb.d
     ports:
       - "3306:3306"
     networks:
@@ -51,7 +52,11 @@ services:
       - api-dbsrv-01
     environment:
       - PMA_ARBITRARY=1
-      - PMA_HOSTS=unique_db
+      - PMA_HOST=unique_db
+      - PMA_PORT=3306
+      - PMA_USER=root
+      - PMA_PASSWORD=R00tP@ssw0rd
+    container_name: unique_phpmyadmin
     ports:
       - "3001:80"
     networks:
