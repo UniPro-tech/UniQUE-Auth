@@ -349,6 +349,8 @@ async def token_endpoint(
         id_token_data,
         hash_maker,
         clalms={
+            "name": user.name,
+            "preferred_username": user.custom_id,
             "email": user.email,
             "email_verified": True,
         },
