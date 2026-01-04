@@ -27,6 +27,9 @@ async def openid_configuration():
             ClientAuthMethod.CLIENT_SECRET_POST,
         ],
         "claims_supported": [
+            "email",
+            "email_verified",
+            "name",
             "iss",
             "sub",
             "aud",
