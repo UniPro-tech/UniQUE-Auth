@@ -271,17 +271,18 @@ async def token_endpoint(
     # アクセストークンの生成
     now = datetime.now(timezone.utc)
     access_token_data = TokenPayload(
-        iss="unique-api",
         sub=user.id,
+        client_id=app.id,
+        scope=consent.scope,
         aud=app.id,
         exp=int(
             (now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp()
         ),
         iat=int(now.timestamp()),
         jti=str(ulid.new()),
-        scope=consent.scope,
+        iss="unique-api",
     )
-    access_token_oj = token_maker(hash_maker, "access_token", access_token_data)
+    access_token_oj = token_maker("access_token", access_token_data, hash_maker)
     access_token_jwt = access_token_oj.generate_token()
 
     # アクセストークンの保存
@@ -298,15 +299,16 @@ async def token_endpoint(
 
     # リフレッシュトークンの生成
     refresh_token_data = TokenPayload(
-        iss="unique-api",
         sub=user.id,
+        client_id=app.id,
+        scope=consent.scope,
         aud=app.id,
         exp=int((now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)).timestamp()),
         iat=int(now.timestamp()),
         jti=str(ulid.new()),
-        scope=consent.scope,
+        iss="unique-api",
     )
-    refresh_token_oj = token_maker(hash_maker, "refresh_token", refresh_token_data)
+    refresh_token_oj = token_maker("refresh_token", refresh_token_data, hash_maker)
     refresh_token_jwt = refresh_token_oj.generate_token()
 
     # リフレッシュトークンの保存
@@ -327,18 +329,25 @@ async def token_endpoint(
     id_token_id = str(ulid.new())
     id_token_data = TokenPayload(
         sub=user.id,
+        client_id=app.id,
+        scope=consent.scope,
         aud=app.id,
-        auth_time=int(code_obj.created_at.timestamp()),
+        exp=int(
+            (now + timedelta(minutes=settings.ID_TOKEN_EXPIRE_MINUTES)).timestamp()
+        ),
+        iat=int(code_obj.created_at.timestamp()),
+        jti=str(ulid.new()),
+        iss="unique-api",
+        amr=code_obj.amr,
         nonce=code_obj.nonce,
         acr=code_obj.acr,
-        amr=code_obj.amr,
-        at_hash=at_hash,
         azp=app.id if isinstance(app.id, list) and len(app.id) > 1 else None,
+        at_hash=at_hash,
     )
     id_token_oj = token_maker(
-        hash_maker,
         "id_token",
         id_token_data,
+        hash_maker,
         clalms={
             "email": user.email,
             "email_verified": True,
