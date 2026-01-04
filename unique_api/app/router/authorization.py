@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Request, HTTPException, Depends, Form
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Request, Depends, Form
 from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from urllib.parse import urlencode
@@ -21,11 +20,7 @@ from unique_api.app.model import (
     Code,
     Sessions,
 )
-from unique_api.app.schema import AuthenticationRequest
-from unique_api.app.crud.auth import get_existing_auth
 from unique_api.app.services.authorization import (
-    extract_authorized_scopes,
-    is_scope_authorized,
     get_or_create_auth,
     create_oidc_authorization,
 )
@@ -41,139 +36,86 @@ from unique_api.app.services.token.hash import make_token_hasher
 
 
 router = APIRouter()
-templates = Jinja2Templates(
-    directory=os.path.join(os.path.dirname(__file__), "../../pages")
-)
-
-
-@router.get("/auth")
-async def auth(
-    request: Request,
-    params: AuthenticationRequest = Depends(),
-    db: Session = Depends(get_db),
-):
-    """
-    OIDC 認可フローのためのエンドポイント。
-    """
-    print("Auth request received:", params.model_dump(exclude_none=True))
-    # セッションからユーザ情報を取得
-    session_id = request.cookies.get("session_")
-    if session_id is None:
-        login_action_url = "login"
-        login_action_url += f"?{urlencode(params.model_dump(exclude_none=True))}"
-        return RedirectResponse(url=login_action_url, status_code=302)
-
-    session = db.query(Sessions).filter_by(id=session_id).first()
-    # セッションが保持されていない場合はloginにリダイレクト
-    if not session:
-        login_action_url = "login"
-        login_action_url += f"?{urlencode(params.model_dump(exclude_none=True))}"
-        return RedirectResponse(url=login_action_url, status_code=302)
-
-    user = db.query(Users).filter_by(id=session.user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    app = db.query(Apps).filter_by(id=params.client_id).first()
-    if not app:
-        raise HTTPException(status_code=404, detail="Client not found")
-
-    # リダイレクト URI の検証
-    redirect_uris = [uri.uri for uri in app.redirect_uris]
-    validated_redirect_uri = validate_redirect_uri(params.redirect_uri, redirect_uris)
-
-    # すでに認可されているか確認
-    existing_auth = get_existing_auth(db, user.id, app.client_id)
-    if existing_auth:
-        # すでに認可されている場合は、scopeの権限を確認
-        scopes = extract_authorized_scopes(existing_auth)
-        if is_scope_authorized(params.scope, scopes):
-            print("Existing auth found:", existing_auth.id)
-            auth: Auths = get_or_create_auth(db, user.id, app.id)
-            oidc_auth: OidcAuthorizations = create_oidc_authorization(
-                db, auth, params.scope
-            )
-
-            request.session.clear()
-            print(f"http://localhost:8000/code?code={oidc_auth.code.token}")
-            return RedirectResponse(
-                url=f"{params.redirect_uri}?code={oidc_auth.code.token}&state={params.state}",
-                status_code=302,
-            )
-
-    # 認可されていない場合は認可画面を表示
-    # リクエストパラメータをセッションストレージに署名付きで保存する
-    request.session["auth_request"] = {
-        "client_id": app.id,
-        "redirect_uri": validated_redirect_uri,
-        "scope": params.scope,
-        "state": params.state,
-        "response_type": params.response_type,
-        "auth_at": session.created_at.isoformat(),
-        "nonce": params.nonce,
-        "code_challenge": params.code_challenge,
-        "code_challenge_method": params.code_challenge_method,
-    }
-    action_url = "auth"
-    # 認可画面に必要な情報をテンプレートに渡す
-    # ここでは、アプリケーションの情報とユーザ情報を渡す
-    auth_data = {
-        "app": {
-            "name": app.name,
-            "client_id": app.id,
-            "redirect_uris": validated_redirect_uri,
-            "scope": params.scope,
-        },
-        "user": {"name": user.custom_id, "id": user.id},
-    }
-
-    response = templates.TemplateResponse(
-        "confirm.html",
-        {"request": request, "action_url": action_url, "auth_data": auth_data},
-    )
-    return response
 
 
 @router.post("/auth")
-async def auth_confirm(request: Request, db: Session = Depends(get_db)):
+async def auth_confirm(
+    request: Request,
+    client_id: str = Form(...),
+    redirect_uri: str = Form(...),
+    scope: str = Form(...),
+    state: str | None = Form(None),
+    db: Session = Depends(get_db),
+):
     """
     OIDC 認可フローの確認画面での POST 送信を受けて、認可処理を行う。
+    フォーム送信 (hidden inputs: client_id, redirect_uri, scope, state) を想定している。
+    セッションに保存された nonce / PKCE 情報があれば補完して使用する。
     """
-    print("Auth confirm request received:", dict(request.query_params))
-    # セッションからリクエスト情報を取得
-    auth_request = request.session.get("auth_request")
-    if auth_request is None:
-        raise HTTPException(status_code=400, detail="No auth request found in session")
-    # セッションチェック♪
-    session_id = request.cookies.get("session_")
+    print(
+        "Auth confirm (form) request received:",
+        {
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "scope": scope,
+            "state": state,
+        },
+    )
+
+    # セッションから補完情報（nonce, PKCE 等）を取得
+    session_auth_request = request.session.get("auth_request", {})
+
+    # セッションチェック（cookie 名が環境によって異なる場合があるため両方確認）
+    session_id = request.cookies.get("unique-sid") or request.cookies.get("session_")
     if session_id is None:
-        raise HTTPException(status_code=500, detail="Oops, we have a problem.")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/auth/error?{urlencode({'error': 'session_missing', 'error_description': 'Session is missing'})}",
+            status_code=302,
+        )
+
     session = db.query(Sessions).filter_by(id=session_id).first()
-    # セッションが保持されていない場合はloginにリダイレクト
     if session is None:
-        raise HTTPException(status_code=404, detail="Oops, we have a problem.")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/auth/error?{urlencode({'error': 'session_invalid', 'error_description': 'Session is invalid'})}",
+            status_code=302,
+        )
 
     user = db.query(Users).filter_by(id=session.user_id).first()
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/auth/error?{urlencode({'error': 'user_not_found', 'error_description': 'User not found'})}",
+            status_code=302,
+        )
 
-    app = db.query(Apps).filter_by(id=auth_request["client_id"]).first()
+    # client_id はフォームで受け取る
+    app = db.query(Apps).filter_by(id=client_id).first()
     if app is None:
-        raise HTTPException(status_code=404, detail="Client not found")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/auth/error?{urlencode({'error': 'client_not_found', 'error_description': 'Client not found'})}",
+            status_code=302,
+        )
 
-    # すでに認可されているか確認
+    # redirect_uri の検証
+    redirect_uris = [uri.uri for uri in app.redirect_uris]
+    validated_redirect_uri = validate_redirect_uri(redirect_uri, redirect_uris)
+
+    # 認可（Auth）を取得/作成
     auth = get_or_create_auth(db, user.id, app.id)
-    # 将来的にamrやacrを使う場合はここでチェックする
-    # 現在はpwdオンリー
+
+    # セッションから補完できるなら nonce / PKCE を使う
+    nonce = session_auth_request.get("nonce")
+    code_challenge = session_auth_request.get("code_challenge")
+    code_challenge_method = session_auth_request.get("code_challenge_method")
+
     oidc_auth = create_oidc_authorization(
         db,
         auth,
-        auth_request["scope"],
-        nonce=auth_request["nonce"],
-        code_challenge=auth_request["code_challenge"],
-        code_challenge_method=auth_request["code_challenge_method"],
+        scope,
+        nonce=nonce,
+        code_challenge=code_challenge,
+        code_challenge_method=code_challenge_method,
         acr="pwd",
-        amr="pwd",  # JSONでもよい
+        amr="pwd",
     )
 
     request.session.clear()
@@ -182,13 +124,13 @@ async def auth_confirm(request: Request, db: Session = Depends(get_db)):
     encoded_credentials = base64.b64encode(credentials.encode()).decode()
     print(
         "Token can be obtained with:\n"
-        f"curl -X POST http://localhost:8000/token \\\n"
-        "  -H 'Content-Type: application/x-www-form-urlencoded' \\\n"
-        f"  -H 'Authorization: Basic {encoded_credentials}'\\\n"
-        f"  -d 'grant_type=authorization_code&code={oidc_auth.code.token}&redirect_uri={auth_request['redirect_uri']}'"
+        f"curl -X POST http://localhost:8000/token \\\n+  -H 'Content-Type: application/x-www-form-urlencoded' \\\n+  -H 'Authorization: Basic {encoded_credentials}'\\\n"
+        f"  -d 'grant_type=authorization_code&code={oidc_auth.code.token}&redirect_uri={validated_redirect_uri}'"
     )
+
+    resp_state = state or session_auth_request.get("state")
     return RedirectResponse(
-        url=f"{auth_request['redirect_uri']}?code={oidc_auth.code.token}&state={auth_request['state']}",
+        url=f"{validated_redirect_uri}?code={oidc_auth.code.token}&state={resp_state}",
         status_code=302,
     )
 

@@ -1,17 +1,25 @@
-from fastapi import HTTPException
+from fastapi.responses import RedirectResponse
 from typing import List
 from pydantic import AnyHttpUrl
 import base64
+from unique_api.app.config import settings
+from urllib.parse import urlencode
 
 
 def validate_redirect_uri(
     requested_uri: AnyHttpUrl | None, registered_uris: List[str]
 ) -> str:
     if requested_uri is None:
-        raise HTTPException(status_code=400, detail="Redirect URI not provided")
+        return RedirectResponse(
+            f"{settings.FRONTEND_URL}/auth/error?{urlencode({'error': 'session_invalid', 'error_description': 'Session is invalid'})}",
+            status_code=302,
+        )
 
     if str(requested_uri) not in registered_uris:
-        raise HTTPException(status_code=400, detail="Redirect URI not allowed")
+        return RedirectResponse(
+            f"{settings.FRONTEND_URL}/auth/error?{urlencode({'error': 'invalid_redirect_uri', 'error_description': 'The provided redirect_uri is not registered'})}",
+            status_code=302,
+        )
 
     return str(requested_uri)
 
