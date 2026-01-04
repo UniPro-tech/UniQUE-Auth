@@ -17,6 +17,7 @@ async def openid_configuration():
         "authorization_endpoint": f"{settings.FRONTEND_URL}/auth",
         "token_endpoint": f"{settings.ISSUER}/token",
         "jwks_uri": f"{settings.ISSUER}/.well-known/jwks.json",
+        "userinfo_endpoint": f"{settings.ISSUER}/userinfo",
         "scopes_supported": ["openid", "profile", "email"],
         "response_types_supported": ["code"],
         "grant_types_supported": ["authorization_code", "refresh_token"],

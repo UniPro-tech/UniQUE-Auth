@@ -8,6 +8,7 @@ from unique_api.app.db import engine, Base, get_db
 from unique_api.app.router.authorization import router as authorization_router
 from unique_api.app.router.authentication import router as authentication_router
 from unique_api.app.router.metadata import router as metadata_router
+from unique_api.app.router.userinfo import router as userinfo_router
 
 
 load_dotenv(".env")
@@ -42,6 +43,7 @@ app.add_middleware(
 app.include_router(authorization_router, tags=["Authorization"])
 app.include_router(authentication_router, tags=["Authentication"])
 app.include_router(metadata_router, tags=["Metadata"])
+app.include_router(userinfo_router, tags=["UserInfo"])
 
 
 if __name__ == "__main__":
