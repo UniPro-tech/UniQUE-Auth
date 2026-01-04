@@ -99,6 +99,9 @@ async def auth_confirm(
     redirect_uris = [uri.uri for uri in app.redirect_uris]
     validated_redirect_uri = validate_redirect_uri(redirect_uri, redirect_uris)
 
+    if isinstance(validated_redirect_uri, RedirectResponse):
+        return validated_redirect_uri
+
     # 認可（Auth）を取得/作成
     auth = get_or_create_auth(db, user.id, app.id)
 
