@@ -5,6 +5,7 @@ import os
 class Settings(BaseSettings):
     # OIDC Provider Configuration
     ISSUER: str = "https://auth.uniproject.jp"
+    FRONTEND_URL: str = "https://unique.uniproject.jp"
 
     # ---------- JWT Configuration ----------
     # JWT署名アルゴリズム (HS256 or RS256)によって設定箇所が変わります。

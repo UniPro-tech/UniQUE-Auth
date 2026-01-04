@@ -14,7 +14,7 @@ async def openid_configuration():
     """
     metadata = {
         "issuer": settings.ISSUER,
-        "authorization_endpoint": f"{settings.ISSUER}/auth",
+        "authorization_endpoint": f"{settings.FRONTEND_URL}/auth",
         "token_endpoint": f"{settings.ISSUER}/token",
         "jwks_uri": f"{settings.ISSUER}/.well-known/jwks.json",
         "scopes_supported": ["openid", "profile", "email"],
