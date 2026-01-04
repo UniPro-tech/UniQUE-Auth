@@ -31,6 +31,7 @@ async def openid_configuration():
             "email",
             "email_verified",
             "name",
+            "preferred_username",
             "iss",
             "sub",
             "aud",
