@@ -280,7 +280,7 @@ async def token_endpoint(
         ),
         iat=int(now.timestamp()),
         jti=str(ulid.new()),
-        iss="unique-api",
+        iss=settings.ISSUER,
     )
     access_token_oj = token_maker("access_token", access_token_data, hash_maker)
     access_token_jwt = access_token_oj.generate_token()
@@ -306,7 +306,7 @@ async def token_endpoint(
         exp=int((now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)).timestamp()),
         iat=int(now.timestamp()),
         jti=str(ulid.new()),
-        iss="unique-api",
+        iss=settings.ISSUER,
     )
     refresh_token_oj = token_maker("refresh_token", refresh_token_data, hash_maker)
     refresh_token_jwt = refresh_token_oj.generate_token()
@@ -337,7 +337,7 @@ async def token_endpoint(
         ),
         iat=int(code_obj.created_at.timestamp()),
         jti=str(ulid.new()),
-        iss="unique-api",
+        iss=settings.ISSUER,
         amr=code_obj.amr,
         nonce=code_obj.nonce,
         acr=code_obj.acr,
