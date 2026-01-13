@@ -48,7 +48,7 @@ sqlacodegen==3.2.0
 sqlalchemy==2.0.40
 sqlmodel==0.0.31
 starlette==0.46.1
-typeguard==4.4.2
+typeguard==4.4.4
 typing-extensions==4.13.0
 typing-inspection==0.4.0
 ulid-py==1.1.0
