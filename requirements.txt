@@ -50,7 +50,7 @@ sqlmodel==0.0.31
 starlette==0.46.1
 typeguard==4.4.2
 typing-extensions==4.13.0
-typing-inspection==0.4.0
+typing-inspection==0.4.2
 ulid-py==1.1.0
 -e file:///home/sibainu/Project/UniQUE-Auth
 urllib3==2.5.0
