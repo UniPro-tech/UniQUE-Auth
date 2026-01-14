@@ -33,7 +33,7 @@ dependencies = [
     "typing_extensions==4.13.0",
     "urllib3==2.5.0",
     "uuid7==0.1.0",
-    "uvicorn==0.34.0",
+    "uvicorn==0.40.0",
     "yarg==0.1.10",
     "mysqlclient==2.2.7",
     "sqlacodegen>=3.0.0",
