@@ -38,7 +38,7 @@ pygments==2.19.2
 pyjwt==2.10.1
 pymysql==1.1.2
 pytest==9.0.2
-python-dotenv==1.1.0
+python-dotenv==1.2.1
 python-multipart==0.0.21
 pyyaml==6.0.3
 requests==2.32.5
