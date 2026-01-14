@@ -17,7 +17,7 @@ dependencies = [
     "idna==3.10",
     "itsdangerous==2.2.0",
     "Jinja2==3.1.6",
-    "MarkupSafe==3.0.2",
+    "MarkupSafe==3.0.3",
     "nanoid==2.0.0",
     "passlib==1.7.4",
     "pydantic==2.11.1",
