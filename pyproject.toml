@@ -21,7 +21,7 @@ dependencies = [
     "nanoid==2.0.0",
     "passlib==1.7.4",
     "pydantic==2.11.1",
-    "pydantic_core==2.33.0",
+    "pydantic_core==2.41.5",
     "PyJWT==2.10.1",
     "python-dotenv==1.1.0",
     "python-multipart==0.0.21",
