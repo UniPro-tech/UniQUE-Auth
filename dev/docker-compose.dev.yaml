@@ -10,7 +10,7 @@ services:
     environment:
       ENV: development
       VIRTUAL_ENV: .venv-compose
-      DATABASE_URL: mysql://api:P%40ssw0rd@unique_db:3306/devdb
+      DATABASE_URL: mysql://api:NewPass123@unique_db:3306/devdb
     working_dir: /app
     command: >
       /bin/sh -c "apk add --no-cache \
@@ -34,7 +34,7 @@ services:
       TZ: "Asia/Tokyo"
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       MYSQL_USER: api
-      MYSQL_PASSWORD: P@ssw0rd
+      MYSQL_PASSWORD: NewPass123
       MYSQL_DATABASE: devdb
       MYSQL_TCP_PORT: 3306
       MYSQL_ROOT_PASSWORD: R00tP@ssw0rd
