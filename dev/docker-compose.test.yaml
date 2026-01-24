@@ -36,7 +36,7 @@ services:
       - unique_test
 
   test-db:
-    image: mysql:9.5
+    image: mysql:9.6
     container_name: unique_test_db
     environment:
       TZ: "Asia/Tokyo"
