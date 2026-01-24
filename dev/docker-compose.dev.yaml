@@ -1,7 +1,7 @@
 name: unique_auth
 services:
   unique_api:
-    image: ghcr.io/astral-sh/uv:python3.13-alpine
+    image: ghcr.io/astral-sh/uv:python3.14-alpine
     container_name: unique_auth
     ports:
       - "8000:8000"
