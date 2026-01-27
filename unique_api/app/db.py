@@ -13,7 +13,12 @@ if SQLALCHEMY_DATABASE_URL.startswith("mysql+mysqlconnector://"):
         "mysql+mysqlconnector://", "mysql+pymysql://", 1
     )
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=1800,
+)
+
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
