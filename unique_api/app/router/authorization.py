@@ -154,6 +154,16 @@ async def token_endpoint(
     - REQUIRE_TLS: "true" (デフォルト) の場合、TLSを強制。"false"の場合、TLS検証をスキップ
     - REQUIRE_CLIENT_AUTH: "true" (デフォルト) の場合、クライアント認証を強制。"false"の場合、認証をスキップ
     """
+    print(
+        "Token endpoint request received:",
+        {
+            "grant_type": grant_type,
+            "code": code,
+            "redirect_uri": redirect_uri,
+            "code_verifier": code_verifier,
+        },
+    )
+
     # TLS要件のチェック
     require_tls = os.getenv("REQUIRE_TLS", "true").lower() == "true"
     if require_tls and not request.url.scheme == "https":
