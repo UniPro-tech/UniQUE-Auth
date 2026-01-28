@@ -176,6 +176,7 @@ async def token_endpoint(
     if require_client_auth:
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Basic "):
+            print("Missing or invalid Authorization header")
             return create_token_error_response(
                 error=OAuthErrorCode.INVALID_CLIENT,
                 status_code=401,
@@ -187,12 +188,14 @@ async def token_endpoint(
             client_id, client_secret = token_authorization(auth_header)
             app = db.query(Apps).filter_by(id=client_id).first()
             if not app or app.client_secret != client_secret:
+                print("Invalid client credentials")
                 return create_token_error_response(
                     error=OAuthErrorCode.INVALID_CLIENT,
                     status_code=401,
                     www_authenticate="Basic",
                 )
         except Exception:
+            print("Exception occurred during client authentication")
             return create_token_error_response(
                 error=OAuthErrorCode.INVALID_CLIENT,
                 status_code=401,
@@ -206,6 +209,7 @@ async def token_endpoint(
     # Authorization Codeの検証
     code_obj: Code = db.query(Code).filter_by(token=code).first()
     if not code_obj or not code_obj.is_enable:
+        print("Invalid or used authorization code")
         return create_token_error_response(error=OAuthErrorCode.INVALID_GRANT)
 
     # Codeの有効期限チェック
@@ -216,6 +220,7 @@ async def token_endpoint(
         else code_obj.exp
     )
     if now > code_exp:
+        print("Authorization code has expired")
         return create_token_error_response(
             error=OAuthErrorCode.INVALID_GRANT,
             error_description="Authorization code has expired",
@@ -224,6 +229,7 @@ async def token_endpoint(
     # PKCE検証
     if code_obj.code_challenge is not None:
         if not code_verifier:
+            print("code_verifier is required for PKCE")
             return create_token_error_response(
                 error=OAuthErrorCode.INVALID_REQUEST,
                 error_description="code_verifier required",
@@ -239,6 +245,7 @@ async def token_endpoint(
             verifier_challenge = code_verifier
 
         if verifier_challenge != code_obj.code_challenge:
+            print("code_verifier does not match code_challenge")
             return create_token_error_response(
                 error=OAuthErrorCode.INVALID_GRANT,
                 error_description="code_verifier mismatch",
@@ -249,6 +256,7 @@ async def token_endpoint(
         db.query(OidcAuthorizations).filter_by(code_id=code_obj.id).first()
     )
     if not oidc_auth:
+        print("OIDC Authorization not found for the given code")
         return create_token_error_response(
             error=OAuthErrorCode.INVALID_GRANT,
             error_description="Invalid authorization code",
@@ -262,6 +270,7 @@ async def token_endpoint(
     # redirect_uriの検証
     redirect_uris = [uri.uri for uri in app.redirect_uris]
     if redirect_uri not in redirect_uris:
+        print("redirect_uri does not match any registered URIs")
         return create_token_error_response(
             error=OAuthErrorCode.INVALID_REQUEST,
             error_description="redirect_uri mismatch",
