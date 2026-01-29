@@ -879,7 +879,7 @@ wheels = [
 
 [[package]]
 name = "unique-api"
-version = "1.0.0a14"
+version = "1.0.0a17"
 source = { editable = "." }
 dependencies = [
     { name = "annotated-types" },
