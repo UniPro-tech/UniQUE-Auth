@@ -15,10 +15,10 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key")
 
     RSA_PRIVATE_KEY_PATH: str | None = os.getenv(
-        "RSA_PRIVATE_KEY_PATH", "/app/unique_api/rsa_private.pem"
+        "RSA_PRIVATE_KEY_PATH", "/app/keys/rsa_private.pem"
     )  # 例: "path/to/private_key.pem"
     RSA_PUBLIC_KEY_PATH: str | None = os.getenv(
-        "RSA_PUBLIC_KEY_PATH", "/app/unique_api/rsa_public.pem"
+        "RSA_PUBLIC_KEY_PATH", "/app/keys/rsa_public.pem"
     )  # 例: "path/to/public_key.pem"
 
     # ---------- Token Configuration ----------
