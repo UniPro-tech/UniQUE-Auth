@@ -409,9 +409,7 @@ async def token_endpoint(
     token_response = {
         "access_token": access_token_jwt,
         "token_type": "Bearer",
-        "expires_in": int(
-            (now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)).timestamp()
-        ),  # 1時間
+        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # 1時間
         "refresh_token": refresh_token_jwt,
         "id_token": id_token_jwt,
         "scope": consent.scope,
