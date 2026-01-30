@@ -20,6 +20,6 @@ RUN  uv sync --active
 
 EXPOSE 8080
 
-RUN chmod +x /app/scripts/run.sh
+RUN chmod +x /app/unique_api/scripts/run.sh
 
-CMD ["/app/scripts/run.sh"]
+CMD ["/app/unique_api/scripts/run.sh"]
