@@ -34,6 +34,7 @@ async def userinfo(request: Request, db: Session = Depends(get_db)):
     """
     token = _bearer_token_from_request(request)
     if not token:
+        print("No bearer token found in request")
         return create_token_error_response(
             error="invalid_request",
             error_description="Missing Authorization Bearer token",
@@ -51,7 +52,8 @@ async def userinfo(request: Request, db: Session = Depends(get_db)):
         )
         # verify は例外を投げる可能性があるが、audience は未指定（任意）
         hash_maker.verify(token)
-    except Exception:
+    except Exception as e:
+        print(f"Token verification failed: {e}")
         return create_token_error_response(
             error="invalid_token",
             error_description="Invalid access token",
@@ -63,6 +65,7 @@ async def userinfo(request: Request, db: Session = Depends(get_db)):
     token_hash = hashlib.sha256(token.encode()).hexdigest()
     at = db.query(AccessTokens).filter_by(hash=token_hash).first()
     if not at or at.revoked:
+        print("Access token not found or revoked")
         return create_token_error_response(
             error="invalid_token",
             error_description="Token revoked or not found",
@@ -76,6 +79,7 @@ async def userinfo(request: Request, db: Session = Depends(get_db)):
     if exp.tzinfo is None:
         exp = exp.replace(tzinfo=timezone.utc)
     if now > exp:
+        print("Access token expired")
         return create_token_error_response(
             error="invalid_token",
             error_description="Token expired",
@@ -86,6 +90,7 @@ async def userinfo(request: Request, db: Session = Depends(get_db)):
     # ユーザ情報を返す
     user = db.query(Users).filter_by(id=at.user_id).first()
     if not user:
+        print("Associated user not found")
         return create_token_error_response(
             error="invalid_token",
             error_description="Associated user not found",
