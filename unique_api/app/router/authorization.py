@@ -417,6 +417,8 @@ async def token_endpoint(
         "scope": consent.scope,
     }
 
+    print("Token response generated:", token_response)
+
     return JSONResponse(
         content=token_response,
         headers={
