@@ -51,7 +51,7 @@ async def userinfo(request: Request, db: Session = Depends(get_db)):
             secret_key=getattr(settings, "HMAC_SECRET", None),
         )
         # verify は例外を投げる可能性があるが、audience は未指定（任意）
-        hash_maker.verify(token)
+        hash_maker.verify(token, audience=None, verify_aud=False)
     except Exception as e:
         print(f"Token verification failed: {e}")
         return create_token_error_response(

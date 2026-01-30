@@ -20,7 +20,9 @@ class TokenHashBase(ABC):
         pass
 
     @abstractmethod
-    def verify(self, token: str, *, audience: Optional[str] = None) -> Dict[str, Any]:
+    def verify(
+        self, token: str, *, audience: Optional[str] = None, verify_aud: bool = True
+    ) -> Dict[str, Any]:
         """検証してデコード済みクレームを返す（失敗時は例外を投げる）"""
         pass
 
@@ -47,8 +49,17 @@ class HMACTokenHash(TokenHashBase):
             payload, self.secret_key, algorithm=self.algorithm, headers=heder
         )
 
-    def verify(self, token: str, *, audience: Optional[str] = None) -> Dict[str, Any]:
+    def verify(
+        self, token: str, *, audience: Optional[str] = None, verify_aud: bool = True
+    ) -> Dict[str, Any]:
         # jwt.decode が署名・exp 等を検証してデコード済み claims を返す
+        if not verify_aud:
+            return jwt.decode(
+                token,
+                self.secret_key,
+                algorithms=[self._alg],
+                options={"verify_aud": False},
+            )
         return jwt.decode(
             token, self.secret_key, algorithms=[self._alg], audience=audience
         )
@@ -98,9 +109,18 @@ class RSATokenHash(TokenHashBase):
             payload, self.private_key, algorithm=self._alg, headers=header
         )
 
-    def verify(self, token: str, *, audience: Optional[str] = None) -> Dict[str, Any]:
+    def verify(
+        self, token: str, *, audience: Optional[str] = None, verify_aud: bool = True
+    ) -> Dict[str, Any]:
         if not self.public_key:
             raise ValueError("public_key is required for verification")
+        if not verify_aud:
+            return jwt.decode(
+                token,
+                self.public_key,
+                algorithms=[self._alg],
+                options={"verify_aud": False},
+            )
         return jwt.decode(
             token, self.public_key, algorithms=[self._alg], audience=audience
         )
