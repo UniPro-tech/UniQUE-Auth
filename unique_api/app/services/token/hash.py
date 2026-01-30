@@ -85,14 +85,15 @@ class RSATokenHash(TokenHashBase):
         public_key: Optional[str],
         algorithm: str = "RS256",
     ):
+        # hash.py の _load_if_path にエラーハンドリング追加
         def _load_if_path(k: Optional[str]) -> Optional[str]:
             if k is None:
                 return None
-            # 文字列がファイルとして存在するなら中身を読み込む
             if os.path.exists(k) and os.path.isfile(k):
                 with open(k, "rb") as f:
-                    return f.read().decode()  # PEM を文字列で返す
-            return k  # そのまま PEM 文字列だと仮定
+                    return f.read().decode()
+            # ファイルが見つからない場合は例外を発生させる
+            raise FileNotFoundError(f"Key file not found: {k}")
 
         self.private_key = _load_if_path(private_key)
         self.public_key = _load_if_path(public_key)

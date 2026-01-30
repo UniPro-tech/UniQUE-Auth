@@ -14,8 +14,12 @@ class Settings(BaseSettings):
 
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key")
 
-    RSA_PRIVATE_KEY_PATH: str | None = "rsa_private.pem"  # 例: "path/to
-    RSA_PUBLIC_KEY_PATH: str | None = "rsa_public.pem"  # 例: "path/to/public_key.pem"
+    RSA_PRIVATE_KEY_PATH: str | None = os.getenv(
+        "RSA_PRIVATE_KEY_PATH", "/app/unique_api/rsa_private.pem"
+    )  # 例: "path/to/private_key.pem"
+    RSA_PUBLIC_KEY_PATH: str | None = os.getenv(
+        "RSA_PUBLIC_KEY_PATH", "/app/unique_api/rsa_public.pem"
+    )  # 例: "path/to/public_key.pem"
 
     # ---------- Token Configuration ----------
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
