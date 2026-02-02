@@ -37,6 +37,7 @@ func newAuthorizationRequest(db *gorm.DB, opts ...gen.DOOption) authorizationReq
 	_authorizationRequest.Nonce = field.NewString(tableName, "nonce")
 	_authorizationRequest.CodeChallenge = field.NewString(tableName, "code_challenge")
 	_authorizationRequest.CodeChallengeMethod = field.NewString(tableName, "code_challenge_method")
+	_authorizationRequest.Code = field.NewString(tableName, "code")
 	_authorizationRequest.IsEnabled = field.NewBool(tableName, "is_enabled")
 	_authorizationRequest.ExpiresAt = field.NewTime(tableName, "expires_at")
 	_authorizationRequest.CreatedAt = field.NewTime(tableName, "created_at")
@@ -60,6 +61,7 @@ type authorizationRequest struct {
 	Nonce               field.String
 	CodeChallenge       field.String
 	CodeChallengeMethod field.String
+	Code                field.String
 	IsEnabled           field.Bool
 	ExpiresAt           field.Time
 	CreatedAt           field.Time
@@ -88,6 +90,7 @@ func (a *authorizationRequest) updateTableName(table string) *authorizationReque
 	a.Nonce = field.NewString(table, "nonce")
 	a.CodeChallenge = field.NewString(table, "code_challenge")
 	a.CodeChallengeMethod = field.NewString(table, "code_challenge_method")
+	a.Code = field.NewString(table, "code")
 	a.IsEnabled = field.NewBool(table, "is_enabled")
 	a.ExpiresAt = field.NewTime(table, "expires_at")
 	a.CreatedAt = field.NewTime(table, "created_at")
@@ -119,7 +122,7 @@ func (a *authorizationRequest) GetFieldByName(fieldName string) (field.OrderExpr
 }
 
 func (a *authorizationRequest) fillFieldMap() {
-	a.fieldMap = make(map[string]field.Expr, 12)
+	a.fieldMap = make(map[string]field.Expr, 13)
 	a.fieldMap["id"] = a.ID
 	a.fieldMap["user_id"] = a.UserID
 	a.fieldMap["application_id"] = a.ApplicationID
@@ -129,6 +132,7 @@ func (a *authorizationRequest) fillFieldMap() {
 	a.fieldMap["nonce"] = a.Nonce
 	a.fieldMap["code_challenge"] = a.CodeChallenge
 	a.fieldMap["code_challenge_method"] = a.CodeChallengeMethod
+	a.fieldMap["code"] = a.Code
 	a.fieldMap["is_enabled"] = a.IsEnabled
 	a.fieldMap["expires_at"] = a.ExpiresAt
 	a.fieldMap["created_at"] = a.CreatedAt
