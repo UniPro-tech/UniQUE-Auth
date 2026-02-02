@@ -19,7 +19,7 @@ func main() {
 	}
 
 	g := gen.NewGenerator(gen.Config{
-		OutPath: "./query",
+		OutPath: "./internal/query",
 		Mode:    gen.WithDefaultQuery | gen.WithQueryInterface,
 	})
 
