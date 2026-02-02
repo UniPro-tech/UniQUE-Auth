@@ -21,6 +21,7 @@ type AuthorizationRequest struct {
 	Nonce               string    `gorm:"column:nonce" json:"nonce"`
 	CodeChallenge       string    `gorm:"column:code_challenge" json:"code_challenge"`
 	CodeChallengeMethod string    `gorm:"column:code_challenge_method" json:"code_challenge_method"`
+	IsEnabled           bool      `gorm:"column:is_enabled;not null" json:"is_enabled"`
 	ExpiresAt           time.Time `gorm:"column:expires_at;not null" json:"expires_at"`
 	CreatedAt           time.Time `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 }
