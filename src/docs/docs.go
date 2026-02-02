@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/authorization": {
             "get": {
-                "description": "do authorization",
+                "description": "OAuth 2.0 / OIDC における認可エンドポイントです。クライアントアプリケーションがユーザーの認可を取得するために使用します。",
                 "tags": [
                     "authorization"
                 ],
@@ -109,7 +109,7 @@ const docTemplate = `{
         },
         "/health": {
             "get": {
-                "description": "do health check",
+                "description": "システムの稼働状況を確認するためのエンドポイントです。",
                 "consumes": [
                     "application/json"
                 ],

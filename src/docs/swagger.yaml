@@ -10,7 +10,7 @@ info:
 paths:
   /authorization:
     get:
-      description: do authorization
+      description: OAuth 2.0 / OIDC における認可エンドポイントです。クライアントアプリケーションがユーザーの認可を取得するために使用します。
       parameters:
       - description: Client ID
         in: query
@@ -74,7 +74,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: do health check
+      description: システムの稼働状況を確認するためのエンドポイントです。
       produces:
       - application/json
       responses:

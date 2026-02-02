@@ -21,7 +21,7 @@ type AuthorizationRequest struct {
 // AuthorizationGet godoc
 // @Summary authorization endpoint
 // @Schemes
-// @Description do authorization
+// @Description OAuth 2.0 / OIDC における認可エンドポイントです。クライアントアプリケーションがユーザーの認可を取得するために使用します。
 // @Tags authorization
 // @Param client_id query string true "Client ID"
 // @Param redirect_uri query string true "Redirect URI"

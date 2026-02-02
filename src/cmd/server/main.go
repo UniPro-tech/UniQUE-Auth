@@ -24,7 +24,7 @@ type HealthResponse struct {
 // HealthCheck godoc
 // @Summary health check endpoint
 // @Schemes
-// @Description do health check
+// @Description システムの稼働状況を確認するためのエンドポイントです。
 // @Tags system info
 // @Accept json
 // @Produce json
