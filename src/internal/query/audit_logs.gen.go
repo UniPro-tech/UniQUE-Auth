@@ -45,7 +45,7 @@ func newAuditLog(db *gorm.DB, opts ...gen.DOOption) auditLog {
 
 // auditLog Table to store audit logs for security and compliance. Type: transactional
 type auditLog struct {
-	auditLogDo auditLogDo
+	auditLogDo
 
 	ALL            field.Asterisk
 	ID             field.String
@@ -87,14 +87,6 @@ func (a *auditLog) updateTableName(table string) *auditLog {
 
 	return a
 }
-
-func (a *auditLog) WithContext(ctx context.Context) IAuditLogDo { return a.auditLogDo.WithContext(ctx) }
-
-func (a auditLog) TableName() string { return a.auditLogDo.TableName() }
-
-func (a auditLog) Alias() string { return a.auditLogDo.Alias() }
-
-func (a auditLog) Columns(cols ...field.Expr) gen.Columns { return a.auditLogDo.Columns(cols...) }
 
 func (a *auditLog) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	_f, ok := a.fieldMap[fieldName]

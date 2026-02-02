@@ -43,7 +43,7 @@ func newConsent(db *gorm.DB, opts ...gen.DOOption) consent {
 
 // consent Table to store user consents for third-party applications. Type: master
 type consent struct {
-	consentDo consentDo
+	consentDo
 
 	ALL           field.Asterisk
 	ID            field.String
@@ -81,14 +81,6 @@ func (c *consent) updateTableName(table string) *consent {
 
 	return c
 }
-
-func (c *consent) WithContext(ctx context.Context) IConsentDo { return c.consentDo.WithContext(ctx) }
-
-func (c consent) TableName() string { return c.consentDo.TableName() }
-
-func (c consent) Alias() string { return c.consentDo.Alias() }
-
-func (c consent) Columns(cols ...field.Expr) gen.Columns { return c.consentDo.Columns(cols...) }
 
 func (c *consent) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	_f, ok := c.fieldMap[fieldName]

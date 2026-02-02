@@ -47,7 +47,7 @@ func newExternalIdentity(db *gorm.DB, opts ...gen.DOOption) externalIdentity {
 
 // externalIdentity Table to store external identity links for users. Type: master
 type externalIdentity struct {
-	externalIdentityDo externalIdentityDo
+	externalIdentityDo
 
 	ALL            field.Asterisk
 	ID             field.String
@@ -92,18 +92,6 @@ func (e *externalIdentity) updateTableName(table string) *externalIdentity {
 	e.fillFieldMap()
 
 	return e
-}
-
-func (e *externalIdentity) WithContext(ctx context.Context) IExternalIdentityDo {
-	return e.externalIdentityDo.WithContext(ctx)
-}
-
-func (e externalIdentity) TableName() string { return e.externalIdentityDo.TableName() }
-
-func (e externalIdentity) Alias() string { return e.externalIdentityDo.Alias() }
-
-func (e externalIdentity) Columns(cols ...field.Expr) gen.Columns {
-	return e.externalIdentityDo.Columns(cols...)
 }
 
 func (e *externalIdentity) GetFieldByName(fieldName string) (field.OrderExpr, bool) {

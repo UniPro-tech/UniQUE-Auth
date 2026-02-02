@@ -45,7 +45,7 @@ func newOauthToken(db *gorm.DB, opts ...gen.DOOption) oauthToken {
 
 // oauthToken Table to store OAuth tokens for third-party applications. Type: master
 type oauthToken struct {
-	oauthTokenDo oauthTokenDo
+	oauthTokenDo
 
 	ALL             field.Asterisk
 	ID              field.String
@@ -87,16 +87,6 @@ func (o *oauthToken) updateTableName(table string) *oauthToken {
 
 	return o
 }
-
-func (o *oauthToken) WithContext(ctx context.Context) IOauthTokenDo {
-	return o.oauthTokenDo.WithContext(ctx)
-}
-
-func (o oauthToken) TableName() string { return o.oauthTokenDo.TableName() }
-
-func (o oauthToken) Alias() string { return o.oauthTokenDo.Alias() }
-
-func (o oauthToken) Columns(cols ...field.Expr) gen.Columns { return o.oauthTokenDo.Columns(cols...) }
 
 func (o *oauthToken) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	_f, ok := o.fieldMap[fieldName]

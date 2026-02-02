@@ -41,7 +41,7 @@ func newRedirectURI(db *gorm.DB, opts ...gen.DOOption) redirectURI {
 
 // redirectURI Table to store redirect URIs for third-party applications. Type: master
 type redirectURI struct {
-	redirectURIDo redirectURIDo
+	redirectURIDo
 
 	ALL           field.Asterisk
 	ApplicationID field.String
@@ -75,16 +75,6 @@ func (r *redirectURI) updateTableName(table string) *redirectURI {
 
 	return r
 }
-
-func (r *redirectURI) WithContext(ctx context.Context) IRedirectURIDo {
-	return r.redirectURIDo.WithContext(ctx)
-}
-
-func (r redirectURI) TableName() string { return r.redirectURIDo.TableName() }
-
-func (r redirectURI) Alias() string { return r.redirectURIDo.Alias() }
-
-func (r redirectURI) Columns(cols ...field.Expr) gen.Columns { return r.redirectURIDo.Columns(cols...) }
 
 func (r *redirectURI) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	_f, ok := r.fieldMap[fieldName]

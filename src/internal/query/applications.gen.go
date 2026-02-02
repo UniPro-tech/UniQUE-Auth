@@ -46,7 +46,7 @@ func newApplication(db *gorm.DB, opts ...gen.DOOption) application {
 
 // application Table to store third-party application information. Type: master
 type application struct {
-	applicationDo applicationDo
+	applicationDo
 
 	ALL              field.Asterisk
 	ID               field.String
@@ -90,16 +90,6 @@ func (a *application) updateTableName(table string) *application {
 
 	return a
 }
-
-func (a *application) WithContext(ctx context.Context) IApplicationDo {
-	return a.applicationDo.WithContext(ctx)
-}
-
-func (a application) TableName() string { return a.applicationDo.TableName() }
-
-func (a application) Alias() string { return a.applicationDo.Alias() }
-
-func (a application) Columns(cols ...field.Expr) gen.Columns { return a.applicationDo.Columns(cols...) }
 
 func (a *application) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	_f, ok := a.fieldMap[fieldName]

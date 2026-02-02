@@ -40,7 +40,7 @@ func newUserRole(db *gorm.DB, opts ...gen.DOOption) userRole {
 
 // userRole Table to associate users with roles. Type: transactional
 type userRole struct {
-	userRoleDo userRoleDo
+	userRoleDo
 
 	ALL       field.Asterisk
 	UserID    field.String
@@ -72,14 +72,6 @@ func (u *userRole) updateTableName(table string) *userRole {
 
 	return u
 }
-
-func (u *userRole) WithContext(ctx context.Context) IUserRoleDo { return u.userRoleDo.WithContext(ctx) }
-
-func (u userRole) TableName() string { return u.userRoleDo.TableName() }
-
-func (u userRole) Alias() string { return u.userRoleDo.Alias() }
-
-func (u userRole) Columns(cols ...field.Expr) gen.Columns { return u.userRoleDo.Columns(cols...) }
 
 func (u *userRole) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	_f, ok := u.fieldMap[fieldName]

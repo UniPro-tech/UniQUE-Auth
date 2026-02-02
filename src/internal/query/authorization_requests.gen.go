@@ -49,7 +49,7 @@ func newAuthorizationRequest(db *gorm.DB, opts ...gen.DOOption) authorizationReq
 
 // authorizationRequest Table to store OAuth2 authorization requests. Type: transactional
 type authorizationRequest struct {
-	authorizationRequestDo authorizationRequestDo
+	authorizationRequestDo
 
 	ALL                 field.Asterisk
 	ID                  field.String
@@ -98,18 +98,6 @@ func (a *authorizationRequest) updateTableName(table string) *authorizationReque
 	a.fillFieldMap()
 
 	return a
-}
-
-func (a *authorizationRequest) WithContext(ctx context.Context) IAuthorizationRequestDo {
-	return a.authorizationRequestDo.WithContext(ctx)
-}
-
-func (a authorizationRequest) TableName() string { return a.authorizationRequestDo.TableName() }
-
-func (a authorizationRequest) Alias() string { return a.authorizationRequestDo.Alias() }
-
-func (a authorizationRequest) Columns(cols ...field.Expr) gen.Columns {
-	return a.authorizationRequestDo.Columns(cols...)
 }
 
 func (a *authorizationRequest) GetFieldByName(fieldName string) (field.OrderExpr, bool) {

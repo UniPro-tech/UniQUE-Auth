@@ -42,7 +42,7 @@ func newEmailVerificationCode(db *gorm.DB, opts ...gen.DOOption) emailVerificati
 
 // emailVerificationCode Table to store email verification codes. Type: transactional
 type emailVerificationCode struct {
-	emailVerificationCodeDo emailVerificationCodeDo
+	emailVerificationCodeDo
 
 	ALL         field.Asterisk
 	ID          field.String
@@ -77,18 +77,6 @@ func (e *emailVerificationCode) updateTableName(table string) *emailVerification
 	e.fillFieldMap()
 
 	return e
-}
-
-func (e *emailVerificationCode) WithContext(ctx context.Context) IEmailVerificationCodeDo {
-	return e.emailVerificationCodeDo.WithContext(ctx)
-}
-
-func (e emailVerificationCode) TableName() string { return e.emailVerificationCodeDo.TableName() }
-
-func (e emailVerificationCode) Alias() string { return e.emailVerificationCodeDo.Alias() }
-
-func (e emailVerificationCode) Columns(cols ...field.Expr) gen.Columns {
-	return e.emailVerificationCodeDo.Columns(cols...)
 }
 
 func (e *emailVerificationCode) GetFieldByName(fieldName string) (field.OrderExpr, bool) {

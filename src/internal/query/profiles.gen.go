@@ -46,7 +46,7 @@ func newProfile(db *gorm.DB, opts ...gen.DOOption) profile {
 
 // profile Table to store user profile information. Type: master
 type profile struct {
-	profileDo profileDo
+	profileDo
 
 	ALL           field.Asterisk
 	UserID        field.String
@@ -90,14 +90,6 @@ func (p *profile) updateTableName(table string) *profile {
 
 	return p
 }
-
-func (p *profile) WithContext(ctx context.Context) IProfileDo { return p.profileDo.WithContext(ctx) }
-
-func (p profile) TableName() string { return p.profileDo.TableName() }
-
-func (p profile) Alias() string { return p.profileDo.Alias() }
-
-func (p profile) Columns(cols ...field.Expr) gen.Columns { return p.profileDo.Columns(cols...) }
 
 func (p *profile) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	_f, ok := p.fieldMap[fieldName]

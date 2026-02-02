@@ -44,7 +44,7 @@ func newRole(db *gorm.DB, opts ...gen.DOOption) role {
 
 // role Table to store user roles. Type: master
 type role struct {
-	roleDo roleDo
+	roleDo
 
 	ALL               field.Asterisk
 	ID                field.String
@@ -84,14 +84,6 @@ func (r *role) updateTableName(table string) *role {
 
 	return r
 }
-
-func (r *role) WithContext(ctx context.Context) IRoleDo { return r.roleDo.WithContext(ctx) }
-
-func (r role) TableName() string { return r.roleDo.TableName() }
-
-func (r role) Alias() string { return r.roleDo.Alias() }
-
-func (r role) Columns(cols ...field.Expr) gen.Columns { return r.roleDo.Columns(cols...) }
 
 func (r *role) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	_f, ok := r.fieldMap[fieldName]
