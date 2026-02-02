@@ -7,6 +7,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/docs"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/db"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/router"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm/logger"
@@ -19,6 +20,7 @@ type HealthResponse struct {
 }
 
 // @BasePath /
+
 // HealthCheck godoc
 // @Summary health check endpoint
 // @Schemes
@@ -61,6 +63,7 @@ func main() {
 
 	// Routes
 	r.GET("/health", healthCheck)
+	r.GET("/authorization", router.AuthorizationGet)
 
 	// Start server
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

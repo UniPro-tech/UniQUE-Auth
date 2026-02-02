@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   main.HealthResponse:
     properties:
@@ -7,6 +8,68 @@ definitions:
 info:
   contact: {}
 paths:
+  /authorization:
+    get:
+      description: do authorization
+      parameters:
+      - description: Client ID
+        in: query
+        name: client_id
+        required: true
+        type: string
+      - description: Redirect URI
+        in: query
+        name: redirect_uri
+        required: true
+        type: string
+      - description: Response Type
+        in: query
+        name: response_type
+        required: true
+        type: string
+      - description: Scope
+        in: query
+        name: scope
+        required: true
+        type: string
+      - description: State
+        in: query
+        name: state
+        type: string
+      - description: Nonce
+        in: query
+        name: nonce
+        type: string
+      - description: Code Challenge
+        in: query
+        name: code_challenge
+        type: string
+      - description: Code Challenge Method
+        in: query
+        name: code_challenge_method
+        type: string
+      responses:
+        "302":
+          description: Redirect to frontend authorization page
+          schema:
+            type: string
+      summary: authorization endpoint
+      tags:
+      - authorization
+    post:
+      consumes:
+      - application/json
+      description: do authorization
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: authorization endpoint
+      tags:
+      - authorization
   /health:
     get:
       consumes:
