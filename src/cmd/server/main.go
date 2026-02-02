@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/UniPro-tech/UniQUE-Auth/docs"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/db"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -34,6 +35,8 @@ func healthCheck(c *gin.Context) {
 }
 
 func main() {
+	environmentConfigs := config.LoadConfig()
+
 	// Initialize database
 	dbConnection, err := db.NewDB()
 	dbConnection.Logger = dbConnection.Logger.LogMode(logger.Info)
@@ -43,8 +46,20 @@ func main() {
 
 	// loggerとrecoveryミドルウェア付きGinルーター作成
 	r := gin.Default()
-	docs.SwaggerInfo.BasePath = "/"
 
+	// Swagger Info
+	docs.SwaggerInfo.BasePath = "/"
+	docs.SwaggerInfo.Title = environmentConfigs.AppName + " Auth API"
+	docs.SwaggerInfo.Version = environmentConfigs.Version
+
+	// Add contexts
+	r.Use(func(c *gin.Context) {
+		c.Set("config", environmentConfigs)
+		c.Set("db", dbConnection)
+		c.Next()
+	})
+
+	// Routes
 	r.GET("/health", healthCheck)
 
 	// Start server
