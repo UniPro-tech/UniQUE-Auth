@@ -8,6 +8,7 @@ type Config struct {
 	AppName     string
 	Version     string
 	FrontendURL string
+	IssuerURL   string
 }
 
 // envが設定されていない場合のデフォルト値
@@ -20,6 +21,7 @@ var (
 var (
 	AppName     = "UniQUE-Auth"
 	FrontendURL = "http://localhost:3000"
+	IssuerURL   = "http://localhost:8080"
 )
 
 func LoadConfig() *Config {
@@ -40,10 +42,15 @@ func LoadConfig() *Config {
 	if FrontendURLEnv == "" {
 		FrontendURLEnv = FrontendURL
 	}
+	IssuerURLEnv := os.Getenv("CONFIG_ISSUER_URL")
+	if IssuerURLEnv == "" {
+		IssuerURLEnv = IssuerURL
+	}
 
 	return &Config{
 		AppName:     AppNameEnv,
 		FrontendURL: FrontendURLEnv,
+		IssuerURL:   IssuerURLEnv,
 		Version:     version,
 	}
 }
