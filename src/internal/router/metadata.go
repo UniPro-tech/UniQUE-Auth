@@ -15,29 +15,46 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type WellKnownOpenIDConfigurationResponse struct {
+	Issuer                            string   `json:"issuer"`
+	AuthorizationEndpoint             string   `json:"authorization_endpoint"`
+	TokenEndpoint                     string   `json:"token_endpoint"`
+	UserinfoEndpoint                  string   `json:"userinfo_endpoint"`
+	RevocationEndpoint                string   `json:"revocation_endpoint"`
+	JwksURI                           string   `json:"jwks_uri"`
+	ResponseTypesSupported            []string `json:"response_types_supported"`
+	SubjectTypesSupported             []string `json:"subject_types_supported"`
+	IDTokenSigningAlgValuesSupported  []string `json:"id_token_signing_alg_values_supported"`
+	ScopesSupported                   []string `json:"scopes_supported"`
+	TokenEndpointAuthMethodsSupported []string `json:"token_endpoint_auth_methods_supported"`
+	ClaimsSupported                   []string `json:"claims_supported"`
+	CodeChallengeMethodsSupported     []string `json:"code_challenge_methods_supported"`
+	GrantTypesSupported               []string `json:"grant_types_supported"`
+}
+
 // WellKnownOpenIDConfiguration godoc
 // @Summary OpenID Configuration
 // @Description .well-known/openid-configuration エンドポイント
 // @Produce json
-// @Tags Metadata
-// @Success 200 {object} map[string]interface{}
+// @Tags metadata
+// @Success 200 {object} WellKnownOpenIDConfigurationResponse
 // @Router /.well-known/openid-configuration [get]
 func WellKnownOpenIDConfiguration(c *gin.Context) {
 	environmentConfigs := c.MustGet("config").(*config.Config)
 
-	c.JSON(200, gin.H{
-		"issuer":                                environmentConfigs.IssuerURL,
-		"authorization_endpoint":                environmentConfigs.IssuerURL + "/authorization",
-		"token_endpoint":                        environmentConfigs.IssuerURL + "/token",
-		"userinfo_endpoint":                     environmentConfigs.IssuerURL + "/userinfo",
-		"revocation_endpoint":                   environmentConfigs.IssuerURL + "/revocation",
-		"jwks_uri":                              environmentConfigs.IssuerURL + "/.well-known/jwks.json",
-		"response_types_supported":              []string{"code" /* TODO: Impliment "code token", etc... */},
-		"subject_types_supported":               []string{"public"},
-		"id_token_signing_alg_values_supported": []string{"RS256"},
-		"scopes_supported":                      config.Scopes.AllowedScopes,
-		"token_endpoint_auth_methods_supported": []string{"client_secret_basic" /* TODO: Impliment "client_secret_post",*/},
-		"claims_supported": []string{
+	c.JSON(200, WellKnownOpenIDConfigurationResponse{
+		Issuer:                            environmentConfigs.IssuerURL,
+		AuthorizationEndpoint:             environmentConfigs.IssuerURL + "/authorization",
+		TokenEndpoint:                     environmentConfigs.IssuerURL + "/token",
+		UserinfoEndpoint:                  environmentConfigs.IssuerURL + "/userinfo",
+		RevocationEndpoint:                environmentConfigs.IssuerURL + "/revocation",
+		JwksURI:                           environmentConfigs.IssuerURL + "/.well-known/jwks.json",
+		ResponseTypesSupported:            []string{"code" /* TODO: Impliment "code token", etc... */},
+		SubjectTypesSupported:             []string{"public"},
+		IDTokenSigningAlgValuesSupported:  []string{"RS256"},
+		ScopesSupported:                   config.Scopes.AllowedScopes,
+		TokenEndpointAuthMethodsSupported: []string{"client_secret_basic" /* TODO: Impliment "client_secret_post",*/},
+		ClaimsSupported: []string{
 			"sub",
 			"iss",
 			"aud",
@@ -47,17 +64,30 @@ func WellKnownOpenIDConfiguration(c *gin.Context) {
 			"preferred_username",
 			"email",
 		},
-		"code_challenge_methods_supported": []string{"S256"},
-		"grant_types_supported":            []string{"authorization_code", "refresh_token"},
+		CodeChallengeMethodsSupported: []string{"S256"},
+		GrantTypesSupported:           []string{"authorization_code", "refresh_token"},
 	})
+}
+
+type JWKS struct {
+	Keys []JWKSKey `json:"keys"`
+}
+
+type JWKSKey struct {
+	Kty string `json:"kty"`
+	Use string `json:"use"`
+	Alg string `json:"alg"`
+	Kid string `json:"kid"`
+	N   string `json:"n"`
+	E   string `json:"e"`
 }
 
 // WellKnownJWKS godoc
 // @Summary JSON Web Key Set
 // @Description .well-known/jwks.json エンドポイント
 // @Produce json
-// @Tags Metadata
-// @Success 200 {object} map[string]interface{}
+// @Tags metadata
+// @Success 200 {object} JWKS
 // @Router /.well-known/jwks.json [get]
 func WellKnownJWKS(c *gin.Context) {
 	// Get Keys Path from config
@@ -71,19 +101,18 @@ func WellKnownJWKS(c *gin.Context) {
 	c.JSON(200, jwks)
 }
 
-func generateJWKS(publicKeysPath, keyType string) (map[string]interface{}, error) {
+func generateJWKS(publicKeysPath, keyType string) (*JWKS, error) {
 	keys, err := loadPublicKeys(publicKeysPath, keyType)
 	if err != nil {
 		return nil, err
 	}
 
-	result := map[string]interface{}{
-		"keys": keys,
-	}
-	return result, nil
+	return &JWKS{
+		Keys: keys,
+	}, nil
 }
 
-func loadPublicKeys(publicKeysPath, keyType string) ([]interface{}, error) {
+func loadPublicKeys(publicKeysPath, keyType string) ([]JWKSKey, error) {
 	// For simplicity, only RSA is implemented here.
 	if keyType != "RSA" {
 		slog.Warn("Unsupported key type: " + keyType)
@@ -95,16 +124,15 @@ func loadPublicKeys(publicKeysPath, keyType string) ([]interface{}, error) {
 		return nil, err
 	}
 
-	var result []interface{}
+	var result []JWKSKey
 	for _, key := range rsaKeys {
 		result = append(result, key)
 	}
 	return result, nil
 }
 
-func loadRSAPublicKeys(publicKeysPath string) ([]interface{}, error) {
-	var result []interface{}
-
+func loadRSAPublicKeys(publicKeysPath string) ([]JWKSKey, error) {
+	var result []JWKSKey
 	files, err := os.ReadDir(publicKeysPath)
 	if err != nil {
 		return nil, err
@@ -175,13 +203,13 @@ func loadRSAPublicKeys(publicKeysPath string) ([]interface{}, error) {
 			}
 			e := base64.RawURLEncoding.EncodeToString(eBytes)
 
-			jwk := map[string]interface{}{
-				"kty": "RSA",
-				"use": "sig",
-				"alg": "RS256",
-				"kid": kid,
-				"n":   n,
-				"e":   e,
+			jwk := JWKSKey{
+				Kty: "RSA",
+				Use: "sig",
+				Alg: "RS256",
+				Kid: kid,
+				N:   n,
+				E:   e,
 			}
 			result = append(result, jwk)
 		}

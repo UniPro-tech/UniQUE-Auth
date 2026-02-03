@@ -20,6 +20,75 @@ definitions:
     required:
     - type
     type: object
+  router.JWKS:
+    properties:
+      keys:
+        items:
+          $ref: '#/definitions/router.JWKSKey'
+        type: array
+    type: object
+  router.JWKSKey:
+    properties:
+      alg:
+        type: string
+      e:
+        type: string
+      kid:
+        type: string
+      kty:
+        type: string
+      "n":
+        type: string
+      use:
+        type: string
+    type: object
+  router.WellKnownOpenIDConfigurationResponse:
+    properties:
+      authorization_endpoint:
+        type: string
+      claims_supported:
+        items:
+          type: string
+        type: array
+      code_challenge_methods_supported:
+        items:
+          type: string
+        type: array
+      grant_types_supported:
+        items:
+          type: string
+        type: array
+      id_token_signing_alg_values_supported:
+        items:
+          type: string
+        type: array
+      issuer:
+        type: string
+      jwks_uri:
+        type: string
+      response_types_supported:
+        items:
+          type: string
+        type: array
+      revocation_endpoint:
+        type: string
+      scopes_supported:
+        items:
+          type: string
+        type: array
+      subject_types_supported:
+        items:
+          type: string
+        type: array
+      token_endpoint:
+        type: string
+      token_endpoint_auth_methods_supported:
+        items:
+          type: string
+        type: array
+      userinfo_endpoint:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -32,8 +101,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/router.JWKS'
       summary: JSON Web Key Set
       tags:
       - Metadata
@@ -46,8 +114,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/router.WellKnownOpenIDConfigurationResponse'
       summary: OpenID Configuration
       tags:
       - Metadata
