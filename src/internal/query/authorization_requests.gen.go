@@ -35,6 +35,7 @@ func newAuthorizationRequest(db *gorm.DB, opts ...gen.DOOption) authorizationReq
 	_authorizationRequest.RedirectURI = field.NewString(tableName, "redirect_uri")
 	_authorizationRequest.State = field.NewString(tableName, "state")
 	_authorizationRequest.Nonce = field.NewString(tableName, "nonce")
+	_authorizationRequest.Prompt = field.NewString(tableName, "prompt")
 	_authorizationRequest.CodeChallenge = field.NewString(tableName, "code_challenge")
 	_authorizationRequest.CodeChallengeMethod = field.NewString(tableName, "code_challenge_method")
 	_authorizationRequest.ResponseType = field.NewString(tableName, "response_type")
@@ -60,6 +61,7 @@ type authorizationRequest struct {
 	RedirectURI         field.String
 	State               field.String
 	Nonce               field.String
+	Prompt              field.String
 	CodeChallenge       field.String
 	CodeChallengeMethod field.String
 	ResponseType        field.String
@@ -90,6 +92,7 @@ func (a *authorizationRequest) updateTableName(table string) *authorizationReque
 	a.RedirectURI = field.NewString(table, "redirect_uri")
 	a.State = field.NewString(table, "state")
 	a.Nonce = field.NewString(table, "nonce")
+	a.Prompt = field.NewString(table, "prompt")
 	a.CodeChallenge = field.NewString(table, "code_challenge")
 	a.CodeChallengeMethod = field.NewString(table, "code_challenge_method")
 	a.ResponseType = field.NewString(table, "response_type")
@@ -113,7 +116,7 @@ func (a *authorizationRequest) GetFieldByName(fieldName string) (field.OrderExpr
 }
 
 func (a *authorizationRequest) fillFieldMap() {
-	a.fieldMap = make(map[string]field.Expr, 14)
+	a.fieldMap = make(map[string]field.Expr, 15)
 	a.fieldMap["id"] = a.ID
 	a.fieldMap["session_id"] = a.SessionID
 	a.fieldMap["application_id"] = a.ApplicationID
@@ -121,6 +124,7 @@ func (a *authorizationRequest) fillFieldMap() {
 	a.fieldMap["redirect_uri"] = a.RedirectURI
 	a.fieldMap["state"] = a.State
 	a.fieldMap["nonce"] = a.Nonce
+	a.fieldMap["prompt"] = a.Prompt
 	a.fieldMap["code_challenge"] = a.CodeChallenge
 	a.fieldMap["code_challenge_method"] = a.CodeChallengeMethod
 	a.fieldMap["response_type"] = a.ResponseType

@@ -16,6 +16,7 @@ type AuthorizationRequest struct {
 	Scope               string  `form:"scope" binding:"required"`
 	State               *string `form:"state"`
 	Nonce               *string `form:"nonce"`
+	Prompt              *string `form:"prompt"`
 	CodeChallenge       *string `form:"code_challenge"`
 	CodeChallengeMethod *string `form:"code_challenge_method" binding:"omitempty,oneof=plain S256"`
 }
@@ -85,6 +86,7 @@ func AuthorizationGet(c *gin.Context) {
 		Scope:               req.Scope,
 		State:               derefPtr(req.State),
 		Nonce:               derefPtr(req.Nonce),
+		Prompt:              derefPtr(req.Prompt),
 		CodeChallenge:       derefPtr(req.CodeChallenge),
 		CodeChallengeMethod: derefPtr(req.CodeChallengeMethod),
 		ExpiresAt:           time.Now().Add(20 * time.Minute),

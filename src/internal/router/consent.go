@@ -1,23 +1,31 @@
 package router
 
 import (
-	"encoding/base64"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
-type ConsentRequestBody struct {
+type ConsentPostRequest struct {
 	AuthRequestID string `json:"auth_request_id" binding:"required"`
 	SessionID     string `json:"session_id" binding:"required"`
 	Approve       bool   `json:"approve" binding:"required"`
 }
 
-type ConsentResponse struct {
+type ConsentPostResponse struct {
 	AuthRequestID string `json:"auth_request_id"`
+}
+
+type ConsentGetRequest struct {
+	AuthRequestID string `form:"auth_request_id" binding:"required"`
+	SessionID     string `form:"session_id" binding:"required"`
+}
+
+type ConsentGetResponse struct {
+	IsConsented bool `json:"is_consented"`
 }
 
 // ConsentPost godoc
@@ -27,11 +35,11 @@ type ConsentResponse struct {
 // @Tags internal
 // @Accept json
 // @Produce json
-// @Param request body ConsentRequestBody true "Consent Request"
-// @Success 200 {object} ConsentResponse
+// @Param request body ConsentPostRequest true "Consent Request"
+// @Success 200 {object} ConsentPostResponse
 // @Router /internal/authorization [post]
 func ConsentPost(c *gin.Context) {
-	req := ConsentRequestBody{}
+	req := ConsentPostRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
@@ -69,12 +77,11 @@ func ConsentPost(c *gin.Context) {
 	// Generate authorization code or token based on response_type
 	switch authReq.ResponseType {
 	case "code":
-		code, err := uuid.NewRandom()
+		authReq.Code, err = util.GenerateAuthCode()
 		if err != nil {
 			c.JSON(500, gin.H{"error": "internal server error"})
 			return
 		}
-		authReq.Code = base64.URLEncoding.EncodeToString([]byte(code.String()))
 	default:
 		c.JSON(400, gin.H{"error": "unsupported response_type"})
 		return
@@ -100,25 +107,9 @@ func ConsentPost(c *gin.Context) {
 			return
 		}
 	} else {
-		if consent.Scope != authReq.Scope {
+		if !util.CompareScopes(consent.Scope, authReq.Scope) {
 			// 既存の同意のスコープに追加する
-			scopeList := map[string]bool{}
-			for _, s := range splitScope(consent.Scope) {
-				scopeList[s] = true
-			}
-			for _, s := range splitScope(authReq.Scope) {
-				scopeList[s] = true
-			}
-			// 重複を排除して再度結合
-			newScope := ""
-			first := true
-			for s := range scopeList {
-				if !first {
-					newScope += " "
-				}
-				newScope += s
-				first = false
-			}
+			newScope := util.MergeScopes(consent.Scope, authReq.Scope)
 			consent.Scope = newScope
 			_, err := query.Consent.Update(query.Consent.ID.Eq(consent.ID), consent)
 			if err != nil {
@@ -127,24 +118,69 @@ func ConsentPost(c *gin.Context) {
 			}
 		}
 	}
-	c.JSON(200, ConsentResponse{AuthRequestID: authReq.ID})
+	c.JSON(200, ConsentPostResponse{AuthRequestID: authReq.ID})
 }
 
-func splitScope(scope string) []string {
-	var result []string
-	current := ""
-	for _, c := range scope {
-		if c == ' ' {
-			if current != "" {
-				result = append(result, current)
-				current = ""
-			}
-		} else {
-			current += string(c)
+// ConsentGet godoc
+// @Summary internal consent check endpoint
+// @Schemes
+// @Description 内部用の同意確認エンドポイントです。同意済みかどうかを確認します。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
+// @Tags internal
+// @Accept json
+// @Produce json
+// @Param auth_request_id query string true "Authorization Request ID"
+// @Param session_id query string true "Session ID"
+// @Success 200 {object} ConsentGetResponse
+// @Router /internal/authorization [get]
+func ConsentGet(c *gin.Context) {
+	authRequestID := c.Query("auth_request_id")
+	sessionID := c.Query("session_id")
+	authReq, err := query.AuthorizationRequest.Where(query.AuthorizationRequest.ID.Eq(authRequestID)).First()
+	if authReq == nil {
+		c.JSON(400, gin.H{"error": "invalid auth_request_id"})
+		return
+	}
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal server error"})
+		return
+	}
+	session, err := query.Session.Where(query.Session.ID.Eq(sessionID)).First()
+	if session == nil {
+		c.JSON(400, gin.H{"error": "invalid session_id"})
+		return
+	}
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal server error"})
+		return
+	}
+	consent, err := query.Consent.Where(
+		query.Consent.ApplicationID.Eq(authReq.ApplicationID),
+		query.Consent.UserID.Eq(session.UserID),
+	).First()
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal server error"})
+		return
+	}
+
+	if consent == nil || !util.CompareScopes(consent.Scope, authReq.Scope) {
+		c.JSON(200, ConsentGetResponse{IsConsented: false})
+		return
+	}
+
+	authReq.IsConsented = true
+	authReq.SessionID = session.ID
+	authReq.ExpiresAt = time.Now().Add(5 * time.Minute)
+	switch authReq.ResponseType {
+	case "code":
+		authReq.Code, err = util.GenerateAuthCode()
+		if err != nil {
+			c.JSON(500, gin.H{"error": "internal server error"})
+			return
 		}
+	default:
+		c.JSON(400, gin.H{"error": "unsupported response_type"})
+		return
 	}
-	if current != "" {
-		result = append(result, current)
-	}
-	return result
+
+	c.JSON(200, ConsentGetResponse{IsConsented: authReq.IsConsented})
 }

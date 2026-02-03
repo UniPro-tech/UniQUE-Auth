@@ -19,6 +19,7 @@ type AuthorizationRequest struct {
 	RedirectURI         string    `gorm:"column:redirect_uri;not null" json:"redirect_uri"`
 	State               string    `gorm:"column:state" json:"state"`
 	Nonce               string    `gorm:"column:nonce" json:"nonce"`
+	Prompt              string    `gorm:"column:prompt" json:"prompt"`
 	CodeChallenge       string    `gorm:"column:code_challenge" json:"code_challenge"`
 	CodeChallengeMethod string    `gorm:"column:code_challenge_method" json:"code_challenge_method"`
 	ResponseType        string    `gorm:"column:response_type;not null;default:code" json:"response_type"`
