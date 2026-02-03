@@ -66,6 +66,7 @@ func main() {
 	r.GET("/authorization", router.AuthorizationGet)
 	r.POST("/authentication", router.AuthenticationPost)
 	r.GET("/.well-known/openid-configuration", router.WellKnownOpenIDConfiguration)
+	r.GET("/.well-known/jwks.json", router.WellKnownJWKS)
 
 	// Start server
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

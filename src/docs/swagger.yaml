@@ -23,6 +23,34 @@ definitions:
 info:
   contact: {}
 paths:
+  /.well-known/jwks.json:
+    get:
+      description: .well-known/jwks.json エンドポイント
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: JSON Web Key Set
+      tags:
+      - Metadata
+  /.well-known/openid-configuration:
+    get:
+      description: .well-known/openid-configuration エンドポイント
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: OpenID Configuration
+      tags:
+      - Metadata
   /authorization:
     get:
       description: OAuth 2.0 / OIDC における認可エンドポイントです。クライアントアプリケーションがユーザーの認可を取得するために使用します。
