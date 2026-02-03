@@ -39,7 +39,7 @@ func newAuthorizationRequest(db *gorm.DB, opts ...gen.DOOption) authorizationReq
 	_authorizationRequest.CodeChallengeMethod = field.NewString(tableName, "code_challenge_method")
 	_authorizationRequest.ResponseType = field.NewString(tableName, "response_type")
 	_authorizationRequest.Code = field.NewString(tableName, "code")
-	_authorizationRequest.IsEnabled = field.NewBool(tableName, "is_enabled")
+	_authorizationRequest.IsConsented = field.NewBool(tableName, "is_consented")
 	_authorizationRequest.ExpiresAt = field.NewTime(tableName, "expires_at")
 	_authorizationRequest.CreatedAt = field.NewTime(tableName, "created_at")
 
@@ -64,7 +64,7 @@ type authorizationRequest struct {
 	CodeChallengeMethod field.String
 	ResponseType        field.String
 	Code                field.String
-	IsEnabled           field.Bool
+	IsConsented         field.Bool
 	ExpiresAt           field.Time
 	CreatedAt           field.Time
 
@@ -94,7 +94,7 @@ func (a *authorizationRequest) updateTableName(table string) *authorizationReque
 	a.CodeChallengeMethod = field.NewString(table, "code_challenge_method")
 	a.ResponseType = field.NewString(table, "response_type")
 	a.Code = field.NewString(table, "code")
-	a.IsEnabled = field.NewBool(table, "is_enabled")
+	a.IsConsented = field.NewBool(table, "is_consented")
 	a.ExpiresAt = field.NewTime(table, "expires_at")
 	a.CreatedAt = field.NewTime(table, "created_at")
 
@@ -125,7 +125,7 @@ func (a *authorizationRequest) fillFieldMap() {
 	a.fieldMap["code_challenge_method"] = a.CodeChallengeMethod
 	a.fieldMap["response_type"] = a.ResponseType
 	a.fieldMap["code"] = a.Code
-	a.fieldMap["is_enabled"] = a.IsEnabled
+	a.fieldMap["is_consented"] = a.IsConsented
 	a.fieldMap["expires_at"] = a.ExpiresAt
 	a.fieldMap["created_at"] = a.CreatedAt
 }

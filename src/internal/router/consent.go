@@ -60,7 +60,7 @@ func ConsentPost(c *gin.Context) {
 		return
 	}
 
-	authReq.IsEnabled = true
+	authReq.IsConsented = true
 	authReq.SessionID = session.ID
 
 	// codeの有効期限を5分に設定
