@@ -3,6 +3,7 @@ package router
 import (
 	"encoding/base64"
 
+	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -76,5 +77,67 @@ func ConsentPost(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "internal server error"})
 		return
 	}
+	consent, err := query.Consent.Where(query.Consent.ApplicationID.Eq(authReq.ApplicationID), query.Consent.UserID.Eq(session.UserID)).First()
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal server error"})
+		return
+	}
+	if consent == nil {
+		newConsent := &model.Consent{
+			ApplicationID: authReq.ApplicationID,
+			UserID:        session.UserID,
+		}
+		err := query.Consent.Create(newConsent)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "internal server error"})
+			return
+		}
+	} else {
+		if consent.Scope != authReq.Scope {
+			// 既存の同意のスコープに追加する
+			scopeList := map[string]bool{}
+			for _, s := range splitScope(consent.Scope) {
+				scopeList[s] = true
+			}
+			for _, s := range splitScope(authReq.Scope) {
+				scopeList[s] = true
+			}
+			// 重複を排除して再度結合
+			newScope := ""
+			first := true
+			for s := range scopeList {
+				if !first {
+					newScope += " "
+				}
+				newScope += s
+				first = false
+			}
+			consent.Scope = newScope
+			_, err := query.Consent.Update(query.Consent.ID.Eq(consent.ID), consent)
+			if err != nil {
+				c.JSON(500, gin.H{"error": "internal server error"})
+				return
+			}
+		}
+	}
 	c.JSON(200, ConsentResponse{AuthRequestID: authReq.ID})
+}
+
+func splitScope(scope string) []string {
+	var result []string
+	current := ""
+	for _, c := range scope {
+		if c == ' ' {
+			if current != "" {
+				result = append(result, current)
+				current = ""
+			}
+		} else {
+			current += string(c)
+		}
+	}
+	if current != "" {
+		result = append(result, current)
+	}
+	return result
 }
