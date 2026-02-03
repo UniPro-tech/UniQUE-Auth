@@ -129,6 +129,34 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/internal/authentication": {
+            "post": {
+                "description": "内部用の認証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。",
+                "tags": [
+                    "authentication"
+                ],
+                "summary": "authentication endpoint",
+                "parameters": [
+                    {
+                        "description": "Authentication Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/router.AuthenticationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -136,6 +164,28 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.AuthenticationRequest": {
+            "type": "object",
+            "required": [
+                "type"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "password",
+                        "mfa",
+                        "totp"
+                    ]
+                },
+                "username": {
                     "type": "string"
                 }
             }

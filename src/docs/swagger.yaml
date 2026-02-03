@@ -5,6 +5,21 @@ definitions:
       status:
         type: string
     type: object
+  router.AuthenticationRequest:
+    properties:
+      password:
+        type: string
+      type:
+        enum:
+        - password
+        - mfa
+        - totp
+        type: string
+      username:
+        type: string
+    required:
+    - type
+    type: object
 info:
   contact: {}
 paths:
@@ -85,4 +100,22 @@ paths:
       summary: health check endpoint
       tags:
       - system info
+  /internal/authentication:
+    post:
+      description: 内部用の認証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
+      parameters:
+      - description: Authentication Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.AuthenticationRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: authentication endpoint
+      tags:
+      - authentication
 swagger: "2.0"
