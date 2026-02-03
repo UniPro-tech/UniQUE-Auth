@@ -19,7 +19,7 @@ type AuthenticationRequest struct {
 // @Tags authentication
 // @Success 200 {string} string "OK"
 // @Param request body AuthenticationRequest true "Authentication Request"
-// @Accpect json
+// @Accept json
 // @Router /internal/authentication [post]
 func AuthenticationPost(c *gin.Context) {
 	req := AuthenticationRequest{}
