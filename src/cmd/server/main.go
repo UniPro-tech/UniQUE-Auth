@@ -64,6 +64,7 @@ func main() {
 	// Routes
 	r.GET("/health", healthCheck)
 	r.GET("/authorization", router.AuthorizationGet)
+	r.POST("/authentication", router.AuthenticationPost)
 
 	// Start server
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
