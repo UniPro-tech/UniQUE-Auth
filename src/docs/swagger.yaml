@@ -32,6 +32,24 @@ definitions:
       sid:
         type: string
     type: object
+  router.ConsentRequestBody:
+    properties:
+      approve:
+        type: boolean
+      auth_request_id:
+        type: string
+      session_id:
+        type: string
+    required:
+    - approve
+    - auth_request_id
+    - session_id
+    type: object
+  router.ConsentResponse:
+    properties:
+      auth_request_id:
+        type: string
+    type: object
   router.JWKS:
     properties:
       keys:
@@ -178,20 +196,6 @@ paths:
       summary: authorization endpoint
       tags:
       - authorization
-    post:
-      consumes:
-      - application/json
-      description: do authorization
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: authorization endpoint
-      tags:
-      - authorization
   /health:
     get:
       consumes:
@@ -226,5 +230,27 @@ paths:
             $ref: '#/definitions/router.AuthenticationResponse'
       summary: authentication endpoint
       tags:
-      - authentication
+      - internal
+  /internal/authorization:
+    post:
+      consumes:
+      - application/json
+      description: 内部用の認可エンドポイントです。同意したことを受け取ります。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
+      parameters:
+      - description: Consent Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.ConsentRequestBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.ConsentResponse'
+      summary: internal consent endpoint
+      tags:
+      - internal
 swagger: "2.0"

@@ -107,20 +107,6 @@ func AuthorizationGet(c *gin.Context) {
 	c.Redirect(302, config.FrontendURL+"/authorization?auth_request_id="+createdAuthorizationRequest.ID)
 }
 
-// AuthorizationPost godoc
-// @Summary authorization endpoint
-// @Schemes
-// @Description do authorization
-// @Tags authorization
-// @Accept json
-// @Produce json
-// @Success 200 {string} string "OK"
-// @Router /authorization [post]
-func AuthorizationPost(c *gin.Context) {
-	// TODO: Implement authorization logic from Frontend
-	c.JSON(200, gin.H{"message": "OK"})
-}
-
 // splitAndTrim splits a space-separated string into a slice of strings and trims spaces.
 func splitAndTrim(s string) []string {
 	var result []string

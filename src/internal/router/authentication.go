@@ -26,7 +26,7 @@ type AuthenticationResponse struct {
 // @Summary authentication endpoint
 // @Schemes
 // @Description 内部用の認証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
-// @Tags authentication
+// @Tags internal
 // @Success 200 {object} AuthenticationResponse "OK"
 // @Param request body AuthenticationRequest true "Authentication Request"
 // @Accept json

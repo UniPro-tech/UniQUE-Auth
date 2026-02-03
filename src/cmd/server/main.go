@@ -64,9 +64,12 @@ func main() {
 	// Routes
 	r.GET("/health", healthCheck)
 	r.GET("/authorization", router.AuthorizationGet)
-	r.POST("/authentication", router.AuthenticationPost)
 	r.GET("/.well-known/openid-configuration", router.WellKnownOpenIDConfiguration)
 	r.GET("/.well-known/jwks.json", router.WellKnownJWKS)
+
+	// Internal routes
+	r.POST("/internal/authentication", router.AuthenticationPost)
+	r.POST("/internal/authorization", router.ConsentPost)
 
 	// Start server
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

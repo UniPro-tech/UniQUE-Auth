@@ -124,27 +124,6 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "post": {
-                "description": "do authorization",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "authorization"
-                ],
-                "summary": "authorization endpoint",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
             }
         },
         "/health": {
@@ -177,7 +156,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "authentication"
+                    "internal"
                 ],
                 "summary": "authentication endpoint",
                 "parameters": [
@@ -196,6 +175,40 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/router.AuthenticationResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/authorization": {
+            "post": {
+                "description": "内部用の認可エンドポイントです。同意したことを受け取ります。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "internal"
+                ],
+                "summary": "internal consent endpoint",
+                "parameters": [
+                    {
+                        "description": "Consent Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/router.ConsentRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.ConsentResponse"
                         }
                     }
                 }
@@ -247,6 +260,33 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "sid": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.ConsentRequestBody": {
+            "type": "object",
+            "required": [
+                "approve",
+                "auth_request_id",
+                "session_id"
+            ],
+            "properties": {
+                "approve": {
+                    "type": "boolean"
+                },
+                "auth_request_id": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.ConsentResponse": {
+            "type": "object",
+            "properties": {
+                "auth_request_id": {
                     "type": "string"
                 }
             }
