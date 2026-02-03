@@ -2,6 +2,7 @@ package router
 
 import (
 	"encoding/base64"
+	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
@@ -58,6 +59,12 @@ func ConsentPost(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "consent denied"})
 		return
 	}
+
+	authReq.IsEnabled = true
+	authReq.SessionID = session.ID
+
+	// codeの有効期限を5分に設定
+	authReq.ExpiresAt = time.Now().Add(5 * time.Minute)
 
 	// Generate authorization code or token based on response_type
 	switch authReq.ResponseType {

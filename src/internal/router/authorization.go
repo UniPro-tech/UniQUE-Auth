@@ -1,6 +1,8 @@
 package router
 
 import (
+	"time"
+
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
@@ -85,6 +87,7 @@ func AuthorizationGet(c *gin.Context) {
 		Nonce:               derefPtr(req.Nonce),
 		CodeChallenge:       derefPtr(req.CodeChallenge),
 		CodeChallengeMethod: derefPtr(req.CodeChallengeMethod),
+		ExpiresAt:           time.Now().Add(20 * time.Minute),
 	})
 
 	if err != nil {
