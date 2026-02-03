@@ -7,18 +7,30 @@ definitions:
     type: object
   router.AuthenticationRequest:
     properties:
+      ip_address:
+        type: string
       password:
         type: string
+      remember:
+        default: false
+        type: boolean
       type:
         enum:
         - password
         - mfa
         - totp
         type: string
+      user_agent:
+        type: string
       username:
         type: string
     required:
     - type
+    type: object
+  router.AuthenticationResponse:
+    properties:
+      sid:
+        type: string
     type: object
   router.JWKS:
     properties:
@@ -104,7 +116,7 @@ paths:
             $ref: '#/definitions/router.JWKS'
       summary: JSON Web Key Set
       tags:
-      - Metadata
+      - metadata
   /.well-known/openid-configuration:
     get:
       description: .well-known/openid-configuration エンドポイント
@@ -117,7 +129,7 @@ paths:
             $ref: '#/definitions/router.WellKnownOpenIDConfigurationResponse'
       summary: OpenID Configuration
       tags:
-      - Metadata
+      - metadata
   /authorization:
     get:
       description: OAuth 2.0 / OIDC における認可エンドポイントです。クライアントアプリケーションがユーザーの認可を取得するために使用します。
@@ -197,6 +209,8 @@ paths:
       - system info
   /internal/authentication:
     post:
+      consumes:
+      - application/json
       description: 内部用の認証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
       parameters:
       - description: Authentication Request
@@ -209,7 +223,7 @@ paths:
         "200":
           description: OK
           schema:
-            type: string
+            $ref: '#/definitions/router.AuthenticationResponse'
       summary: authentication endpoint
       tags:
       - authentication

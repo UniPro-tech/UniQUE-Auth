@@ -12,7 +12,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Metadata"
+                    "metadata"
                 ],
                 "summary": "JSON Web Key Set",
                 "responses": {
@@ -32,7 +32,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Metadata"
+                    "metadata"
                 ],
                 "summary": "OpenID Configuration",
                 "responses": {
@@ -163,6 +163,9 @@
         "/internal/authentication": {
             "post": {
                 "description": "内部用の認証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。",
+                "consumes": [
+                    "application/json"
+                ],
                 "tags": [
                     "authentication"
                 ],
@@ -182,7 +185,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/router.AuthenticationResponse"
                         }
                     }
                 }
@@ -204,8 +207,15 @@
                 "type"
             ],
             "properties": {
+                "ip_address": {
+                    "type": "string"
+                },
                 "password": {
                     "type": "string"
+                },
+                "remember": {
+                    "type": "boolean",
+                    "default": false
                 },
                 "type": {
                     "type": "string",
@@ -215,7 +225,18 @@
                         "totp"
                     ]
                 },
+                "user_agent": {
+                    "type": "string"
+                },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.AuthenticationResponse": {
+            "type": "object",
+            "properties": {
+                "sid": {
                     "type": "string"
                 }
             }

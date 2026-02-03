@@ -1,15 +1,25 @@
 package router
 
 import (
+	"time"
+
+	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
 )
 
 type AuthenticationRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Type     string `json:"type" binding:"required,oneof=password mfa totp"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	IPAddress string `json:"ip_address"`
+	UserAgent string `json:"user_agent"`
+	Type      string `json:"type" binding:"required,oneof=password mfa totp"`
+	Remember  bool   `json:"remember" default:"false"`
+}
+
+type AuthenticationResponse struct {
+	Sid string `json:"sid"`
 }
 
 // AuthenticationPost godoc
@@ -17,7 +27,7 @@ type AuthenticationRequest struct {
 // @Schemes
 // @Description 内部用の認証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
 // @Tags authentication
-// @Success 200 {string} string "OK"
+// @Success 200 {object} AuthenticationResponse "OK"
 // @Param request body AuthenticationRequest true "Authentication Request"
 // @Accept json
 // @Router /internal/authentication [post]
@@ -31,16 +41,37 @@ func AuthenticationPost(c *gin.Context) {
 	switch req.Type {
 	case "password":
 		// Handle password authentication
-		ok, err := passwordAuthentication(req.Username, req.Password)
+		user, err := passwordAuthentication(req.Username, req.Password)
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
-		if !ok {
+		if user == nil {
 			c.JSON(401, gin.H{"error": "Invalid username or password"})
 			return
 		}
-		c.JSON(200, gin.H{"message": "Password authentication successful"})
+		err = query.Session.Create(&model.Session{
+			UserID:      user.ID,
+			IPAddress:   req.IPAddress,
+			UserAgent:   req.UserAgent,
+			ExpiresAt:   CalculateSessionExpiry(req.Remember),
+			LastLoginAt: time.Now(),
+		})
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+		session, err := query.Session.Where(query.Session.UserID.Eq(user.ID)).Order(query.Session.CreatedAt.Desc()).First()
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+		if session == nil {
+			c.JSON(500, gin.H{"error": "Failed to create session"})
+			return
+		}
+		// Return session ID as a token
+		c.JSON(200, AuthenticationResponse{Sid: session.ID})
 	case "mfa":
 		// Handle MFA authentication
 		// Not implemented yet
@@ -54,16 +85,24 @@ func AuthenticationPost(c *gin.Context) {
 	}
 }
 
-func passwordAuthentication(username, password string) (bool, error) {
+func passwordAuthentication(username, password string) (*model.User, error) {
 	user, err := query.User.Where(query.User.CustomID.Eq(username)).First()
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	if user == nil {
-		return false, nil
+		return nil, nil
 	}
 	if ok, err := util.VerifyPassword(password, user.PasswordHash); err != nil || !ok {
-		return false, err
+		return nil, err
 	}
-	return true, nil
+	return user, nil
+}
+
+// CalculateSessionExpiry calculates the session expiry time based on the remember flag.
+func CalculateSessionExpiry(remember bool) (expiryTime time.Time) {
+	if remember {
+		return time.Now().Add(30 * 24 * time.Hour) // 30 days
+	}
+	return time.Now().Add(7 * 24 * time.Hour) // 7 days
 }

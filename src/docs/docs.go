@@ -22,7 +22,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Metadata"
+                    "metadata"
                 ],
                 "summary": "JSON Web Key Set",
                 "responses": {
@@ -42,7 +42,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Metadata"
+                    "metadata"
                 ],
                 "summary": "OpenID Configuration",
                 "responses": {
@@ -173,6 +173,9 @@ const docTemplate = `{
         "/internal/authentication": {
             "post": {
                 "description": "内部用の認証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。",
+                "consumes": [
+                    "application/json"
+                ],
                 "tags": [
                     "authentication"
                 ],
@@ -192,7 +195,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/router.AuthenticationResponse"
                         }
                     }
                 }
@@ -214,8 +217,15 @@ const docTemplate = `{
                 "type"
             ],
             "properties": {
+                "ip_address": {
+                    "type": "string"
+                },
                 "password": {
                     "type": "string"
+                },
+                "remember": {
+                    "type": "boolean",
+                    "default": false
                 },
                 "type": {
                     "type": "string",
@@ -225,7 +235,18 @@ const docTemplate = `{
                         "totp"
                     ]
                 },
+                "user_agent": {
+                    "type": "string"
+                },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.AuthenticationResponse": {
+            "type": "object",
+            "properties": {
+                "sid": {
                     "type": "string"
                 }
             }
