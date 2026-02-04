@@ -32,7 +32,12 @@ definitions:
       sid:
         type: string
     type: object
-  router.ConsentRequestBody:
+  router.ConsentGetResponse:
+    properties:
+      is_consented:
+        type: boolean
+    type: object
+  router.ConsentPostRequest:
     properties:
       approve:
         type: boolean
@@ -45,7 +50,7 @@ definitions:
     - auth_request_id
     - session_id
     type: object
-  router.ConsentResponse:
+  router.ConsentPostResponse:
     properties:
       auth_request_id:
         type: string
@@ -70,6 +75,19 @@ definitions:
       "n":
         type: string
       use:
+        type: string
+    type: object
+  router.TokenGetResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      id_token:
+        type: string
+      refresh_token:
+        type: string
+      token_type:
         type: string
     type: object
   router.WellKnownOpenIDConfigurationResponse:
@@ -196,6 +214,27 @@ paths:
       summary: authorization endpoint
       tags:
       - authorization
+  /consented:
+    get:
+      consumes:
+      - application/json
+      description: 認可リクエストが完了したのちにリダイレクトするためのエンドポイントです。
+      parameters:
+      - description: Authorization Request ID
+        in: query
+        name: authorization_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "301":
+          description: Redirect to client application with authorization code
+          schema:
+            type: string
+      summary: Redirect for Authorization Request
+      tags:
+      - authorization
   /health:
     get:
       consumes:
@@ -232,6 +271,31 @@ paths:
       tags:
       - internal
   /internal/authorization:
+    get:
+      consumes:
+      - application/json
+      description: 内部用の同意確認エンドポイントです。同意済みかどうかを確認します。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
+      parameters:
+      - description: Authorization Request ID
+        in: query
+        name: auth_request_id
+        required: true
+        type: string
+      - description: Session ID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.ConsentGetResponse'
+      summary: internal consent check endpoint
+      tags:
+      - internal
     post:
       consumes:
       - application/json
@@ -242,15 +306,66 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/router.ConsentRequestBody'
+          $ref: '#/definitions/router.ConsentPostRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/router.ConsentResponse'
+            $ref: '#/definitions/router.ConsentPostResponse'
       summary: internal consent endpoint
       tags:
       - internal
+  /token:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: OAuth2 Token Endpoint
+      parameters:
+      - description: Grant Type
+        enum:
+        - authorization_code
+        - refresh_token
+        - client_credentials
+        in: formData
+        name: grant_type
+        required: true
+        type: string
+      - description: Authorization Code
+        in: formData
+        name: code
+        type: string
+      - description: Redirect URI
+        in: formData
+        name: redirect_uri
+        type: string
+      - description: Client ID
+        in: formData
+        name: client_id
+        type: string
+      - description: Client Secret
+        in: formData
+        name: client_secret
+        type: string
+      - description: Refresh Token
+        in: formData
+        name: refresh_token
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.TokenGetResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Token Endpoint
+      tags:
+      - oauth2
 swagger: "2.0"

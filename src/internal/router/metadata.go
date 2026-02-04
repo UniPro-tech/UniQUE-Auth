@@ -102,7 +102,7 @@ func generateJWKSFromConfig(cfg *config.Config) (*JWKS, error) {
 
 	// iterate over configured key pairs
 	for _, kp := range cfg.KeyPairs {
-		rsaPub := &kp.PublicKeys
+		rsaPub := &kp.PublicKey
 
 		// marshal to PKIX DER to compute kid
 		der, err := x509.MarshalPKIXPublicKey(rsaPub)

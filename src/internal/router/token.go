@@ -2,12 +2,14 @@ package router
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwe"
 )
 
 type TokenGetRequest struct {
@@ -49,15 +51,12 @@ func TokenPost(c *gin.Context) {
 		return
 	}
 
-	checkClientAuthentication(c, &req)
-
 	switch req.GrantType {
 	case "authorization_code":
+		checkClientAuthentication(c, &req)
 		handleAuthorizationCodeGrant(c, &req)
 	case "refresh_token":
 		handleRefreshTokenGrant(c, &req)
-	case "client_credentials":
-		handleClientCredentialsGrant(c, &req)
 	default:
 		c.JSON(400, gin.H{"error": "unsupported grant_type"})
 	}
@@ -87,15 +86,78 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
 		c.JSON(400, gin.H{"error": "invalid consent"})
 		return
 	}
-	util.GenerateTokens(c.MustGet("config").(config.Config), consent, authReq.Scope, authReq.Nonce)
+	accessToken, refreshToken, idToken, err := util.GenerateTokens(c.MustGet("config").(config.Config), consent, authReq.Scope, authReq.Nonce)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "failed to generate tokens"})
+		return
+	}
+	c.JSON(200, TokenGetResponse{
+		AccessToken:  accessToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    3600,
+		RefreshToken: refreshToken,
+		IDToken:      idToken,
+	})
 }
 
 func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
-	// Implementation for refresh token grant
-}
+	config := c.MustGet("config").(config.Config)
+	// perse refresh token
+	jweObj, err := jwe.ParseEncrypted(req.RefreshToken)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid refresh token"})
+		return
+	}
 
-func handleClientCredentialsGrant(c *gin.Context, req *TokenGetRequest) {
-	// Implementation for client credentials grant
+	// Try to decrypt with each private key until one succeeds
+	var decryptedObj []byte
+	var decErr error
+	for _, kp := range config.KeyPairs {
+		decryptedObj, decErr = jweObj.Decrypt(&kp.PrivateKey)
+		if decErr == nil {
+			break
+		}
+	}
+	if decErr != nil {
+		c.JSON(400, gin.H{"error": "invalid refresh token"})
+		return
+	}
+
+	// parse decrypted payload into refresh token claims to extract JTI
+	var claims util.RefreshTokenClaims
+	if err := json.Unmarshal(decryptedObj, &claims); err != nil {
+		c.JSON(400, gin.H{"error": "invalid refresh token payload"})
+		return
+	}
+
+	// get tokenset by JTI from decrypted claims
+	tokenset, err := query.OauthToken.Where(query.OauthToken.RefreshTokenJti.Eq(claims.ID)).First()
+
+	if err != nil || tokenset == nil {
+		c.JSON(400, gin.H{"error": "invalid refresh token"})
+		return
+	}
+
+	// get consent
+	consent, err := query.Consent.Where(query.Consent.ID.Eq(tokenset.ConsentID)).First()
+	if err != nil || consent == nil {
+		c.JSON(400, gin.H{"error": "invalid consent"})
+		return
+	}
+
+	accessToken, refreshToken, idToken, err := util.GenerateTokens(config, consent, claims.Scope, "")
+	if err != nil {
+		c.JSON(400, gin.H{"error": "failed to generate tokens"})
+		return
+	}
+
+	c.JSON(200, TokenGetResponse{
+		AccessToken:  accessToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    3600,
+		RefreshToken: refreshToken,
+		IDToken:      idToken,
+	})
 }
 
 func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) {

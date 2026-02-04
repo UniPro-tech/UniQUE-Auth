@@ -62,7 +62,7 @@ func GenerateTokens(config config.Config, consent *model.Consent, scopes, nonce 
 		},
 		Scope: scopes,
 	})
-	accessTokenString, err := accessTokenClaims.SignedString(config.KeyPairs[0].PrivateKeys)
+	accessTokenString, err := accessTokenClaims.SignedString(config.KeyPairs[0].PrivateKey)
 	if err != nil {
 		return "", "", "", err
 	}
@@ -87,7 +87,7 @@ func GenerateTokens(config config.Config, consent *model.Consent, scopes, nonce 
 	}
 
 	// create JWE with new signature: (alg, key, method, plaintext)
-	refreshTokenClaim, err := jwe.NewJWE(jwe.KeyAlgorithmRSAOAEP, config.KeyPairs[0].PublicKeys, jwe.EncryptionTypeA256GCM, plaintext)
+	refreshTokenClaim, err := jwe.NewJWE(jwe.KeyAlgorithmRSAOAEP, config.KeyPairs[0].PublicKey, jwe.EncryptionTypeA256GCM, plaintext)
 	if err != nil {
 		return "", "", "", err
 	}
@@ -167,6 +167,6 @@ func GenerateIDToken(jti, userID, clientID, nonce, scopes string, config config.
 		//Birthdate:         profile.Birthdate.String(),
 		UpdatedAt: profile.UpdatedAt.Unix(),
 	})
-	IDTokenString, err := IDTokenClaims.SignedString(config.KeyPairs[0].PrivateKeys)
+	IDTokenString, err := IDTokenClaims.SignedString(config.KeyPairs[0].PrivateKey)
 	return IDTokenString, err
 }

@@ -142,8 +142,8 @@ func ParseKeys(cfg KeyPathsConfig) ([]KeyPairConfig, error) {
 	for name, pub := range pubMap {
 		if priv, ok := privMap[name]; ok {
 			results = append(results, KeyPairConfig{
-				PublicKeys:  *pub,
-				PrivateKeys: *priv,
+				PublicKey:  *pub,
+				PrivateKey: *priv,
 			})
 		}
 	}

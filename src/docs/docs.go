@@ -126,6 +126,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/consented": {
+            "get": {
+                "description": "認可リクエストが完了したのちにリダイレクトするためのエンドポイントです。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "authorization"
+                ],
+                "summary": "Redirect for Authorization Request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Authorization Request ID",
+                        "name": "authorization_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "301": {
+                        "description": "Redirect to client application with authorization code",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "システムの稼働状況を確認するためのエンドポイントです。",
@@ -181,6 +213,43 @@ const docTemplate = `{
             }
         },
         "/internal/authorization": {
+            "get": {
+                "description": "内部用の同意確認エンドポイントです。同意済みかどうかを確認します。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "internal"
+                ],
+                "summary": "internal consent check endpoint",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Authorization Request ID",
+                        "name": "auth_request_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.ConsentGetResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "内部用の認可エンドポイントです。同意したことを受け取ります。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。",
                 "consumes": [
@@ -200,7 +269,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/router.ConsentRequestBody"
+                            "$ref": "#/definitions/router.ConsentPostRequest"
                         }
                     }
                 ],
@@ -208,7 +277,83 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/router.ConsentResponse"
+                            "$ref": "#/definitions/router.ConsentPostResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/token": {
+            "post": {
+                "description": "OAuth2 Token Endpoint",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "oauth2"
+                ],
+                "summary": "Token Endpoint",
+                "parameters": [
+                    {
+                        "enum": [
+                            "authorization_code",
+                            "refresh_token",
+                            "client_credentials"
+                        ],
+                        "type": "string",
+                        "description": "Grant Type",
+                        "name": "grant_type",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authorization Code",
+                        "name": "code",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Redirect URI",
+                        "name": "redirect_uri",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Client ID",
+                        "name": "client_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Client Secret",
+                        "name": "client_secret",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Refresh Token",
+                        "name": "refresh_token",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.TokenGetResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -264,7 +409,15 @@ const docTemplate = `{
                 }
             }
         },
-        "router.ConsentRequestBody": {
+        "router.ConsentGetResponse": {
+            "type": "object",
+            "properties": {
+                "is_consented": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "router.ConsentPostRequest": {
             "type": "object",
             "required": [
                 "approve",
@@ -283,7 +436,7 @@ const docTemplate = `{
                 }
             }
         },
-        "router.ConsentResponse": {
+        "router.ConsentPostResponse": {
             "type": "object",
             "properties": {
                 "auth_request_id": {
@@ -321,6 +474,26 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "use": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.TokenGetResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "id_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "token_type": {
                     "type": "string"
                 }
             }

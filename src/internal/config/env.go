@@ -21,8 +21,8 @@ type KeyPathsConfig struct {
 }
 
 type KeyPairConfig struct {
-	PublicKeys  rsa.PublicKey
-	PrivateKeys rsa.PrivateKey
+	PublicKey  rsa.PublicKey
+	PrivateKey rsa.PrivateKey
 }
 
 // envが設定されていない場合のデフォルト値
