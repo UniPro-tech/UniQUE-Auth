@@ -163,9 +163,18 @@ func GenerateIDToken(jti, userID, clientID, nonce, scopes string, config config.
 			return false
 		}(),
 		PreferredUsername: user.CustomID,
-		Website:           profile.WebsiteURL,
-		// TODO: 権限を追加
-		//Birthdate:         profile.Birthdate.String(),
+		Website: func() string {
+			if ContainsScope(scopes, "profile") {
+				return profile.WebsiteURL
+			}
+			return ""
+		}(),
+		Birthdate: func() string {
+			if ContainsScope(scopes, "profile") {
+				return profile.Birthdate.String()
+			}
+			return ""
+		}(),
 		UpdatedAt: profile.UpdatedAt.Unix(),
 	})
 	IDTokenString, err := IDTokenClaims.SignedString(config.KeyPairs[0].PrivateKey)

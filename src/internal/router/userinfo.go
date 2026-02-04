@@ -16,6 +16,7 @@ type UserInfoResponse struct {
 	Birthdate         string `json:"birthdate,omitempty"`
 	Website           string `json:"website,omitempty"`
 	Twitter           string `json:"twitter,omitempty"`
+	AffiliationPeriod string `json:"affiliation_period,omitempty"`
 	UpdatedAt         int64  `json:"updated_at,omitempty"`
 }
 
@@ -81,10 +82,25 @@ func UserInfoGet(c *gin.Context) {
 			}
 			return false
 		}(),
-		// TODO: 権限
-		// Birthdate: profile.Birthdate.String(),
-		Website:   profile.WebsiteURL,
-		Twitter:   profile.TwitterHandle,
-		UpdatedAt: profile.UpdatedAt.Unix(),
+		Birthdate: func() string {
+			if util.ContainsScope(scope, "profile") {
+				return profile.Birthdate.Format("2006-01-02")
+			}
+			return ""
+		}(),
+		Website: func() string {
+			if util.ContainsScope(scope, "profile") {
+				return profile.WebsiteURL
+			}
+			return ""
+		}(),
+		Twitter: func() string {
+			if util.ContainsScope(scope, "profile") {
+				return profile.TwitterHandle
+			}
+			return ""
+		}(),
+		AffiliationPeriod: user.AffiliationPeriod,
+		UpdatedAt:         profile.UpdatedAt.Unix(),
 	})
 }
