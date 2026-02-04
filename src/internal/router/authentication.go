@@ -3,6 +3,7 @@ package router
 import (
 	"time"
 
+	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
@@ -19,7 +20,7 @@ type AuthenticationRequest struct {
 }
 
 type AuthenticationResponse struct {
-	Sid string `json:"sid"`
+	SessionJWT string `json:"session_jwt"`
 }
 
 // AuthenticationPost godoc
@@ -71,7 +72,14 @@ func AuthenticationPost(c *gin.Context) {
 			return
 		}
 		// Return session ID as a token
-		c.JSON(200, AuthenticationResponse{Sid: session.ID})
+		sessionJWT, err := util.GenerateSessionJWT(session.ID, c.MustGet("config").(config.Config))
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, AuthenticationResponse{
+			SessionJWT: sessionJWT,
+		})
 	case "mfa":
 		// Handle MFA authentication
 		// Not implemented yet
