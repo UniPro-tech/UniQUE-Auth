@@ -283,6 +283,90 @@ const docTemplate = `{
                 }
             }
         },
+        "/internal/session_verify": {
+            "get": {
+                "description": "内部用のセッション検証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "internal"
+                ],
+                "summary": "session verify endpoint",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "JIT",
+                        "name": "jit",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.SessionVerifyResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/token_verify": {
+            "get": {
+                "description": "内部用のトークン検証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "internal"
+                ],
+                "summary": "token verify endpoint",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "JIT",
+                        "name": "jit",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.TokenVerifyResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/update_last_logined": {
+            "post": {
+                "description": "内部のLastLogined更新エンドポイント",
+                "tags": [
+                    "internal"
+                ],
+                "summary": "Update Last Logined",
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "null"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/token": {
             "post": {
                 "description": "OAuth2 Token Endpoint",
@@ -358,6 +442,38 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/userinfo": {
+            "get": {
+                "description": "OAuth2 UserInfo Endpoint",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "userinfo"
+                ],
+                "summary": "UserInfo Endpoint",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.UserInfoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -404,7 +520,7 @@ const docTemplate = `{
         "router.AuthenticationResponse": {
             "type": "object",
             "properties": {
-                "sid": {
+                "session_jwt": {
                     "type": "string"
                 }
             }
@@ -478,6 +594,17 @@ const docTemplate = `{
                 }
             }
         },
+        "router.SessionVerifyResponse": {
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string"
+                },
+                "valid": {
+                    "type": "boolean"
+                }
+            }
+        },
         "router.TokenGetResponse": {
             "type": "object",
             "properties": {
@@ -494,6 +621,49 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "token_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.TokenVerifyResponse": {
+            "type": "object",
+            "properties": {
+                "valid": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "router.UserInfoResponse": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "birthdate": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "email_verified": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "preferred_username": {
+                    "type": "string"
+                },
+                "sub": {
+                    "type": "string"
+                },
+                "twitter": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "integer"
+                },
+                "website": {
                     "type": "string"
                 }
             }

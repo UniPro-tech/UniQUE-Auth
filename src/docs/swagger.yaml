@@ -29,7 +29,7 @@ definitions:
     type: object
   router.AuthenticationResponse:
     properties:
-      sid:
+      session_jwt:
         type: string
     type: object
   router.ConsentGetResponse:
@@ -77,6 +77,13 @@ definitions:
       use:
         type: string
     type: object
+  router.SessionVerifyResponse:
+    properties:
+      expires_at:
+        type: string
+      valid:
+        type: boolean
+    type: object
   router.TokenGetResponse:
     properties:
       access_token:
@@ -88,6 +95,34 @@ definitions:
       refresh_token:
         type: string
       token_type:
+        type: string
+    type: object
+  router.TokenVerifyResponse:
+    properties:
+      valid:
+        type: boolean
+    type: object
+  router.UserInfoResponse:
+    properties:
+      bio:
+        type: string
+      birthdate:
+        type: string
+      email:
+        type: string
+      email_verified:
+        type: boolean
+      name:
+        type: string
+      preferred_username:
+        type: string
+      sub:
+        type: string
+      twitter:
+        type: string
+      updated_at:
+        type: integer
+      website:
         type: string
     type: object
   router.WellKnownOpenIDConfigurationResponse:
@@ -317,6 +352,61 @@ paths:
       summary: internal consent endpoint
       tags:
       - internal
+  /internal/session_verify:
+    get:
+      consumes:
+      - application/json
+      description: 内部用のセッション検証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
+      parameters:
+      - description: JIT
+        in: query
+        name: jit
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.SessionVerifyResponse'
+      summary: session verify endpoint
+      tags:
+      - internal
+  /internal/token_verify:
+    get:
+      consumes:
+      - application/json
+      description: 内部用のトークン検証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
+      parameters:
+      - description: JIT
+        in: query
+        name: jit
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.TokenVerifyResponse'
+      summary: token verify endpoint
+      tags:
+      - internal
+  /internal/update_last_logined:
+    post:
+      description: 内部のLastLogined更新エンドポイント
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: "null"
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update Last Logined
+      tags:
+      - internal
   /token:
     post:
       consumes:
@@ -368,4 +458,25 @@ paths:
       summary: Token Endpoint
       tags:
       - oauth2
+  /userinfo:
+    get:
+      consumes:
+      - application/json
+      description: OAuth2 UserInfo Endpoint
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.UserInfoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: UserInfo Endpoint
+      tags:
+      - userinfo
 swagger: "2.0"
