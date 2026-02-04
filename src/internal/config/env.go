@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/rsa"
 	"os"
 )
 
@@ -9,13 +10,19 @@ type Config struct {
 	Version     string
 	FrontendURL string
 	IssuerURL   string
-	KeyConfig   KeyPairConfig
+	KeyPaths    KeyPathsConfig
+	KeyPairs    []KeyPairConfig
 }
 
-type KeyPairConfig struct {
+type KeyPathsConfig struct {
 	KeyType         string
 	PublicKeysPath  string
 	PrivateKeysPath string
+}
+
+type KeyPairConfig struct {
+	PublicKeys  rsa.PublicKey
+	PrivateKeys rsa.PrivateKey
 }
 
 // envが設定されていない場合のデフォルト値
@@ -29,7 +36,7 @@ var (
 	AppName     = "UniQUE-Auth"
 	FrontendURL = "http://localhost:3000"
 	IssuerURL   = "http://localhost:8080"
-	KeyPath     = KeyPairConfig{
+	KeyPaths    = KeyPathsConfig{
 		KeyType:         "RSA",
 		PublicKeysPath:  "../keys/public",
 		PrivateKeysPath: "../keys/private",
@@ -58,25 +65,30 @@ func LoadConfig() *Config {
 	if IssuerURLEnv == "" {
 		IssuerURLEnv = IssuerURL
 	}
-	KeyPathEnv := KeyPairConfig{
+	KeyPathEnv := KeyPathsConfig{
 		KeyType:         os.Getenv("CONFIG_KEY_TYPE"),
 		PublicKeysPath:  os.Getenv("CONFIG_KEY_PUBLIC_PATH"),
 		PrivateKeysPath: os.Getenv("CONFIG_KEY_PRIVATE_PATH"),
 	}
 	if KeyPathEnv.PublicKeysPath == "" {
-		KeyPathEnv.PublicKeysPath = KeyPath.PublicKeysPath
+		KeyPathEnv.PublicKeysPath = KeyPaths.PublicKeysPath
 	}
 	if KeyPathEnv.PrivateKeysPath == "" {
-		KeyPathEnv.PrivateKeysPath = KeyPath.PrivateKeysPath
+		KeyPathEnv.PrivateKeysPath = KeyPaths.PrivateKeysPath
 	}
 	if KeyPathEnv.KeyType == "" {
-		KeyPathEnv.KeyType = KeyPath.KeyType
+		KeyPathEnv.KeyType = KeyPaths.KeyType
+	}
+	keyPairs, err := ParseKeys(KeyPathEnv)
+	if err != nil {
+		panic(err)
 	}
 	return &Config{
 		AppName:     AppNameEnv,
 		FrontendURL: FrontendURLEnv,
 		IssuerURL:   IssuerURLEnv,
 		Version:     version,
-		KeyConfig:   KeyPathEnv,
+		KeyPaths:    KeyPathEnv,
+		KeyPairs:    keyPairs,
 	}
 }

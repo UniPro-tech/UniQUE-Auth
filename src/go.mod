@@ -4,9 +4,14 @@ go 1.24.4
 
 require (
 	github.com/gin-gonic/gin v1.11.0
+	github.com/golang-jwt/jwe v0.0.0-20220815104040-b2647e820b90
+	github.com/golang-jwt/jwt/v5 v5.3.1
+	github.com/google/uuid v1.3.0
+	github.com/oklog/ulid v1.3.1
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.1
 	github.com/swaggo/swag v1.16.6
+	golang.org/x/crypto v0.47.0
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gen v0.3.27
 	gorm.io/gorm v1.31.1
@@ -37,7 +42,6 @@ require (
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -54,7 +58,6 @@ require (
 	go.uber.org/mock v0.5.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/arch v0.20.0 // indirect
-	golang.org/x/crypto v0.47.0 // indirect
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect

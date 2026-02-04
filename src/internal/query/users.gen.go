@@ -32,6 +32,7 @@ func newUser(db *gorm.DB, opts ...gen.DOOption) user {
 	_user.CustomID = field.NewString(tableName, "custom_id")
 	_user.Email = field.NewString(tableName, "email")
 	_user.ExternalEmail = field.NewString(tableName, "external_email")
+	_user.EmailVerified = field.NewBool(tableName, "email_verified")
 	_user.AffiliationPeriod = field.NewString(tableName, "affiliation_period")
 	_user.PasswordHash = field.NewString(tableName, "password_hash")
 	_user.Status = field.NewString(tableName, "status")
@@ -53,6 +54,7 @@ type user struct {
 	CustomID          field.String
 	Email             field.String
 	ExternalEmail     field.String
+	EmailVerified     field.Bool
 	AffiliationPeriod field.String
 	PasswordHash      field.String
 	Status            field.String
@@ -79,6 +81,7 @@ func (u *user) updateTableName(table string) *user {
 	u.CustomID = field.NewString(table, "custom_id")
 	u.Email = field.NewString(table, "email")
 	u.ExternalEmail = field.NewString(table, "external_email")
+	u.EmailVerified = field.NewBool(table, "email_verified")
 	u.AffiliationPeriod = field.NewString(table, "affiliation_period")
 	u.PasswordHash = field.NewString(table, "password_hash")
 	u.Status = field.NewString(table, "status")
@@ -101,11 +104,12 @@ func (u *user) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (u *user) fillFieldMap() {
-	u.fieldMap = make(map[string]field.Expr, 10)
+	u.fieldMap = make(map[string]field.Expr, 11)
 	u.fieldMap["id"] = u.ID
 	u.fieldMap["custom_id"] = u.CustomID
 	u.fieldMap["email"] = u.Email
 	u.fieldMap["external_email"] = u.ExternalEmail
+	u.fieldMap["email_verified"] = u.EmailVerified
 	u.fieldMap["affiliation_period"] = u.AffiliationPeriod
 	u.fieldMap["password_hash"] = u.PasswordHash
 	u.fieldMap["status"] = u.Status

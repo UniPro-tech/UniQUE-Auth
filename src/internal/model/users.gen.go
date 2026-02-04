@@ -18,6 +18,7 @@ type User struct {
 	CustomID          string         `gorm:"column:custom_id;not null" json:"custom_id"`
 	Email             string         `gorm:"column:email;not null" json:"email"`
 	ExternalEmail     string         `gorm:"column:external_email;not null" json:"external_email"`
+	EmailVerified     bool           `gorm:"column:email_verified;not null" json:"email_verified"`
 	AffiliationPeriod string         `gorm:"column:affiliation_period" json:"affiliation_period"`
 	PasswordHash      string         `gorm:"column:password_hash;not null" json:"password_hash"`
 	Status            string         `gorm:"column:status;not null;default:established" json:"status"`

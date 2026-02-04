@@ -1,0 +1,137 @@
+package router
+
+import (
+	"encoding/base64"
+	"errors"
+
+	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
+	"github.com/gin-gonic/gin"
+)
+
+type TokenGetRequest struct {
+	GrantType    string `form:"grant_type" binding:"required,oneof=authorization_code refresh_token client_credentials"`
+	Code         string `form:"code"`
+	RedirectURI  string `form:"redirect_uri"`
+	ClientID     string `form:"client_id"`
+	ClientSecret string `form:"client_secret"`
+	RefreshToken string `form:"refresh_token"`
+}
+
+type TokenGetResponse struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	IDToken      string `json:"id_token,omitempty"`
+}
+
+// TokenPost godoc
+// @Summary      Token Endpoint
+// @Description  OAuth2 Token Endpoint
+// @Tags         oauth2
+// @Accept       application/x-www-form-urlencoded
+// @Produce      json
+// @Param        grant_type     formData  string  true   "Grant Type"  Enums(authorization_code, refresh_token, client_credentials)
+// @Param        code           formData  string  false  "Authorization Code"
+// @Param        redirect_uri   formData  string  false  "Redirect URI"
+// @Param        client_id      formData  string  false  "Client ID"
+// @Param        client_secret  formData  string  false  "Client Secret"
+// @Param        refresh_token  formData  string  false  "Refresh Token"
+// @Success      200  {object}  TokenGetResponse
+// @Failure      400  {object}  map[string]string
+// @Router       /token [post]
+func TokenPost(c *gin.Context) {
+	req := TokenGetRequest{}
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	checkClientAuthentication(c, &req)
+
+	switch req.GrantType {
+	case "authorization_code":
+		handleAuthorizationCodeGrant(c, &req)
+	case "refresh_token":
+		handleRefreshTokenGrant(c, &req)
+	case "client_credentials":
+		handleClientCredentialsGrant(c, &req)
+	default:
+		c.JSON(400, gin.H{"error": "unsupported grant_type"})
+	}
+}
+
+func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
+	// get authorization request
+	authReq, err := query.AuthorizationRequest.Where(query.AuthorizationRequest.ID.Eq(req.Code)).First()
+	if err != nil || authReq == nil {
+		c.JSON(400, gin.H{"error": "invalid authorization code"})
+		return
+	}
+
+	if authReq.RedirectURI != req.RedirectURI {
+		c.JSON(400, gin.H{"error": "redirect_uri does not match"})
+		return
+	}
+
+	// generate tokens and respond
+	session, err := query.Session.Where(query.Session.ID.Eq(authReq.SessionID)).First()
+	if err != nil || session == nil {
+		c.JSON(400, gin.H{"error": "invalid session"})
+		return
+	}
+	consent, err := query.Consent.Where(query.Consent.UserID.Eq(session.UserID), query.Consent.ApplicationID.Eq(authReq.ApplicationID)).First()
+	if err != nil || consent == nil {
+		c.JSON(400, gin.H{"error": "invalid consent"})
+		return
+	}
+	util.GenerateTokens(c.MustGet("config").(config.Config), consent, authReq.Scope, authReq.Nonce)
+}
+
+func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
+	// Implementation for refresh token grant
+}
+
+func handleClientCredentialsGrant(c *gin.Context, req *TokenGetRequest) {
+	// Implementation for client credentials grant
+}
+
+func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) {
+	// check client_secret
+	if clientVerifyBasic := c.GetHeader("Authorization"); clientVerifyBasic != "" {
+		// if authorization header
+		clientID, clientSecret, err := parseBasicAuth(clientVerifyBasic)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "not valid authorization header"})
+			return
+		}
+		application, err := query.Application.Where(query.Application.ID.Eq(clientID), query.Application.ClientSecret.Eq(clientSecret)).Find()
+		if err != nil || application == nil {
+			c.JSON(400, gin.H{"error": "invalid client credentials"})
+			return
+		}
+	} else {
+		// if form body
+		application, err := query.Application.Where(query.Application.ID.Eq(req.ClientID), query.Application.ClientSecret.Eq(req.ClientSecret)).Find()
+		if err != nil || application == nil {
+			c.JSON(400, gin.H{"error": "invalid client credentials"})
+			return
+		}
+	}
+}
+
+func parseBasicAuth(authHeader string) (string, string, error) {
+	base64Decoded, err := base64.StdEncoding.DecodeString(authHeader[len("Basic "):])
+	if err != nil {
+		return "", "", err
+	}
+	parts := string(base64Decoded)
+	for i := 0; i < len(parts); i++ {
+		if parts[i] == ':' {
+			return parts[:i], parts[i+1:], nil
+		}
+	}
+	return "", "", errors.New("invalid basic auth format")
+}

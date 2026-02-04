@@ -70,3 +70,13 @@ func splitScope(scope string) []string {
 	}
 	return result
 }
+
+func ContainsScope(scopes, targetScope string) bool {
+	scopeList := splitScope(scopes)
+	for _, s := range scopeList {
+		if s == targetScope {
+			return true
+		}
+	}
+	return false
+}
