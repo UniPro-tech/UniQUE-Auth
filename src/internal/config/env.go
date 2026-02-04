@@ -33,7 +33,7 @@ var (
 )
 
 var (
-	AppName     = "UniQUE-Auth"
+	AppName     = "UniQUE"
 	FrontendURL = "http://localhost:3000"
 	IssuerURL   = "http://localhost:8080"
 	KeyPaths    = KeyPathsConfig{
