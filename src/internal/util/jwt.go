@@ -9,6 +9,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwe"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/oklog/ulid"
@@ -169,4 +170,35 @@ func GenerateIDToken(jti, userID, clientID, nonce, scopes string, config config.
 	})
 	IDTokenString, err := IDTokenClaims.SignedString(config.KeyPairs[0].PrivateKey)
 	return IDTokenString, err
+}
+
+func ValidateAccessToken(tokenString string, c *gin.Context) (jit, sub, scope string, err error) {
+	config := c.MustGet("config").(config.Config)
+
+	// Parse and validate token
+	token, err := jwt.ParseWithClaims(tokenString, &AccessTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// Verify the signing method
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		// Return the public key for verification
+		return &config.KeyPairs[0].PublicKey, nil
+	})
+	if err != nil {
+		return "", "", "", err
+	}
+
+	// Validate claims
+	if claims, ok := token.Claims.(*AccessTokenClaims); ok && token.Valid {
+		tokenSet, err := query.OauthToken.Where(query.OauthToken.AccessTokenJti.Eq(claims.ID), query.OauthToken.DeletedAt.IsNull()).First()
+		if err != nil {
+			return "", "", "", err
+		}
+		if tokenSet == nil {
+			return "", "", "", errors.New("invalid token")
+		}
+		return claims.ID, claims.Subject, claims.Scope, nil
+	} else {
+		return "", "", "", errors.New("invalid token claims")
+	}
 }

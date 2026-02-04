@@ -67,6 +67,7 @@ func main() {
 	r.GET("/.well-known/openid-configuration", router.WellKnownOpenIDConfiguration)
 	r.GET("/.well-known/jwks.json", router.WellKnownJWKS)
 	r.POST("/token", router.TokenPost)
+	r.GET("/userinfo", router.UserInfoGet)
 
 	// Internal routes
 	r.POST("/internal/authentication", router.AuthenticationPost)
