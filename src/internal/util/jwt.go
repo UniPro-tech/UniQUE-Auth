@@ -211,7 +211,7 @@ func GenerateSessionJWT(sessionID string, config config.Config) (string, error) 
 	// Generate Session JWT
 	sessionTokenClaims := jwt.NewWithClaims(jwt.SigningMethodRS256, SessionTokenClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   sessionID,
+			Subject:   "SID_" + sessionID,
 			Issuer:    config.IssuerURL,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
@@ -222,38 +222,4 @@ func GenerateSessionJWT(sessionID string, config config.Config) (string, error) 
 		return "", err
 	}
 	return sessionTokenString, nil
-}
-
-func ValidateSessionToken(tokenString string, c *gin.Context) (session *model.Session, err error) {
-	config := c.MustGet("config").(config.Config)
-
-	// Parse and validate token
-	token, err := jwt.ParseWithClaims(tokenString, &SessionTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
-		// Verify the signing method
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, errors.New("unexpected signing method")
-		}
-		// Return the public key for verification
-		return &config.KeyPairs[0].PublicKey, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Validate claims
-	if claims, ok := token.Claims.(*SessionTokenClaims); ok && token.Valid {
-		session, err := query.Session.Where(query.Session.ID.Eq(claims.Subject), query.Session.DeletedAt.IsNull()).First()
-		if err != nil {
-			return nil, err
-		}
-		if session == nil {
-			return nil, errors.New("invalid session")
-		}
-		if session.ExpiresAt.Before(time.Now()) {
-			return nil, errors.New("session expired")
-		}
-		return session, nil
-	} else {
-		return nil, errors.New("invalid token claims")
-	}
 }
