@@ -8,11 +8,12 @@ import (
 )
 
 type SessionVerifyRequest struct {
-	jit string `form:"jit" binding:"required"`
+	JIT string `form:"jit" binding:"required"`
 }
 
 type SessionVerifyResponse struct {
 	Valid     bool      `json:"valid"`
+	UserID    string    `json:"user_id,omitempty"`
 	ExpiresAt time.Time `json:"expires_at,omitempty"`
 }
 
@@ -31,10 +32,10 @@ func SessionVerifyGet(c *gin.Context) {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	session, err := query.Session.Where(query.Session.ID.Eq(req.jit), query.Session.DeletedAt.IsNull(), query.Session.ExpiresAt.Gt(time.Now())).First()
+	session, err := query.Session.Where(query.Session.ID.Eq(req.JIT), query.Session.DeletedAt.IsNull(), query.Session.ExpiresAt.Gt(time.Now())).First()
 	if err != nil {
 		c.JSON(200, SessionVerifyResponse{Valid: false})
 		return
 	}
-	c.JSON(200, SessionVerifyResponse{Valid: true, ExpiresAt: session.ExpiresAt})
+	c.JSON(200, SessionVerifyResponse{Valid: true, UserID: session.UserID, ExpiresAt: session.ExpiresAt})
 }
