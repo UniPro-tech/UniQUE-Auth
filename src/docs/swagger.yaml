@@ -32,27 +32,34 @@ definitions:
       session_jwt:
         type: string
     type: object
-  router.ConsentGetResponse:
+  router.ConsentCreateRequest:
     properties:
-      is_consented:
-        type: boolean
-    type: object
-  router.ConsentPostRequest:
-    properties:
-      approve:
-        type: boolean
-      auth_request_id:
+      application_id:
         type: string
-      session_id:
+      scope:
+        type: string
+      user_id:
         type: string
     required:
-    - approve
-    - auth_request_id
-    - session_id
+    - application_id
+    - scope
+    - user_id
     type: object
-  router.ConsentPostResponse:
+  router.ConsentResponse:
     properties:
-      auth_request_id:
+      application_id:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: string
+      scope:
+        type: string
+      updated_at:
+        type: string
+      user_id:
         type: string
     type: object
   router.JWKS:
@@ -104,6 +111,8 @@ definitions:
     type: object
   router.UserInfoResponse:
     properties:
+      affiliation_period:
+        type: string
       bio:
         type: string
       birthdate:
@@ -305,21 +314,27 @@ paths:
       summary: authentication endpoint
       tags:
       - internal
-  /internal/authorization:
+  /internal/consents:
     get:
       consumes:
       - application/json
-      description: 内部用の同意確認エンドポイントです。同意済みかどうかを確認します。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
+      description: 一覧取得およびクエリ条件による検索を行う。任意の検索パラメータ `hogehoge` を利用して柔軟な検索が可能。
       parameters:
-      - description: Authorization Request ID
+      - description: User ID
         in: query
-        name: auth_request_id
-        required: true
+        name: user_id
         type: string
-      - description: Session ID
+      - description: Application ID
         in: query
-        name: session_id
-        required: true
+        name: application_id
+        type: string
+      - description: Scope
+        in: query
+        name: scope
+        type: string
+      - description: Free search parameter
+        in: query
+        name: hogehoge
         type: string
       produces:
       - application/json
@@ -327,29 +342,52 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/router.ConsentGetResponse'
-      summary: internal consent check endpoint
+            items:
+              $ref: '#/definitions/router.ConsentResponse'
+            type: array
+      summary: list or search consents
       tags:
       - internal
     post:
       consumes:
       - application/json
-      description: 内部用の認可エンドポイントです。同意したことを受け取ります。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
       parameters:
-      - description: Consent Request
+      - description: Create Consent
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/router.ConsentPostRequest'
+          $ref: '#/definitions/router.ConsentCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/router.ConsentResponse'
+      summary: create consent
+      tags:
+      - internal
+  /internal/consents/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Consent ID
+        in: path
+        name: id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/router.ConsentPostResponse'
-      summary: internal consent endpoint
+            additionalProperties:
+              type: string
+            type: object
+      summary: delete consent by id
       tags:
       - internal
   /internal/session_verify:

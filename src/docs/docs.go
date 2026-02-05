@@ -212,9 +212,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/internal/authorization": {
+        "/internal/consents": {
             "get": {
-                "description": "内部用の同意確認エンドポイントです。同意済みかどうかを確認します。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。",
+                "description": "一覧取得およびクエリ条件による検索を行う。任意の検索パラメータ ` + "`" + `hogehoge` + "`" + ` を利用して柔軟な検索が可能。",
                 "consumes": [
                     "application/json"
                 ],
@@ -224,34 +224,46 @@ const docTemplate = `{
                 "tags": [
                     "internal"
                 ],
-                "summary": "internal consent check endpoint",
+                "summary": "list or search consents",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Authorization Request ID",
-                        "name": "auth_request_id",
-                        "in": "query",
-                        "required": true
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Session ID",
-                        "name": "session_id",
-                        "in": "query",
-                        "required": true
+                        "description": "Application ID",
+                        "name": "application_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Scope",
+                        "name": "scope",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Free search parameter",
+                        "name": "hogehoge",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/router.ConsentGetResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/router.ConsentResponse"
+                            }
                         }
                     }
                 }
             },
             "post": {
-                "description": "内部用の認可エンドポイントです。同意したことを受け取ります。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。",
                 "consumes": [
                     "application/json"
                 ],
@@ -261,23 +273,57 @@ const docTemplate = `{
                 "tags": [
                     "internal"
                 ],
-                "summary": "internal consent endpoint",
+                "summary": "create consent",
                 "parameters": [
                     {
-                        "description": "Consent Request",
+                        "description": "Create Consent",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/router.ConsentPostRequest"
+                            "$ref": "#/definitions/router.ConsentCreateRequest"
                         }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/router.ConsentResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/consents/{id}": {
+            "delete": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "internal"
+                ],
+                "summary": "delete consent by id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Consent ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/router.ConsentPostResponse"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -525,37 +571,47 @@ const docTemplate = `{
                 }
             }
         },
-        "router.ConsentGetResponse": {
-            "type": "object",
-            "properties": {
-                "is_consented": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "router.ConsentPostRequest": {
+        "router.ConsentCreateRequest": {
             "type": "object",
             "required": [
-                "approve",
-                "auth_request_id",
-                "session_id"
+                "application_id",
+                "scope",
+                "user_id"
             ],
             "properties": {
-                "approve": {
-                    "type": "boolean"
-                },
-                "auth_request_id": {
+                "application_id": {
                     "type": "string"
                 },
-                "session_id": {
+                "scope": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
         },
-        "router.ConsentPostResponse": {
+        "router.ConsentResponse": {
             "type": "object",
             "properties": {
-                "auth_request_id": {
+                "application_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
@@ -636,6 +692,9 @@ const docTemplate = `{
         "router.UserInfoResponse": {
             "type": "object",
             "properties": {
+                "affiliation_period": {
+                    "type": "string"
+                },
                 "bio": {
                     "type": "string"
                 },

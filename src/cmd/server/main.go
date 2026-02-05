@@ -71,7 +71,9 @@ func main() {
 
 	// Internal routes
 	r.POST("/internal/authentication", router.AuthenticationPost)
-	r.POST("/internal/authorization", router.ConsentPost)
+	r.GET("/internal/consents", router.ConsentList)
+	r.POST("/internal/consents", router.ConsentCreate)
+	r.DELETE("/internal/consents/:id", router.ConsentDeleteByID)
 
 	// Start server
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
