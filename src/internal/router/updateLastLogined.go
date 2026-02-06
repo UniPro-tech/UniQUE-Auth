@@ -5,6 +5,7 @@ import (
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type UpdateLastLoginedRequest struct {
@@ -25,14 +26,22 @@ func UpdateLastLogined(c *gin.Context) {
 		return
 	}
 
-	session, err := query.Session.Where(query.Session.ID.Eq(req.SID), query.Session.DeletedAt.IsNull()).First()
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(500, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+
+	session, err := q.Session.Where(q.Session.ID.Eq(req.SID), q.Session.DeletedAt.IsNull()).First()
 	if err != nil || session == nil {
 		c.JSON(400, gin.H{"error": "invalid session id"})
 		return
 	}
 
 	session.LastLoginAt = time.Now()
-	if err := query.Session.Save(session); err != nil {
+	if err := q.Session.Save(session); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}

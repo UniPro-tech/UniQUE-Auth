@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type ConsentedGetRequest struct {
@@ -25,7 +26,15 @@ func ConsentedGet(c *gin.Context) {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	authReq, err := query.AuthorizationRequest.Where(query.AuthorizationRequest.ID.Eq(req.AuthorizationID)).First()
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(500, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+
+	authReq, err := q.AuthorizationRequest.Where(q.AuthorizationRequest.ID.Eq(req.AuthorizationID)).First()
 	if authReq == nil || !authReq.IsConsented {
 		c.JSON(400, gin.H{"error": "invalid auth_request_id"})
 		return

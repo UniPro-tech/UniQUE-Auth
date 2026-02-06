@@ -10,6 +10,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwe"
+	"gorm.io/gorm"
 )
 
 type TokenGetRequest struct {
@@ -63,8 +64,17 @@ func TokenPost(c *gin.Context) {
 }
 
 func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
+	// get DB + query instance
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(500, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+
 	// get authorization request
-	authReq, err := query.AuthorizationRequest.Where(query.AuthorizationRequest.ID.Eq(req.Code)).First()
+	authReq, err := q.AuthorizationRequest.Where(q.AuthorizationRequest.ID.Eq(req.Code)).First()
 	if err != nil || authReq == nil {
 		c.JSON(400, gin.H{"error": "invalid authorization code"})
 		return
@@ -76,12 +86,12 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
 	}
 
 	// generate tokens and respond
-	session, err := query.Session.Where(query.Session.ID.Eq(authReq.SessionID)).First()
+	session, err := q.Session.Where(q.Session.ID.Eq(authReq.SessionID)).First()
 	if err != nil || session == nil {
 		c.JSON(400, gin.H{"error": "invalid session"})
 		return
 	}
-	consent, err := query.Consent.Where(query.Consent.UserID.Eq(session.UserID), query.Consent.ApplicationID.Eq(authReq.ApplicationID)).First()
+	consent, err := q.Consent.Where(q.Consent.UserID.Eq(session.UserID), q.Consent.ApplicationID.Eq(authReq.ApplicationID)).First()
 	if err != nil || consent == nil {
 		c.JSON(400, gin.H{"error": "invalid consent"})
 		return
@@ -131,7 +141,15 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
 	}
 
 	// get tokenset by JTI from decrypted claims
-	tokenset, err := query.OauthToken.Where(query.OauthToken.RefreshTokenJti.Eq(claims.ID)).First()
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(500, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+
+	tokenset, err := q.OauthToken.Where(q.OauthToken.RefreshTokenJti.Eq(claims.ID)).First()
 
 	if err != nil || tokenset == nil {
 		c.JSON(400, gin.H{"error": "invalid refresh token"})
@@ -139,7 +157,7 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
 	}
 
 	// get consent
-	consent, err := query.Consent.Where(query.Consent.ID.Eq(tokenset.ConsentID)).First()
+	consent, err := q.Consent.Where(q.Consent.ID.Eq(tokenset.ConsentID)).First()
 	if err != nil || consent == nil {
 		c.JSON(400, gin.H{"error": "invalid consent"})
 		return
@@ -169,14 +187,30 @@ func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) {
 			c.JSON(400, gin.H{"error": "not valid authorization header"})
 			return
 		}
-		application, err := query.Application.Where(query.Application.ID.Eq(clientID), query.Application.ClientSecret.Eq(clientSecret)).Find()
+		dbAny := c.MustGet("db")
+		db, ok := dbAny.(*gorm.DB)
+		if !ok || db == nil {
+			c.JSON(500, gin.H{"error": "database not available"})
+			return
+		}
+		q := query.Use(db)
+
+		application, err := q.Application.Where(q.Application.ID.Eq(clientID), q.Application.ClientSecret.Eq(clientSecret)).Find()
 		if err != nil || application == nil {
 			c.JSON(400, gin.H{"error": "invalid client credentials"})
 			return
 		}
 	} else {
 		// if form body
-		application, err := query.Application.Where(query.Application.ID.Eq(req.ClientID), query.Application.ClientSecret.Eq(req.ClientSecret)).Find()
+		dbAny := c.MustGet("db")
+		db, ok := dbAny.(*gorm.DB)
+		if !ok || db == nil {
+			c.JSON(500, gin.H{"error": "database not available"})
+			return
+		}
+		q := query.Use(db)
+
+		application, err := q.Application.Where(q.Application.ID.Eq(req.ClientID), q.Application.ClientSecret.Eq(req.ClientSecret)).Find()
 		if err != nil || application == nil {
 			c.JSON(400, gin.H{"error": "invalid client credentials"})
 			return

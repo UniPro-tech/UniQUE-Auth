@@ -8,6 +8,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gen"
+	"gorm.io/gorm"
 )
 
 type ConsentCreateRequest struct {
@@ -48,8 +49,16 @@ func ConsentList(c *gin.Context) {
 		err     error
 	)
 
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(500, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+
 	if userID == "" && appID == "" && scope == "" {
-		results, err = query.Consent.Find()
+		results, err = q.Consent.Find()
 		if err != nil {
 			c.JSON(500, gin.H{"error": "internal server error"})
 			return
@@ -61,20 +70,20 @@ func ConsentList(c *gin.Context) {
 	// build conditions
 	conds := []gen.Condition{}
 	if userID != "" {
-		conds = append(conds, query.Consent.UserID.Eq(userID))
+		conds = append(conds, q.Consent.UserID.Eq(userID))
 	}
 	if appID != "" {
-		conds = append(conds, query.Consent.ApplicationID.Eq(appID))
+		conds = append(conds, q.Consent.ApplicationID.Eq(appID))
 	}
 	if scope != "" {
-		conds = append(conds, query.Consent.Scope.Eq(scope))
+		conds = append(conds, q.Consent.Scope.Eq(scope))
 	}
 
 	// perform query
 	if len(conds) > 0 {
-		results, err = query.Consent.Where(conds...).Find()
+		results, err = q.Consent.Where(conds...).Find()
 	} else {
-		results, err = query.Consent.Find()
+		results, err = q.Consent.Find()
 	}
 	if err != nil {
 		c.JSON(500, gin.H{"error": "internal server error"})
@@ -97,12 +106,19 @@ func ConsentCreate(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(500, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
 	newConsent := &model.Consent{
 		UserID:        req.UserID,
 		ApplicationID: req.ApplicationID,
 		Scope:         req.Scope,
 	}
-	if err := query.Consent.Create(newConsent); err != nil {
+	if err := q.Consent.Create(newConsent); err != nil {
 		c.JSON(500, gin.H{"error": "internal server error"})
 		return
 	}
@@ -123,7 +139,15 @@ func ConsentDeleteByID(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "id required"})
 		return
 	}
-	consent, err := query.Consent.Where(query.Consent.ID.Eq(id)).First()
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(500, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+
+	consent, err := q.Consent.Where(q.Consent.ID.Eq(id)).First()
 	if err != nil {
 		c.JSON(500, gin.H{"error": "internal server error"})
 		return

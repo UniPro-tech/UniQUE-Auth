@@ -4,6 +4,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type UserInfoResponse struct {
@@ -45,7 +46,15 @@ func UserInfoGet(c *gin.Context) {
 	}
 
 	// ユーザー情報の取得
-	user, err := query.User.Where(query.User.ID.Eq(userID), query.User.Status.Eq("active")).First()
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(500, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+
+	user, err := q.User.Where(q.User.ID.Eq(userID), q.User.Status.Eq("active")).First()
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
@@ -55,7 +64,7 @@ func UserInfoGet(c *gin.Context) {
 		return
 	}
 
-	profile, err := query.Profile.Where(query.Profile.UserID.Eq(userID)).First()
+	profile, err := q.Profile.Where(q.Profile.UserID.Eq(userID)).First()
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return

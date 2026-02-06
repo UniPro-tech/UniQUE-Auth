@@ -5,6 +5,7 @@ import (
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type SessionVerifyRequest struct {
@@ -32,7 +33,14 @@ func SessionVerifyGet(c *gin.Context) {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	session, err := query.Session.Where(query.Session.ID.Eq(req.JIT), query.Session.DeletedAt.IsNull(), query.Session.ExpiresAt.Gt(time.Now())).First()
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(500, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+	session, err := q.Session.Where(q.Session.ID.Eq(req.JIT), q.Session.DeletedAt.IsNull(), q.Session.ExpiresAt.Gt(time.Now())).First()
 	if err != nil {
 		c.JSON(200, SessionVerifyResponse{Valid: false})
 		return

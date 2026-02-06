@@ -7,6 +7,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type AuthorizationRequest struct {
@@ -44,14 +45,22 @@ func AuthorizationGet(c *gin.Context) {
 		return
 	}
 
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.Redirect(302, config.FrontendURL+"/authorization?error=internal_server_error")
+		return
+	}
+	q := query.Use(db)
+
 	// If client_id, redirect_uri, response_type, scope are valid, redirect to frontend
-	client, err := query.Application.Where(query.Application.ID.Eq(req.ClientID)).First()
+	client, err := q.Application.Where(q.Application.ID.Eq(req.ClientID)).First()
 	if err != nil || client == nil {
 		c.Redirect(302, config.FrontendURL+"/authorization?error=invalid_client")
 		return
 	}
 
-	redirectURI, err := query.RedirectURI.Where(query.RedirectURI.URI.Eq(req.RedirectURI), query.RedirectURI.ApplicationID.Eq(req.ClientID)).First()
+	redirectURI, err := q.RedirectURI.Where(q.RedirectURI.URI.Eq(req.RedirectURI), q.RedirectURI.ApplicationID.Eq(req.ClientID)).First()
 	if err != nil || redirectURI == nil {
 		c.Redirect(302, config.FrontendURL+"/authorization?error=invalid_redirect_uri")
 		return
@@ -79,7 +88,7 @@ func AuthorizationGet(c *gin.Context) {
 	}
 
 	// save the request parameters in the session or database as needed
-	err = query.AuthorizationRequest.Create(&model.AuthorizationRequest{
+	err = q.AuthorizationRequest.Create(&model.AuthorizationRequest{
 		ApplicationID:       req.ClientID,
 		RedirectURI:         req.RedirectURI,
 		ResponseType:        req.ResponseType,
@@ -97,10 +106,10 @@ func AuthorizationGet(c *gin.Context) {
 		return
 	}
 
-	createdAuthorizationRequest, err := query.AuthorizationRequest.Where(
-		query.AuthorizationRequest.ApplicationID.Eq(req.ClientID),
-		query.AuthorizationRequest.RedirectURI.Eq(req.RedirectURI),
-	).Order(query.AuthorizationRequest.CreatedAt.Desc()).First()
+	createdAuthorizationRequest, err := q.AuthorizationRequest.Where(
+		q.AuthorizationRequest.ApplicationID.Eq(req.ClientID),
+		q.AuthorizationRequest.RedirectURI.Eq(req.RedirectURI),
+	).Order(q.AuthorizationRequest.CreatedAt.Desc()).First()
 
 	if err != nil || createdAuthorizationRequest == nil {
 		c.Redirect(302, config.FrontendURL+"/authorization?error=internal_server_error")

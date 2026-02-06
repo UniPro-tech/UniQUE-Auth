@@ -8,6 +8,7 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type AuthenticationRequest struct {
@@ -39,10 +40,18 @@ func AuthenticationPost(c *gin.Context) {
 		return
 	}
 
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(500, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+
 	switch req.Type {
 	case "password":
 		// Handle password authentication
-		user, err := passwordAuthentication(req.Username, req.Password)
+		user, err := passwordAuthentication(q, req.Username, req.Password)
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
@@ -51,7 +60,7 @@ func AuthenticationPost(c *gin.Context) {
 			c.JSON(401, gin.H{"error": "Invalid username or password"})
 			return
 		}
-		err = query.Session.Create(&model.Session{
+		err = q.Session.Create(&model.Session{
 			UserID:      user.ID,
 			IPAddress:   req.IPAddress,
 			UserAgent:   req.UserAgent,
@@ -62,7 +71,7 @@ func AuthenticationPost(c *gin.Context) {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
-		session, err := query.Session.Where(query.Session.UserID.Eq(user.ID)).Order(query.Session.CreatedAt.Desc()).First()
+		session, err := q.Session.Where(q.Session.UserID.Eq(user.ID)).Order(q.Session.CreatedAt.Desc()).First()
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
@@ -93,8 +102,8 @@ func AuthenticationPost(c *gin.Context) {
 	}
 }
 
-func passwordAuthentication(username, password string) (*model.User, error) {
-	user, err := query.User.Where(query.User.CustomID.Eq(username)).First()
+func passwordAuthentication(q *query.Query, username, password string) (*model.User, error) {
+	user, err := q.User.Where(q.User.CustomID.Eq(username)).First()
 	if err != nil {
 		return nil, err
 	}

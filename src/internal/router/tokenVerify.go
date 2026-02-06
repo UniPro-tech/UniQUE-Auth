@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type TokenVerifyRequest struct {
@@ -29,7 +30,16 @@ func TokenVerifyGet(c *gin.Context) {
 		return
 	}
 
-	tokenset, err := query.OauthToken.Where(query.OauthToken.AccessTokenJti.Eq(req.jit), query.OauthToken.DeletedAt.IsNull()).First()
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(500, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+
+	tokenset, err := q.OauthToken.Where(q.OauthToken.AccessTokenJti.Eq(req.jit), q.OauthToken.DeletedAt.IsNull()).First()
+
 	if err != nil || tokenset == nil {
 		c.JSON(400, gin.H{"error": "invalid token"})
 		return
