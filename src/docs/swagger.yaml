@@ -84,9 +84,23 @@ definitions:
       use:
         type: string
     type: object
+  router.PasswordHashRequest:
+    properties:
+      password:
+        type: string
+    required:
+    - password
+    type: object
+  router.PasswordHashResponse:
+    properties:
+      password_hash:
+        type: string
+    type: object
   router.SessionVerifyResponse:
     properties:
       expires_at:
+        type: string
+      user_id:
         type: string
       valid:
         type: boolean
@@ -318,7 +332,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: 一覧取得およびクエリ条件による検索を行う。任意の検索パラメータ `hogehoge` を利用して柔軟な検索が可能。
+      description: 一覧取得およびクエリ条件による検索を行う。
       parameters:
       - description: User ID
         in: query
@@ -331,10 +345,6 @@ paths:
       - description: Scope
         in: query
         name: scope
-        type: string
-      - description: Free search parameter
-        in: query
-        name: hogehoge
         type: string
       produces:
       - application/json
@@ -388,6 +398,28 @@ paths:
               type: string
             type: object
       summary: delete consent by id
+      tags:
+      - internal
+  /internal/password_hash:
+    post:
+      consumes:
+      - application/json
+      description: パスワードのハッシュ（bcrypt）を生成する内部エンドポイント
+      parameters:
+      - description: Password to hash
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.PasswordHashRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.PasswordHashResponse'
+      summary: Generate password hash
       tags:
       - internal
   /internal/session_verify:

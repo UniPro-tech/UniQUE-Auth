@@ -21,8 +21,6 @@ type PasswordHashResponse struct {
 // @Produce json
 // @Param request body PasswordHashRequest true "Password to hash"
 // @Success 200 {object} PasswordHashResponse
-// @Failure 400 {object} gin.H
-// @Failure 500 {object} gin.H
 // @Router /internal/password_hash [post]
 func PasswordHashPost(c *gin.Context) {
 	req := PasswordHashRequest{}

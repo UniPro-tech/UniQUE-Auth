@@ -214,7 +214,7 @@ const docTemplate = `{
         },
         "/internal/consents": {
             "get": {
-                "description": "一覧取得およびクエリ条件による検索を行う。任意の検索パラメータ ` + "`" + `hogehoge` + "`" + ` を利用して柔軟な検索が可能。",
+                "description": "一覧取得およびクエリ条件による検索を行う。",
                 "consumes": [
                     "application/json"
                 ],
@@ -242,12 +242,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Scope",
                         "name": "scope",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Free search parameter",
-                        "name": "hogehoge",
                         "in": "query"
                     }
                 ],
@@ -324,6 +318,40 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/password_hash": {
+            "post": {
+                "description": "パスワードのハッシュ（bcrypt）を生成する内部エンドポイント",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "internal"
+                ],
+                "summary": "Generate password hash",
+                "parameters": [
+                    {
+                        "description": "Password to hash",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/router.PasswordHashRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.PasswordHashResponse"
                         }
                     }
                 }
@@ -650,10 +678,32 @@ const docTemplate = `{
                 }
             }
         },
+        "router.PasswordHashRequest": {
+            "type": "object",
+            "required": [
+                "password"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.PasswordHashResponse": {
+            "type": "object",
+            "properties": {
+                "password_hash": {
+                    "type": "string"
+                }
+            }
+        },
         "router.SessionVerifyResponse": {
             "type": "object",
             "properties": {
                 "expires_at": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 },
                 "valid": {
