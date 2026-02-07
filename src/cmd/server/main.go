@@ -74,6 +74,7 @@ func main() {
 	r.GET("/internal/consents", router.ConsentList)
 	r.POST("/internal/consents", router.ConsentCreate)
 	r.DELETE("/internal/consents/:id", router.ConsentDeleteByID)
+	r.POST("/internal/password_hash", router.PasswordHashPost)
 
 	// Start server
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
