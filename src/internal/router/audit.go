@@ -14,7 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func writeAuditLog(c *gin.Context, action, target, userID, applicationID, sessionID string, details map[string]interface{}) {
+func writeAuditLog(c *gin.Context, action, target string, userID, applicationID, sessionID *string, details map[string]interface{}) {
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
@@ -36,7 +36,7 @@ func writeAuditLog(c *gin.Context, action, target, userID, applicationID, sessio
 		Action:         normalizeAuditAction(action),
 		TargetResource: target,
 		Trusted:        false,
-		Details:        detailStr,
+		Details:        &detailStr,
 	}
 
 	if err := query.Use(db).AuditLog.Create(entry); err != nil {

@@ -249,7 +249,7 @@ func AuthorizationPost(c *gin.Context) {
 		return
 	}
 
-	writeAuditLog(c, "CONSENT", "authorization_requests/"+authReq.ID, userID, authReq.ApplicationID, sessionID, map[string]interface{}{
+	writeAuditLog(c, "CONSENT", "authorization_requests/"+authReq.ID, &userID, &authReq.ApplicationID, &sessionID, map[string]interface{}{
 		"method":     c.Request.Method,
 		"path":       c.Request.URL.Path,
 		"status":     http.StatusMovedPermanently,

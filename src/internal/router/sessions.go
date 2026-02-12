@@ -113,7 +113,7 @@ func SessionsDelete(c *gin.Context) {
 	if session != nil {
 		userID = session.UserID
 	}
-	writeAuditLog(c, "DELETE", "sessions/"+sid, userID, "", sid, map[string]interface{}{
+	writeAuditLog(c, "DELETE", "sessions/"+sid, &userID, nil, &sid, map[string]interface{}{
 		"method":     c.Request.Method,
 		"path":       c.Request.URL.Path,
 		"status":     http.StatusNoContent,

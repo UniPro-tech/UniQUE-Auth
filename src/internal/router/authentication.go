@@ -95,7 +95,7 @@ func AuthenticationPost(c *gin.Context) {
 		if userAgent == "" {
 			userAgent = c.Request.UserAgent()
 		}
-		writeAuditLog(c, "LOGIN", "sessions/"+session.ID, user.ID, "", session.ID, map[string]interface{}{
+		writeAuditLog(c, "LOGIN", "sessions/"+session.ID, &user.ID, nil, &session.ID, map[string]interface{}{
 			"method":     c.Request.Method,
 			"path":       c.Request.URL.Path,
 			"status":     c.Writer.Status(),

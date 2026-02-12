@@ -122,7 +122,7 @@ func ConsentCreate(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "internal server error"})
 		return
 	}
-	writeAuditLog(c, "CREATE", "consents/"+newConsent.ID, newConsent.UserID, newConsent.ApplicationID, "", map[string]interface{}{
+	writeAuditLog(c, "CREATE", "consents/"+newConsent.ID, &newConsent.UserID, &newConsent.ApplicationID, nil, map[string]interface{}{
 		"method":          c.Request.Method,
 		"path":            c.Request.URL.Path,
 		"status":          http.StatusCreated,
@@ -171,7 +171,7 @@ func ConsentDeleteByID(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "internal server error"})
 		return
 	}
-	writeAuditLog(c, "DELETE", "consents/"+id, consent.UserID, consent.ApplicationID, "", map[string]interface{}{
+	writeAuditLog(c, "DELETE", "consents/"+id, &consent.UserID, &consent.ApplicationID, nil, map[string]interface{}{
 		"method":          c.Request.Method,
 		"path":            c.Request.URL.Path,
 		"status":          http.StatusOK,
