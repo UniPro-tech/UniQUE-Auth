@@ -1,0 +1,283 @@
+package router
+
+import (
+	"crypto/subtle"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"log"
+	"strings"
+
+	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwe"
+	"gorm.io/gorm"
+)
+
+type TokenGetRequest struct {
+	GrantType    string `form:"grant_type" binding:"required,oneof=authorization_code refresh_token client_credentials"`
+	Code         string `form:"code"`
+	RedirectURI  string `form:"redirect_uri"`
+	ClientID     string `form:"client_id"`
+	ClientSecret string `form:"client_secret"`
+	RefreshToken string `form:"refresh_token"`
+}
+
+type TokenGetResponse struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	IDToken      string `json:"id_token,omitempty"`
+}
+
+// TokenPost godoc
+// @Summary      Token Endpoint
+// @Description  OAuth2 Token Endpoint
+// @Tags         oauth2
+// @Accept       application/x-www-form-urlencoded
+// @Produce      json
+// @Param        grant_type     formData  string  true   "Grant Type"  Enums(authorization_code, refresh_token, client_credentials)
+// @Param        code           formData  string  false  "Authorization Code"
+// @Param        redirect_uri   formData  string  false  "Redirect URI"
+// @Param        client_id      formData  string  false  "Client ID"
+// @Param        client_secret  formData  string  false  "Client Secret"
+// @Param        refresh_token  formData  string  false  "Refresh Token"
+// @Success      200  {object}  TokenGetResponse
+// @Failure      400  {object}  map[string]string
+// @Router       /token [post]
+func TokenPost(c *gin.Context) {
+	req := TokenGetRequest{}
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	switch req.GrantType {
+	case "authorization_code":
+		if ok := checkClientAuthentication(c, &req); !ok {
+			// 認証失敗時に処理を継続しない
+			return
+		}
+		handleAuthorizationCodeGrant(c, &req)
+	case "refresh_token":
+		handleRefreshTokenGrant(c, &req)
+	default:
+		c.JSON(400, gin.H{"error": "unsupported grant_type"})
+	}
+}
+
+func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
+	// get DB + query instance
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(500, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+
+	// get authorization request by authorization code
+	authReq, err := q.AuthorizationRequest.Where(q.AuthorizationRequest.Code.Eq(req.Code)).First()
+	if err != nil || authReq == nil {
+		c.JSON(400, gin.H{"error": "invalid authorization code"})
+		return
+	}
+
+	if authReq.RedirectURI != req.RedirectURI {
+		c.JSON(400, gin.H{"error": "redirect_uri does not match"})
+		return
+	}
+
+	// generate tokens and respond
+	if authReq.SessionID == nil || *authReq.SessionID == "" {
+		c.JSON(400, gin.H{"error": "invalid session"})
+		return
+	}
+
+	session, err := q.Session.Where(q.Session.ID.Eq(*authReq.SessionID)).First()
+	if err != nil || session == nil {
+		c.JSON(400, gin.H{"error": "invalid session"})
+		return
+	}
+	consent, err := q.Consent.Where(q.Consent.UserID.Eq(session.UserID), q.Consent.ApplicationID.Eq(authReq.ApplicationID)).First()
+	if err != nil || consent == nil {
+		c.JSON(400, gin.H{"error": "invalid consent"})
+		return
+	}
+	accessToken, idToken, refreshToken, err := util.GenerateTokens(db, *c.MustGet("config").(*config.Config), consent, authReq.Scope, derefPtr(authReq.Nonce))
+	if err != nil {
+		log.Printf("GenerateTokens error: %v", err)
+		c.JSON(400, gin.H{"error": "failed to generate tokens"})
+		return
+	}
+	c.JSON(200, TokenGetResponse{
+		AccessToken:  accessToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    3600,
+		RefreshToken: refreshToken,
+		IDToken:      idToken,
+	})
+}
+
+func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
+	config := *c.MustGet("config").(*config.Config)
+	// parse refresh token; 新しい形式では先頭に "<kid>:<compact-jwe>" を付与している
+	tokenRaw := req.RefreshToken
+	specifiedKid := ""
+	if idx := strings.Index(tokenRaw, ":"); idx > 0 {
+		maybe := tokenRaw[:idx]
+		// 簡易チェック: hex 長が期待値(64)なら kid とみなす
+		if len(maybe) == 64 {
+			specifiedKid = maybe
+			tokenRaw = tokenRaw[idx+1:]
+		}
+	}
+
+	jweObj, err := jwe.ParseEncrypted(tokenRaw)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid refresh token"})
+		return
+	}
+
+	var decryptedObj []byte
+	var decErr error
+	if specifiedKid != "" {
+		// 指定kidがある場合はその鍵のみで復号を試みる（タイミング攻撃緩和）
+		found := false
+		for _, kp := range config.KeyPairs {
+			kpKid := util.KidForPublicKey(kp.PublicKey)
+			if subtle.ConstantTimeCompare([]byte(kpKid), []byte(specifiedKid)) == 1 {
+				decryptedObj, decErr = jweObj.Decrypt(&kp.PrivateKey)
+				found = true
+				break
+			}
+		}
+		if !found || decErr != nil {
+			c.JSON(400, gin.H{"error": "invalid refresh token"})
+			return
+		}
+	} else {
+		// 従来トークン互換性のために全鍵で試行
+		for _, kp := range config.KeyPairs {
+			decryptedObj, decErr = jweObj.Decrypt(&kp.PrivateKey)
+			if decErr == nil {
+				break
+			}
+		}
+		if decErr != nil {
+			c.JSON(400, gin.H{"error": "invalid refresh token"})
+			return
+		}
+	}
+
+	// parse decrypted payload into refresh token claims to extract JTI
+	var claims util.RefreshTokenClaims
+	if err := json.Unmarshal(decryptedObj, &claims); err != nil {
+		c.JSON(400, gin.H{"error": "invalid refresh token"})
+		return
+	}
+
+	// get tokenset by JTI from decrypted claims
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(500, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+
+	tokenset, err := q.OauthToken.Where(q.OauthToken.RefreshTokenJti.Eq(claims.ID)).First()
+
+	if err != nil || tokenset == nil {
+		c.JSON(400, gin.H{"error": "invalid refresh token"})
+		return
+	}
+
+	// get consent
+	consent, err := q.Consent.Where(q.Consent.ID.Eq(tokenset.ConsentID)).First()
+	if err != nil || consent == nil {
+		c.JSON(400, gin.H{"error": "invalid consent"})
+		return
+	}
+
+	accessToken, idToken, refreshToken, err := util.GenerateTokens(db, config, consent, claims.Scope, "")
+	if err != nil {
+		log.Printf("GenerateTokens error (refresh): %v", err)
+		c.JSON(400, gin.H{"error": "failed to generate tokens"})
+		return
+	}
+
+	c.JSON(200, TokenGetResponse{
+		AccessToken:  accessToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    3600,
+		RefreshToken: refreshToken,
+		IDToken:      idToken,
+	})
+}
+
+func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) bool {
+	// check client_secret
+	if clientVerifyBasic := c.GetHeader("Authorization"); clientVerifyBasic != "" {
+		// if authorization header
+		clientID, clientSecret, err := parseBasicAuth(clientVerifyBasic)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "not valid authorization header"})
+			return false
+		}
+		dbAny := c.MustGet("db")
+		db, ok := dbAny.(*gorm.DB)
+		if !ok || db == nil {
+			c.JSON(500, gin.H{"error": "database not available"})
+			return false
+		}
+		q := query.Use(db)
+		// DB側で平文比較するのではなく、IDで取得してから定数時間比較を行う
+		application, err := q.Application.Where(q.Application.ID.Eq(clientID)).First()
+		if err != nil || application == nil {
+			c.JSON(400, gin.H{"error": "invalid client credentials"})
+			return false
+		}
+		// 定数時間比較
+		if subtle.ConstantTimeCompare([]byte(application.ClientSecret), []byte(clientSecret)) != 1 {
+			c.JSON(400, gin.H{"error": "invalid client credentials"})
+			return false
+		}
+	} else {
+		// if form body
+		dbAny := c.MustGet("db")
+		db, ok := dbAny.(*gorm.DB)
+		if !ok || db == nil {
+			c.JSON(500, gin.H{"error": "database not available"})
+			return false
+		}
+		q := query.Use(db)
+		application, err := q.Application.Where(q.Application.ID.Eq(req.ClientID)).First()
+		if err != nil || application == nil {
+			c.JSON(400, gin.H{"error": "invalid client credentials"})
+			return false
+		}
+		if subtle.ConstantTimeCompare([]byte(application.ClientSecret), []byte(req.ClientSecret)) != 1 {
+			c.JSON(400, gin.H{"error": "invalid client credentials"})
+			return false
+		}
+	}
+	return true
+}
+
+func parseBasicAuth(authHeader string) (string, string, error) {
+	base64Decoded, err := base64.StdEncoding.DecodeString(authHeader[len("Basic "):])
+	if err != nil {
+		return "", "", err
+	}
+	parts := string(base64Decoded)
+	for i := 0; i < len(parts); i++ {
+		if parts[i] == ':' {
+			return parts[:i], parts[i+1:], nil
+		}
+	}
+	return "", "", errors.New("invalid basic auth format")
+}

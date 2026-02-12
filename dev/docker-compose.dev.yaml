@@ -37,7 +37,7 @@ services:
       MYSQL_PASSWORD: NewPass123
       MYSQL_DATABASE: devdb
       MYSQL_TCP_PORT: 3306
-      MYSQL_ROOT_PASSWORD: R00tP@ssw0rd
+      MYSQL_ROOT_PASSWORD: rootpass123
     volumes:
       - ./db/data:/var/lib/mysql
       - ./db/conf.d/my.cnf:/etc/mysql/conf.d/my.cnf
@@ -55,7 +55,7 @@ services:
       - PMA_HOST=unique_db
       - PMA_PORT=3306
       - PMA_USER=root
-      - PMA_PASSWORD=R00tP@ssw0rd
+      - PMA_PASSWORD=rootpass123
     container_name: unique_phpmyadmin
     ports:
       - "3001:80"
