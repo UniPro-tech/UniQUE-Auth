@@ -26,7 +26,7 @@ type TokenVerifyResponse struct {
 func TokenVerifyGet(c *gin.Context) {
 	req := TokenVerifyRequest{}
 	if err := c.ShouldBind(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(400, gin.H{"error": "bad request"})
 		return
 	}
 

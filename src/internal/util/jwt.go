@@ -1,6 +1,7 @@
 package util
 
 import (
+	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
@@ -30,6 +31,20 @@ func kidForKey(cfg config.Config) string {
 	}
 	rsaPub := &cfg.KeyPairs[0].PublicKey
 	der, err := x509.MarshalPKIXPublicKey(rsaPub)
+	if err != nil {
+		return ""
+	}
+	thumb := sha256.Sum256(der)
+	return hex.EncodeToString(thumb[:])
+}
+
+// KidForPublicKey は与えられた RSA 公開鍵の PKIX DER シグネチャの SHA-256 サムを
+// hex エンコードした文字列を返す。JWKS の `kid` と互換性を持つ。
+func KidForPublicKey(pub rsa.PublicKey) string {
+	if pub.N == nil {
+		return ""
+	}
+	der, err := x509.MarshalPKIXPublicKey(&pub)
 	if err != nil {
 		return ""
 	}
@@ -144,6 +159,11 @@ func GenerateTokens(db *gorm.DB, config config.Config, consent *model.Consent, s
 	refreshTokenString, err := refreshTokenClaim.CompactSerialize()
 	if err != nil {
 		return "", "", "", err
+	}
+	// 後続での安全な復号のため、kid をプレフィックスとして付与する
+	kid := kidForKey(config)
+	if kid != "" {
+		refreshTokenString = kid + ":" + refreshTokenString
 	}
 	return accessTokenString, IDTokenString, refreshTokenString, nil
 }

@@ -1,9 +1,12 @@
 package router
 
 import (
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"log"
+	"strings"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
@@ -54,7 +57,10 @@ func TokenPost(c *gin.Context) {
 
 	switch req.GrantType {
 	case "authorization_code":
-		checkClientAuthentication(c, &req)
+		if ok := checkClientAuthentication(c, &req); !ok {
+			// 認証失敗時に処理を継続しない
+			return
+		}
 		handleAuthorizationCodeGrant(c, &req)
 	case "refresh_token":
 		handleRefreshTokenGrant(c, &req)
@@ -103,7 +109,8 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
 	}
 	accessToken, idToken, refreshToken, err := util.GenerateTokens(db, *c.MustGet("config").(*config.Config), consent, authReq.Scope, derefPtr(authReq.Nonce))
 	if err != nil {
-		c.JSON(400, gin.H{"error": "failed to generate tokens", "detail": err.Error()})
+		log.Printf("GenerateTokens error: %v", err)
+		c.JSON(400, gin.H{"error": "failed to generate tokens"})
 		return
 	}
 	c.JSON(200, TokenGetResponse{
@@ -117,31 +124,59 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
 
 func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
 	config := *c.MustGet("config").(*config.Config)
-	// perse refresh token
-	jweObj, err := jwe.ParseEncrypted(req.RefreshToken)
+	// parse refresh token; 新しい形式では先頭に "<kid>:<compact-jwe>" を付与している
+	tokenRaw := req.RefreshToken
+	specifiedKid := ""
+	if idx := strings.Index(tokenRaw, ":"); idx > 0 {
+		maybe := tokenRaw[:idx]
+		// 簡易チェック: hex 長が期待値(64)なら kid とみなす
+		if len(maybe) == 64 {
+			specifiedKid = maybe
+			tokenRaw = tokenRaw[idx+1:]
+		}
+	}
+
+	jweObj, err := jwe.ParseEncrypted(tokenRaw)
 	if err != nil {
 		c.JSON(400, gin.H{"error": "invalid refresh token"})
 		return
 	}
 
-	// Try to decrypt with each private key until one succeeds
 	var decryptedObj []byte
 	var decErr error
-	for _, kp := range config.KeyPairs {
-		decryptedObj, decErr = jweObj.Decrypt(&kp.PrivateKey)
-		if decErr == nil {
-			break
+	if specifiedKid != "" {
+		// 指定kidがある場合はその鍵のみで復号を試みる（タイミング攻撃緩和）
+		found := false
+		for _, kp := range config.KeyPairs {
+			kpKid := util.KidForPublicKey(kp.PublicKey)
+			if subtle.ConstantTimeCompare([]byte(kpKid), []byte(specifiedKid)) == 1 {
+				decryptedObj, decErr = jweObj.Decrypt(&kp.PrivateKey)
+				found = true
+				break
+			}
 		}
-	}
-	if decErr != nil {
-		c.JSON(400, gin.H{"error": "invalid refresh token"})
-		return
+		if !found || decErr != nil {
+			c.JSON(400, gin.H{"error": "invalid refresh token"})
+			return
+		}
+	} else {
+		// 従来トークン互換性のために全鍵で試行
+		for _, kp := range config.KeyPairs {
+			decryptedObj, decErr = jweObj.Decrypt(&kp.PrivateKey)
+			if decErr == nil {
+				break
+			}
+		}
+		if decErr != nil {
+			c.JSON(400, gin.H{"error": "invalid refresh token"})
+			return
+		}
 	}
 
 	// parse decrypted payload into refresh token claims to extract JTI
 	var claims util.RefreshTokenClaims
 	if err := json.Unmarshal(decryptedObj, &claims); err != nil {
-		c.JSON(400, gin.H{"error": "invalid refresh token payload"})
+		c.JSON(400, gin.H{"error": "invalid refresh token"})
 		return
 	}
 
@@ -170,7 +205,8 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
 
 	accessToken, idToken, refreshToken, err := util.GenerateTokens(db, config, consent, claims.Scope, "")
 	if err != nil {
-		c.JSON(400, gin.H{"error": "failed to generate tokens", "detail": err.Error()})
+		log.Printf("GenerateTokens error (refresh): %v", err)
+		c.JSON(400, gin.H{"error": "failed to generate tokens"})
 		return
 	}
 
@@ -183,27 +219,32 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
 	})
 }
 
-func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) {
+func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) bool {
 	// check client_secret
 	if clientVerifyBasic := c.GetHeader("Authorization"); clientVerifyBasic != "" {
 		// if authorization header
 		clientID, clientSecret, err := parseBasicAuth(clientVerifyBasic)
 		if err != nil {
 			c.JSON(400, gin.H{"error": "not valid authorization header"})
-			return
+			return false
 		}
 		dbAny := c.MustGet("db")
 		db, ok := dbAny.(*gorm.DB)
 		if !ok || db == nil {
 			c.JSON(500, gin.H{"error": "database not available"})
-			return
+			return false
 		}
 		q := query.Use(db)
-
-		application, err := q.Application.Where(q.Application.ID.Eq(clientID), q.Application.ClientSecret.Eq(clientSecret)).Find()
+		// DB側で平文比較するのではなく、IDで取得してから定数時間比較を行う
+		application, err := q.Application.Where(q.Application.ID.Eq(clientID)).First()
 		if err != nil || application == nil {
 			c.JSON(400, gin.H{"error": "invalid client credentials"})
-			return
+			return false
+		}
+		// 定数時間比較
+		if subtle.ConstantTimeCompare([]byte(application.ClientSecret), []byte(clientSecret)) != 1 {
+			c.JSON(400, gin.H{"error": "invalid client credentials"})
+			return false
 		}
 	} else {
 		// if form body
@@ -211,16 +252,20 @@ func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) {
 		db, ok := dbAny.(*gorm.DB)
 		if !ok || db == nil {
 			c.JSON(500, gin.H{"error": "database not available"})
-			return
+			return false
 		}
 		q := query.Use(db)
-
-		application, err := q.Application.Where(q.Application.ID.Eq(req.ClientID), q.Application.ClientSecret.Eq(req.ClientSecret)).Find()
+		application, err := q.Application.Where(q.Application.ID.Eq(req.ClientID)).First()
 		if err != nil || application == nil {
 			c.JSON(400, gin.H{"error": "invalid client credentials"})
-			return
+			return false
+		}
+		if subtle.ConstantTimeCompare([]byte(application.ClientSecret), []byte(req.ClientSecret)) != 1 {
+			c.JSON(400, gin.H{"error": "invalid client credentials"})
+			return false
 		}
 	}
+	return true
 }
 
 func parseBasicAuth(authHeader string) (string, string, error) {

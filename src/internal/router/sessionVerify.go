@@ -30,7 +30,7 @@ type SessionVerifyResponse struct {
 func SessionVerifyGet(c *gin.Context) {
 	req := SessionVerifyRequest{}
 	if err := c.ShouldBind(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(400, gin.H{"error": "bad request"})
 		return
 	}
 	dbAny := c.MustGet("db")

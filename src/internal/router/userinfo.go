@@ -50,7 +50,7 @@ func UserInfoGet(c *gin.Context) {
 	// アクセストークンの検証
 	_, userID, scope, err := util.ValidateAccessToken(accessToken, c)
 	if err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(400, gin.H{"error": "invalid access token"})
 		return
 	}
 
@@ -65,7 +65,7 @@ func UserInfoGet(c *gin.Context) {
 
 	user, err := q.User.Where(q.User.ID.Eq(userID), q.User.Status.Eq("active")).First()
 	if err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(400, gin.H{"error": "failed to fetch user"})
 		return
 	}
 	if user == nil {
@@ -75,7 +75,7 @@ func UserInfoGet(c *gin.Context) {
 
 	profile, err := q.Profile.Where(q.Profile.UserID.Eq(userID)).First()
 	if err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(400, gin.H{"error": "failed to fetch profile"})
 		return
 	}
 	if profile == nil {
