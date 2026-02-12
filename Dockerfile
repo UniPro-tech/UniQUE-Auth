@@ -5,6 +5,11 @@
 FROM golang:1.24.4-alpine AS builder
 RUN apk add --no-cache git ca-certificates
 WORKDIR /src
+
+# Cache Go modules
+COPY ./src/go.mod ./src/go.sum ./src/
+RUN cd src && go mod download
+
 COPY . .
 
 RUN export COMMIT=$(git rev-parse --short HEAD)
@@ -21,14 +26,11 @@ WORKDIR /app
 RUN mkdir -p /app/keys/private /app/keys/public /app/unique_api
 
 # Copy built server and scripts
-COPY --from=builder /app/server /app/server
-COPY --from=builder /src/scripts /app/unique_api/scripts
-
-# Copy any config or internal packages needed at runtime (optional)
-COPY --from=builder /src/src/internal /app/unique_api/internal
+COPY --from=builder /app/server /app/cmd/server
+COPY --from=builder /src/scripts /app/scripts
 
 EXPOSE 8080
 
-RUN chmod +x /app/unique_api/scripts/run.sh
+RUN chmod +x /app/scripts/run.sh
 
-CMD ["/app/unique_api/scripts/run.sh"]
+CMD ["/app/scripts/run.sh"]

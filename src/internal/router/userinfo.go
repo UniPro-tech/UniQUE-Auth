@@ -1,6 +1,8 @@
 package router
 
 import (
+	"strings"
+
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
@@ -36,6 +38,13 @@ func UserInfoGet(c *gin.Context) {
 	if accessToken == "" {
 		c.JSON(400, gin.H{"error": "missing access token"})
 		return
+	}
+	// Accept both "Bearer <token>" and raw token in header
+	if strings.HasPrefix(accessToken, "Bearer ") || strings.HasPrefix(accessToken, "bearer ") {
+		parts := strings.SplitN(accessToken, " ", 2)
+		if len(parts) == 2 {
+			accessToken = parts[1]
+		}
 	}
 
 	// アクセストークンの検証

@@ -64,10 +64,14 @@ func main() {
 	// Routes
 	r.GET("/health", healthCheck)
 	r.GET("/authorization", router.AuthorizationGet)
+	r.POST("/authorization", router.AuthorizationPost)
 	r.GET("/.well-known/openid-configuration", router.WellKnownOpenIDConfiguration)
 	r.GET("/.well-known/jwks.json", router.WellKnownJWKS)
 	r.POST("/token", router.TokenPost)
 	r.GET("/userinfo", router.UserInfoGet)
+	r.POST("/password-reset-request", router.PasswordResetRequestPost)
+	r.POST("/password-reset-confirm", router.PasswordResetConfirmPost)
+	r.GET("/consented", router.ConsentedGet)
 
 	// Internal routes
 	r.POST("/internal/authentication", router.AuthenticationPost)
@@ -75,6 +79,9 @@ func main() {
 	r.POST("/internal/consents", router.ConsentCreate)
 	r.DELETE("/internal/consents/:id", router.ConsentDeleteByID)
 	r.POST("/internal/password_hash", router.PasswordHashPost)
+	r.GET("/internal/sessions", router.SessionsGet)
+	r.DELETE("/internal/sessions/:sid", router.SessionsDelete)
+	r.GET("/internal/session_verify", router.SessionVerifyGet)
 
 	// Start server
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

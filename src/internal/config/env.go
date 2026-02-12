@@ -6,12 +6,13 @@ import (
 )
 
 type Config struct {
-	AppName     string
-	Version     string
-	FrontendURL string
-	IssuerURL   string
-	KeyPaths    KeyPathsConfig
-	KeyPairs    []KeyPairConfig
+	AppName       string
+	Version       string
+	FrontendURL   string
+	IssuerURL     string
+	MailServerURL string
+	KeyPaths      KeyPathsConfig
+	KeyPairs      []KeyPairConfig
 }
 
 type KeyPathsConfig struct {
@@ -65,6 +66,10 @@ func LoadConfig() *Config {
 	if IssuerURLEnv == "" {
 		IssuerURLEnv = IssuerURL
 	}
+	MailServerURLEnv := os.Getenv("CONFIG_MAIL_SERVER_URL")
+	if MailServerURLEnv == "" {
+		MailServerURLEnv = "http://mailserver:8080"
+	}
 	KeyPathEnv := KeyPathsConfig{
 		KeyType:         os.Getenv("CONFIG_KEY_TYPE"),
 		PublicKeysPath:  os.Getenv("CONFIG_KEY_PUBLIC_PATH"),
@@ -84,11 +89,12 @@ func LoadConfig() *Config {
 		panic(err)
 	}
 	return &Config{
-		AppName:     AppNameEnv,
-		FrontendURL: FrontendURLEnv,
-		IssuerURL:   IssuerURLEnv,
-		Version:     version,
-		KeyPaths:    KeyPathEnv,
-		KeyPairs:    keyPairs,
+		AppName:       AppNameEnv,
+		FrontendURL:   FrontendURLEnv,
+		IssuerURL:     IssuerURLEnv,
+		MailServerURL: MailServerURLEnv,
+		Version:       version,
+		KeyPaths:      KeyPathEnv,
+		KeyPairs:      keyPairs,
 	}
 }

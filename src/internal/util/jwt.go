@@ -1,6 +1,9 @@
 package util
 
 import (
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"math/rand"
@@ -13,10 +16,44 @@ import (
 	"github.com/golang-jwt/jwe"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/oklog/ulid"
+	"gorm.io/gorm"
 )
 
-func GenerateTokens(config config.Config, consent *model.Consent, scopes, nonce string) (accessToken, IDToken, RefreshToken string, err error) {
+// kidForKey computes the kid (SHA-256 thumbprint of PKIX DER) matching the JWKS endpoint.
+func kidForKey(cfg config.Config) string {
+	if len(cfg.KeyPairs) == 0 {
+		return ""
+	}
+	// ensure the keypair appears initialized
+	if cfg.KeyPairs[0].PublicKey.N == nil {
+		return ""
+	}
+	rsaPub := &cfg.KeyPairs[0].PublicKey
+	der, err := x509.MarshalPKIXPublicKey(rsaPub)
+	if err != nil {
+		return ""
+	}
+	thumb := sha256.Sum256(der)
+	return hex.EncodeToString(thumb[:])
+}
+
+func hasValidKeyPair(cfg config.Config) bool {
+	if len(cfg.KeyPairs) == 0 {
+		return false
+	}
+	kp := cfg.KeyPairs[0]
+	if kp.PublicKey.N == nil {
+		return false
+	}
+	if kp.PrivateKey.D == nil {
+		return false
+	}
+	return true
+}
+
+func GenerateTokens(db *gorm.DB, config config.Config, consent *model.Consent, scopes, nonce string) (accessToken, IDToken, RefreshToken string, err error) {
 	scopes = AlphabeticScopeString(scopes)
+	q := query.Use(db)
 
 	t := time.Now()
 	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
@@ -30,7 +67,10 @@ func GenerateTokens(config config.Config, consent *model.Consent, scopes, nonce 
 	IDTokenString := ""
 
 	if ContainsScope(scopes, "openid") {
-		IDTokenString, err = GenerateIDToken(IDTokenID, consent.UserID, consent.ApplicationID, nonce, scopes, config)
+		if !hasValidKeyPair(config) {
+			return "", "", "", errors.New("no valid keypair configured")
+		}
+		IDTokenString, err = GenerateIDToken(q, IDTokenID, consent.UserID, consent.ApplicationID, nonce, scopes, config)
 		if err != nil {
 			return "", "", "", err
 		}
@@ -38,7 +78,7 @@ func GenerateTokens(config config.Config, consent *model.Consent, scopes, nonce 
 		IDTokenID = ""
 	}
 
-	err = query.OauthToken.Create(&model.OauthToken{
+	err = q.OauthToken.Create(&model.OauthToken{
 		ConsentID:       consent.ID,
 		AccessTokenJti:  accessTokenID,
 		RefreshTokenJti: refreshTokenID,
@@ -63,7 +103,11 @@ func GenerateTokens(config config.Config, consent *model.Consent, scopes, nonce 
 		},
 		Scope: scopes,
 	})
-	accessTokenString, err := accessTokenClaims.SignedString(config.KeyPairs[0].PrivateKey)
+	accessTokenClaims.Header["kid"] = kidForKey(config)
+	if !hasValidKeyPair(config) {
+		return "", "", "", errors.New("no valid keypair configured")
+	}
+	accessTokenString, err := accessTokenClaims.SignedString(&config.KeyPairs[0].PrivateKey)
 	if err != nil {
 		return "", "", "", err
 	}
@@ -88,7 +132,10 @@ func GenerateTokens(config config.Config, consent *model.Consent, scopes, nonce 
 	}
 
 	// create JWE with new signature: (alg, key, method, plaintext)
-	refreshTokenClaim, err := jwe.NewJWE(jwe.KeyAlgorithmRSAOAEP, config.KeyPairs[0].PublicKey, jwe.EncryptionTypeA256GCM, plaintext)
+	if !hasValidKeyPair(config) {
+		return "", "", "", errors.New("no valid keypair configured")
+	}
+	refreshTokenClaim, err := jwe.NewJWE(jwe.KeyAlgorithmRSAOAEP, &config.KeyPairs[0].PublicKey, jwe.EncryptionTypeA256GCM, plaintext)
 	if err != nil {
 		return "", "", "", err
 	}
@@ -124,15 +171,15 @@ type RefreshTokenClaims struct {
 	Scope string `json:"scope,omitempty"`
 }
 
-func GenerateIDToken(jti, userID, clientID, nonce, scopes string, config config.Config) (string, error) {
-	user, err := query.User.Where(query.User.ID.Eq(userID)).First()
+func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string, config config.Config) (string, error) {
+	user, err := q.User.Where(q.User.ID.Eq(userID)).First()
 	if err != nil {
 		return "", err
 	}
 	if user == nil {
 		return "", errors.New("user not found")
 	}
-	profile, err := query.Profile.Where(query.Profile.UserID.Eq(userID)).First()
+	profile, err := q.Profile.Where(q.Profile.UserID.Eq(userID)).First()
 	if err != nil {
 		return "", err
 	}
@@ -177,12 +224,16 @@ func GenerateIDToken(jti, userID, clientID, nonce, scopes string, config config.
 		}(),
 		UpdatedAt: profile.UpdatedAt.Unix(),
 	})
-	IDTokenString, err := IDTokenClaims.SignedString(config.KeyPairs[0].PrivateKey)
+	IDTokenClaims.Header["kid"] = kidForKey(config)
+	if !hasValidKeyPair(config) {
+		return "", errors.New("no valid keypair configured")
+	}
+	IDTokenString, err := IDTokenClaims.SignedString(&config.KeyPairs[0].PrivateKey)
 	return IDTokenString, err
 }
 
 func ValidateAccessToken(tokenString string, c *gin.Context) (jit, sub, scope string, err error) {
-	config := c.MustGet("config").(config.Config)
+	config := *c.MustGet("config").(*config.Config)
 
 	// Parse and validate token
 	token, err := jwt.ParseWithClaims(tokenString, &AccessTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
@@ -191,6 +242,9 @@ func ValidateAccessToken(tokenString string, c *gin.Context) (jit, sub, scope st
 			return nil, errors.New("unexpected signing method")
 		}
 		// Return the public key for verification
+		if !hasValidKeyPair(config) {
+			return nil, errors.New("no valid keypair configured")
+		}
 		return &config.KeyPairs[0].PublicKey, nil
 	})
 	if err != nil {
@@ -214,9 +268,10 @@ func ValidateAccessToken(tokenString string, c *gin.Context) (jit, sub, scope st
 
 type SessionTokenClaims struct {
 	jwt.RegisteredClaims
+	UserID string `json:"user_id"`
 }
 
-func GenerateSessionJWT(sessionID string, config config.Config) (string, error) {
+func GenerateSessionJWT(sessionID, userID string, config config.Config) (string, error) {
 	// Generate Session JWT
 	sessionTokenClaims := jwt.NewWithClaims(jwt.SigningMethodRS256, SessionTokenClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -225,8 +280,13 @@ func GenerateSessionJWT(sessionID string, config config.Config) (string, error) 
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 		},
+		UserID: userID,
 	})
-	sessionTokenString, err := sessionTokenClaims.SignedString(config.KeyPairs[0].PrivateKey)
+	sessionTokenClaims.Header["kid"] = kidForKey(config)
+	if !hasValidKeyPair(config) {
+		return "", errors.New("no valid keypair configured")
+	}
+	sessionTokenString, err := sessionTokenClaims.SignedString(&config.KeyPairs[0].PrivateKey)
 	if err != nil {
 		return "", err
 	}

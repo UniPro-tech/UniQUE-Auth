@@ -6,4 +6,4 @@ if [ ! -f /app/keys/private/rsa_private.pem ] || [ ! -f /app/keys/public/rsa_pub
     chmod 600 /app/keys/private/rsa_private.pem && chmod 644 /app/keys/public/rsa_public.pem; \
   fi
 
-/app/server
+/app/cmd/server

@@ -47,14 +47,14 @@ func ConsentedGet(c *gin.Context) {
 	// Generate authorization code or token based on response_type
 	switch authReq.ResponseType {
 	case "code":
-		if authReq.Code == "" {
+		if authReq.Code == nil || *authReq.Code == "" {
 			c.JSON(400, gin.H{"error": "not check consented"})
 			return
 		}
 		// Redirect to client's redirect_uri with authorization code and state
-		redirectURL := authReq.RedirectURI + "?code=" + authReq.Code
-		if authReq.State != "" {
-			redirectURL += "&state=" + authReq.State
+		redirectURL := authReq.RedirectURI + "?code=" + *authReq.Code
+		if authReq.State != nil && *authReq.State != "" {
+			redirectURL += "&state=" + *authReq.State
 		}
 		c.Redirect(301, redirectURL)
 		return

@@ -122,6 +122,16 @@ func ConsentCreate(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "internal server error"})
 		return
 	}
+	writeAuditLog(c, "CREATE", "consents/"+newConsent.ID, newConsent.UserID, newConsent.ApplicationID, "", map[string]interface{}{
+		"method":          c.Request.Method,
+		"path":            c.Request.URL.Path,
+		"status":          http.StatusCreated,
+		"ip":              c.ClientIP(),
+		"user_agent":      c.Request.UserAgent(),
+		"consent_user_id": newConsent.UserID,
+		"application_id":  newConsent.ApplicationID,
+		"scope":           newConsent.Scope,
+	})
 	c.JSON(http.StatusCreated, newConsent)
 }
 
@@ -161,5 +171,15 @@ func ConsentDeleteByID(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "internal server error"})
 		return
 	}
+	writeAuditLog(c, "DELETE", "consents/"+id, consent.UserID, consent.ApplicationID, "", map[string]interface{}{
+		"method":          c.Request.Method,
+		"path":            c.Request.URL.Path,
+		"status":          http.StatusOK,
+		"ip":              c.ClientIP(),
+		"user_agent":      c.Request.UserAgent(),
+		"consent_user_id": consent.UserID,
+		"application_id":  consent.ApplicationID,
+		"scope":           consent.Scope,
+	})
 	c.JSON(200, gin.H{"message": "deleted"})
 }

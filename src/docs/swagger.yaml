@@ -96,6 +96,52 @@ definitions:
       password_hash:
         type: string
     type: object
+  router.PasswordResetConfirmRequest:
+    properties:
+      code:
+        type: string
+      password:
+        type: string
+    required:
+    - code
+    - password
+    type: object
+  router.PasswordResetConfirmResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  router.PasswordResetRequestRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  router.PasswordResetRequestResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  router.SessionResponse:
+    properties:
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: string
+      ip_address:
+        type: string
+      last_login_at:
+        type: string
+      updated_at:
+        type: string
+      user_agent:
+        type: string
+      user_id:
+        type: string
+    type: object
   router.SessionVerifyResponse:
     properties:
       expires_at:
@@ -441,6 +487,60 @@ paths:
       summary: session verify endpoint
       tags:
       - internal
+  /internal/sessions:
+    get:
+      description: '内部用: 指定ユーザーのセッション一覧を取得する。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。'
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/router.SessionResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get sessions for a user
+      tags:
+      - internal
+  /internal/sessions/:sid:
+    delete:
+      description: '内部用: 指定ユーザーのセッションを削除（ソフトデリート）する。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。'
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete sessions for a user
+      tags:
+      - internal
   /internal/token_verify:
     get:
       consumes:
@@ -477,6 +577,82 @@ paths:
       summary: Update Last Logined
       tags:
       - internal
+  /password-reset-confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirm password reset by providing the verification code and new
+        password.
+      parameters:
+      - description: Password Reset Confirmation
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.PasswordResetConfirmRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.PasswordResetConfirmResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Confirm password reset
+      tags:
+      - authentication
+  /password-reset-request:
+    post:
+      consumes:
+      - application/json
+      description: Request password reset by providing external email. This sends
+        a password reset email with a code.
+      parameters:
+      - description: Password Reset Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.PasswordResetRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.PasswordResetRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Request password reset
+      tags:
+      - authentication
   /token:
     post:
       consumes:

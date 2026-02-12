@@ -33,6 +33,7 @@ func newEmailVerificationCode(db *gorm.DB, opts ...gen.DOOption) emailVerificati
 	_emailVerificationCode.Code = field.NewString(tableName, "code")
 	_emailVerificationCode.ExpiresAt = field.NewTime(tableName, "expires_at")
 	_emailVerificationCode.RequestType = field.NewString(tableName, "request_type")
+	_emailVerificationCode.NewEmail = field.NewString(tableName, "new_email")
 	_emailVerificationCode.CreatedAt = field.NewTime(tableName, "created_at")
 
 	_emailVerificationCode.fillFieldMap()
@@ -50,6 +51,7 @@ type emailVerificationCode struct {
 	Code        field.String
 	ExpiresAt   field.Time
 	RequestType field.String
+	NewEmail    field.String
 	CreatedAt   field.Time
 
 	fieldMap map[string]field.Expr
@@ -72,6 +74,7 @@ func (e *emailVerificationCode) updateTableName(table string) *emailVerification
 	e.Code = field.NewString(table, "code")
 	e.ExpiresAt = field.NewTime(table, "expires_at")
 	e.RequestType = field.NewString(table, "request_type")
+	e.NewEmail = field.NewString(table, "new_email")
 	e.CreatedAt = field.NewTime(table, "created_at")
 
 	e.fillFieldMap()
@@ -89,12 +92,13 @@ func (e *emailVerificationCode) GetFieldByName(fieldName string) (field.OrderExp
 }
 
 func (e *emailVerificationCode) fillFieldMap() {
-	e.fieldMap = make(map[string]field.Expr, 6)
+	e.fieldMap = make(map[string]field.Expr, 7)
 	e.fieldMap["id"] = e.ID
 	e.fieldMap["user_id"] = e.UserID
 	e.fieldMap["code"] = e.Code
 	e.fieldMap["expires_at"] = e.ExpiresAt
 	e.fieldMap["request_type"] = e.RequestType
+	e.fieldMap["new_email"] = e.NewEmail
 	e.fieldMap["created_at"] = e.CreatedAt
 }
 

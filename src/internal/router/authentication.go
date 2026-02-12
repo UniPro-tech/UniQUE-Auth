@@ -81,11 +81,29 @@ func AuthenticationPost(c *gin.Context) {
 			return
 		}
 		// Return session ID as a token
-		sessionJWT, err := util.GenerateSessionJWT(session.ID, c.MustGet("config").(config.Config))
+		sessionJWT, err := util.GenerateSessionJWT(session.ID, user.ID, *c.MustGet("config").(*config.Config))
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
+
+		ip := req.IPAddress
+		if ip == "" {
+			ip = c.ClientIP()
+		}
+		userAgent := req.UserAgent
+		if userAgent == "" {
+			userAgent = c.Request.UserAgent()
+		}
+		writeAuditLog(c, "LOGIN", "sessions/"+session.ID, user.ID, "", session.ID, map[string]interface{}{
+			"method":     c.Request.Method,
+			"path":       c.Request.URL.Path,
+			"status":     c.Writer.Status(),
+			"ip":         ip,
+			"user_agent": userAgent,
+			"auth_type":  req.Type,
+		})
+
 		c.JSON(200, AuthenticationResponse{
 			SessionJWT: sessionJWT,
 		})

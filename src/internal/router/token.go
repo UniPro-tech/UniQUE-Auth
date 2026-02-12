@@ -73,8 +73,8 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
 	}
 	q := query.Use(db)
 
-	// get authorization request
-	authReq, err := q.AuthorizationRequest.Where(q.AuthorizationRequest.ID.Eq(req.Code)).First()
+	// get authorization request by authorization code
+	authReq, err := q.AuthorizationRequest.Where(q.AuthorizationRequest.Code.Eq(req.Code)).First()
 	if err != nil || authReq == nil {
 		c.JSON(400, gin.H{"error": "invalid authorization code"})
 		return
@@ -86,7 +86,12 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
 	}
 
 	// generate tokens and respond
-	session, err := q.Session.Where(q.Session.ID.Eq(authReq.SessionID)).First()
+	if authReq.SessionID == nil || *authReq.SessionID == "" {
+		c.JSON(400, gin.H{"error": "invalid session"})
+		return
+	}
+
+	session, err := q.Session.Where(q.Session.ID.Eq(*authReq.SessionID)).First()
 	if err != nil || session == nil {
 		c.JSON(400, gin.H{"error": "invalid session"})
 		return
@@ -96,9 +101,9 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
 		c.JSON(400, gin.H{"error": "invalid consent"})
 		return
 	}
-	accessToken, refreshToken, idToken, err := util.GenerateTokens(c.MustGet("config").(config.Config), consent, authReq.Scope, authReq.Nonce)
+	accessToken, idToken, refreshToken, err := util.GenerateTokens(db, *c.MustGet("config").(*config.Config), consent, authReq.Scope, derefPtr(authReq.Nonce))
 	if err != nil {
-		c.JSON(400, gin.H{"error": "failed to generate tokens"})
+		c.JSON(400, gin.H{"error": "failed to generate tokens", "detail": err.Error()})
 		return
 	}
 	c.JSON(200, TokenGetResponse{
@@ -111,7 +116,7 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
 }
 
 func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
-	config := c.MustGet("config").(config.Config)
+	config := *c.MustGet("config").(*config.Config)
 	// perse refresh token
 	jweObj, err := jwe.ParseEncrypted(req.RefreshToken)
 	if err != nil {
@@ -163,9 +168,9 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
 		return
 	}
 
-	accessToken, refreshToken, idToken, err := util.GenerateTokens(config, consent, claims.Scope, "")
+	accessToken, idToken, refreshToken, err := util.GenerateTokens(db, config, consent, claims.Scope, "")
 	if err != nil {
-		c.JSON(400, gin.H{"error": "failed to generate tokens"})
+		c.JSON(400, gin.H{"error": "failed to generate tokens", "detail": err.Error()})
 		return
 	}
 
