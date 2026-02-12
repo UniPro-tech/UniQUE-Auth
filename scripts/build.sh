@@ -12,11 +12,7 @@ swag i -g cmd/server/main.go
 
 # if --dev flag is provided, set gin to debug mode
 if [ "$1" = "--dev" ]; then
-  if [ ! -f ../keys/private/rsa_private.pem ] || [ ! -f ../keys/public/rsa_public.pem ]; then \
-    openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out ../keys/private/rsa_private.pem && \
-    openssl rsa -pubout -in ../keys/private/rsa_private.pem -out ../keys/public/rsa_public.pem && \
-    chmod 600 ../keys/private/rsa_private.pem && chmod 644 ../keys/public/rsa_public.pem; \
-  fi
+  ./scripts/keys.sh
   export DB_DSN="root:rootpass123@tcp(localhost:3306)/devdb?parseTime=true"
   export GIN_MODE=debug
   go run -ldflags "\
