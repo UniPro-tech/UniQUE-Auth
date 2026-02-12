@@ -22,8 +22,8 @@ func VerifyPassword(password, hash string) (bool, error) {
 	if err == nil {
 		return true, nil
 	}
-	// bcrypt mismatch: try legacy SHA256 hex(password)
-	if err == bcrypt.ErrMismatchedHashAndPassword {
+	// bcrypt malformed hash: try legacy SHA256 hex(password)
+	if _, ok := err.(bcrypt.InvalidHashPrefixError); ok {
 		sum := sha256.Sum256([]byte(password))
 		if hex.EncodeToString(sum[:]) == hash {
 			return true, nil
