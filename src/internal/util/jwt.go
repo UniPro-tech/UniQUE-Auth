@@ -252,22 +252,27 @@ func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string
 	return IDTokenString, err
 }
 
+// ValidateAccessToken は与えられたアクセストークン文字列を検証し、
+// 成功した場合はトークンの JTI、サブジェクト（ユーザID）、スコープを返す。
+// - tokenString: 検証する JWT アクセストークン文字列
+// - c: Gin コンテキスト（中に設定された `config` と `db` を使用）
+// 戻り値は順に (jti, sub, scope, err) で、検証失敗時は err に値が入る。
 func ValidateAccessToken(tokenString string, c *gin.Context) (jti, sub, scope string, err error) {
 	config := *c.MustGet("config").(*config.Config)
 	db := c.MustGet("db").(*gorm.DB)
 	q := query.Use(db)
 
-	// Parse and validate token
+	// トークンをパースして署名とクレームを検証する
 	token, err := jwt.ParseWithClaims(tokenString, &AccessTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
-		// token may be nil if parsing failed
+		// パースに失敗すると token が nil の可能性があるためチェックする
 		if token == nil {
 			return nil, errors.New("invalid token")
 		}
-		// Verify the signing method
+		// 署名アルゴリズムが RSA 系であることを期待する
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
-		// Return the public key for verification
+		// 公開鍵が設定されていることを確認して返す
 		if !hasValidKeyPair(config) {
 			return nil, errors.New("no valid keypair configured")
 		}
@@ -277,8 +282,9 @@ func ValidateAccessToken(tokenString string, c *gin.Context) (jti, sub, scope st
 		return "", "", "", err
 	}
 
-	// Validate claims
+	// クレームの型を確認して有効性を検査する
 	if claims, ok := token.Claims.(*AccessTokenClaims); ok && token.Valid {
+		// DB 側でトークン ID (JTI) が無効化されていないか確認する
 		tokenSet, err := q.OauthToken.Where(query.OauthToken.AccessTokenJti.Eq(claims.ID), query.OauthToken.DeletedAt.IsNull()).First()
 		if err != nil {
 			return "", "", "", err
