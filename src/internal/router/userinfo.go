@@ -10,17 +10,18 @@ import (
 )
 
 type UserInfoResponse struct {
-	Sub               string `json:"sub"`
-	Name              string `json:"name,omitempty"`
-	Bio               string `json:"bio,omitempty"`
-	PreferredUsername string `json:"preferred_username,omitempty"`
-	Email             string `json:"email,omitempty"`
-	EmailVerified     bool   `json:"email_verified,omitempty"`
-	Birthdate         string `json:"birthdate,omitempty"`
-	Website           string `json:"website,omitempty"`
-	Twitter           string `json:"twitter,omitempty"`
-	AffiliationPeriod string `json:"affiliation_period,omitempty"`
-	UpdatedAt         int64  `json:"updated_at,omitempty"`
+	Sub               string   `json:"sub"`
+	Name              string   `json:"name,omitempty"`
+	Bio               string   `json:"bio,omitempty"`
+	PreferredUsername string   `json:"preferred_username,omitempty"`
+	Email             string   `json:"email,omitempty"`
+	EmailVerified     bool     `json:"email_verified,omitempty"`
+	Birthdate         string   `json:"birthdate,omitempty"`
+	Website           string   `json:"website,omitempty"`
+	Twitter           string   `json:"twitter,omitempty"`
+	AffiliationPeriod string   `json:"affiliation_period,omitempty"`
+	Roles             []string `json:"roles,omitempty"`
+	UpdatedAt         int64    `json:"updated_at,omitempty"`
 }
 
 // UserInfoGet godoc
@@ -83,6 +84,20 @@ func UserInfoGet(c *gin.Context) {
 		return
 	}
 
+	rolesBinding, err := q.UserRole.Where(q.UserRole.UserID.Eq(userID)).Find()
+	if err != nil {
+		c.JSON(400, gin.H{"error": "failed to fetch user roles"})
+		return
+	}
+	rolesCusomIDs := make([]string, 0, len(rolesBinding))
+	for _, roleBinding := range rolesBinding {
+		role, err := q.Role.Where(q.Role.ID.Eq(roleBinding.RoleID)).First()
+		if err != nil || role == nil {
+			continue
+		}
+		rolesCusomIDs = append(rolesCusomIDs, role.CustomID)
+	}
+
 	c.JSON(200, UserInfoResponse{
 		Sub:               user.ID,
 		Name:              profile.DisplayName,
@@ -119,6 +134,7 @@ func UserInfoGet(c *gin.Context) {
 			return ""
 		}(),
 		AffiliationPeriod: user.AffiliationPeriod,
+		Roles:             rolesCusomIDs,
 		UpdatedAt:         profile.UpdatedAt.Unix(),
 	})
 }
