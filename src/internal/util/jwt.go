@@ -7,7 +7,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"log"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
@@ -259,8 +261,42 @@ func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string
 // 戻り値は順に (jti, sub, scope, err) で、検証失敗時は err に値が入る。
 func ValidateAccessToken(tokenString string, c *gin.Context) (jti, sub, scope string, err error) {
 	config := *c.MustGet("config").(*config.Config)
-	db := c.MustGet("db").(*gorm.DB)
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		return "", "", "", errors.New("database not available")
+	}
 	q := query.Use(db)
+
+	// 前後の空白を除去
+	tokenString = strings.TrimSpace(tokenString)
+
+	// もしBarerトークン形式であれば "Bearer " 部分を取り除く
+	if strings.HasPrefix(strings.ToLower(tokenString), "bearer ") {
+		tokenString = tokenString[7:]
+	}
+
+	// クライアントが誤ってリフレッシュトークン（kid:... の形式）や
+	// その他のプレフィックス付きトークンを送ってきた場合に、
+	// ライブラリの生のデコードエラーになるのを避け、わかりやすい
+	// エラーメッセージを返す。
+	if strings.Contains(tokenString, ":") {
+		parts := strings.SplitN(tokenString, ":", 2)
+		if len(parts[0]) >= 32 && len(parts[0]) <= 128 {
+			// 先頭部分が16進文字列かどうかを簡易確認
+			if _, hexErr := hex.DecodeString(parts[0]); hexErr == nil {
+				return "", "", "", errors.New("token appears to be a refresh token or contains a kid prefix; expected access token")
+			}
+		}
+	}
+
+	// JWT (JWS) は compact serialization で header.payload.signature の
+	// 3 つのパート（ドットが2つ）を持つことを期待する。
+	if strings.Count(tokenString, ".") != 2 {
+		return "", "", "", errors.New("invalid token format: expected JWS compact serialization")
+	}
+
+	log.Println("Validating access token:", tokenString)
 
 	// トークンをパースして署名とクレームを検証する
 	token, err := jwt.ParseWithClaims(tokenString, &AccessTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
@@ -285,7 +321,7 @@ func ValidateAccessToken(tokenString string, c *gin.Context) (jti, sub, scope st
 	// クレームの型を確認して有効性を検査する
 	if claims, ok := token.Claims.(*AccessTokenClaims); ok && token.Valid {
 		// DB 側でトークン ID (JTI) が無効化されていないか確認する
-		tokenSet, err := q.OauthToken.Where(query.OauthToken.AccessTokenJti.Eq(claims.ID), query.OauthToken.DeletedAt.IsNull()).First()
+		tokenSet, err := q.OauthToken.Where(q.OauthToken.AccessTokenJti.Eq(claims.ID), q.OauthToken.DeletedAt.IsNull()).First()
 		if err != nil {
 			return "", "", "", err
 		}
