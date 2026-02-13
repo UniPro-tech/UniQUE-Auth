@@ -51,6 +51,8 @@ func AuthorizationGet(c *gin.Context) {
 		return
 	}
 
+	contextConfig := c.MustGet("config").(*config.Config)
+
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
 	if !ok || db == nil {
@@ -62,19 +64,19 @@ func AuthorizationGet(c *gin.Context) {
 	// If client_id, redirect_uri, response_type, scope are valid, redirect to frontend
 	client, err := q.Application.Where(q.Application.ID.Eq(req.ClientID)).First()
 	if err != nil || client == nil {
-		c.Redirect(302, config.FrontendURL+"/authorization?error=invalid_client")
+		c.Redirect(302, contextConfig.FrontendURL+"/authorization?error=invalid_client")
 		return
 	}
 
 	redirectURI, err := q.RedirectURI.Where(q.RedirectURI.URI.Eq(req.RedirectURI), q.RedirectURI.ApplicationID.Eq(req.ClientID)).First()
 	if err != nil || redirectURI == nil {
-		c.Redirect(302, config.FrontendURL+"/authorization?error=invalid_redirect_uri")
+		c.Redirect(302, contextConfig.FrontendURL+"/authorization?error=invalid_redirect_uri")
 		return
 	}
 
 	// Only "code" response type is supported for now
 	if req.ResponseType != "code" {
-		c.Redirect(302, config.FrontendURL+"/authorization?error=unsupported_response_type")
+		c.Redirect(302, contextConfig.FrontendURL+"/authorization?error=unsupported_response_type")
 		return
 	}
 
@@ -89,7 +91,7 @@ func AuthorizationGet(c *gin.Context) {
 	}
 
 	if len(requestedScopes) > 0 {
-		c.Redirect(302, config.FrontendURL+"/authorization?error=invalid_scope")
+		c.Redirect(302, contextConfig.FrontendURL+"/authorization?error=invalid_scope")
 		return
 	}
 
@@ -108,7 +110,7 @@ func AuthorizationGet(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.Redirect(302, config.FrontendURL+"/authorization?error=internal_server_error")
+		c.Redirect(302, contextConfig.FrontendURL+"/authorization?error=internal_server_error")
 		return
 	}
 
@@ -118,12 +120,11 @@ func AuthorizationGet(c *gin.Context) {
 	).Order(q.AuthorizationRequest.CreatedAt.Desc()).First()
 
 	if err != nil || createdAuthorizationRequest == nil {
-		c.Redirect(302, config.FrontendURL+"/authorization?error=internal_server_error")
+		c.Redirect(302, contextConfig.FrontendURL+"/authorization?error=internal_server_error")
 		return
 	}
 
 	// Redirect to frontend authorization page with original query parameters
-	cfg := c.MustGet("config").(*config.Config)
 	// preserve original params so frontend can render without extra API calls
 	v := url.Values{}
 	v.Set("auth_request_id", createdAuthorizationRequest.ID)
@@ -143,7 +144,7 @@ func AuthorizationGet(c *gin.Context) {
 	if req.CodeChallengeMethod != nil {
 		v.Set("code_challenge_method", *req.CodeChallengeMethod)
 	}
-	c.Redirect(302, strings.TrimRight(cfg.FrontendURL, "/")+"/authorization?"+v.Encode())
+	c.Redirect(302, strings.TrimRight(contextConfig.FrontendURL, "/")+"/authorization?"+v.Encode())
 }
 
 // derefPrompt returns a valid enum value for prompt; default to 'none' when not provided.
@@ -199,12 +200,12 @@ func AuthorizationPost(c *gin.Context) {
 			token = cookie
 		}
 	}
+	cfg := c.MustGet("config").(*config.Config)
 	if token == "" {
-		c.Redirect(302, "/signin?error=unauthorized")
+		c.Redirect(302, cfg.FrontendURL+"/signin?error=unauthorized")
 		return
 	}
 
-	cfg := c.MustGet("config").(*config.Config)
 	// parse session JWT
 	parsed, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
 		return &cfg.KeyPairs[0].PublicKey, nil
