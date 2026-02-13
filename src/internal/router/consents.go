@@ -166,7 +166,7 @@ func ConsentDeleteByID(c *gin.Context) {
 		c.JSON(404, gin.H{"error": "consent not found"})
 		return
 	}
-	_, err = query.Consent.Delete(consent)
+	_, err = q.Consent.Delete(consent)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "internal server error"})
 		return
