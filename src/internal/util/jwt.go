@@ -259,6 +259,10 @@ func ValidateAccessToken(tokenString string, c *gin.Context) (jit, sub, scope st
 
 	// Parse and validate token
 	token, err := jwt.ParseWithClaims(tokenString, &AccessTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// token may be nil if parsing failed
+		if token == nil {
+			return nil, errors.New("invalid token")
+		}
 		// Verify the signing method
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, errors.New("unexpected signing method")
@@ -320,6 +324,10 @@ func ValidateSessionJWT(tokenString string, c *gin.Context) (sessionID, userID s
 
 	// Parse and validate token
 	token, err := jwt.ParseWithClaims(tokenString, &SessionTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// token may be nil if parsing failed
+		if token == nil {
+			return nil, errors.New("invalid token")
+		}
 		// Verify the signing method
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, errors.New("unexpected signing method")
