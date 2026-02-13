@@ -9,7 +9,7 @@ import (
 )
 
 type SessionVerifyRequest struct {
-	JIT string `form:"jit" binding:"required"`
+	JTI string `form:"jti" binding:"required"`
 }
 
 type SessionVerifyResponse struct {
@@ -24,7 +24,7 @@ type SessionVerifyResponse struct {
 // @Description 内部用のセッション検証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
 // @Tags internal
 // @Success 200 {object} SessionVerifyResponse "OK"
-// @Param jit query string true "JIT"
+// @Param jti query string true "JTI"
 // @Accept json
 // @Router /internal/session_verify [get]
 func SessionVerifyGet(c *gin.Context) {
@@ -40,7 +40,7 @@ func SessionVerifyGet(c *gin.Context) {
 		return
 	}
 	q := query.Use(db)
-	session, err := q.Session.Where(q.Session.ID.Eq(req.JIT), q.Session.DeletedAt.IsNull(), q.Session.ExpiresAt.Gt(time.Now())).First()
+	session, err := q.Session.Where(q.Session.ID.Eq(req.JTI), q.Session.DeletedAt.IsNull(), q.Session.ExpiresAt.Gt(time.Now())).First()
 	if err != nil {
 		c.JSON(200, SessionVerifyResponse{Valid: false})
 		return

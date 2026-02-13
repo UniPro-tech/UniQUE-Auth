@@ -457,8 +457,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "JIT",
-                        "name": "jit",
+                        "description": "JTI",
+                        "name": "jti",
                         "in": "query",
                         "required": true
                     }
@@ -568,8 +568,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "JIT",
-                        "name": "jit",
+                        "description": "JTI",
+                        "name": "jti",
                         "in": "query",
                         "required": true
                     }

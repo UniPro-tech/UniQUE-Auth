@@ -7,7 +7,7 @@ import (
 )
 
 type TokenVerifyRequest struct {
-	jit string `form:"jit" binding:"required"`
+	jti string `form:"jti" binding:"required"`
 }
 
 type TokenVerifyResponse struct {
@@ -20,7 +20,7 @@ type TokenVerifyResponse struct {
 // @Description 内部用のトークン検証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
 // @Tags internal
 // @Success 200 {object} TokenVerifyResponse "OK"
-// @Param jit query string true "JIT"
+// @Param jti query string true "JTI"
 // @Accept json
 // @Router /internal/token_verify [get]
 func TokenVerifyGet(c *gin.Context) {
@@ -38,7 +38,7 @@ func TokenVerifyGet(c *gin.Context) {
 	}
 	q := query.Use(db)
 
-	tokenset, err := q.OauthToken.Where(q.OauthToken.AccessTokenJti.Eq(req.jit), q.OauthToken.DeletedAt.IsNull()).First()
+	tokenset, err := q.OauthToken.Where(q.OauthToken.AccessTokenJti.Eq(req.jti), q.OauthToken.DeletedAt.IsNull()).First()
 
 	if err != nil || tokenset == nil {
 		c.JSON(400, gin.H{"error": "invalid token"})
