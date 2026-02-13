@@ -254,6 +254,8 @@ func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string
 
 func ValidateAccessToken(tokenString string, c *gin.Context) (jit, sub, scope string, err error) {
 	config := *c.MustGet("config").(*config.Config)
+	db := c.MustGet("db").(*gorm.DB)
+	q := query.Use(db)
 
 	// Parse and validate token
 	token, err := jwt.ParseWithClaims(tokenString, &AccessTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
@@ -273,7 +275,7 @@ func ValidateAccessToken(tokenString string, c *gin.Context) (jit, sub, scope st
 
 	// Validate claims
 	if claims, ok := token.Claims.(*AccessTokenClaims); ok && token.Valid {
-		tokenSet, err := query.OauthToken.Where(query.OauthToken.AccessTokenJti.Eq(claims.ID), query.OauthToken.DeletedAt.IsNull()).First()
+		tokenSet, err := q.OauthToken.Where(query.OauthToken.AccessTokenJti.Eq(claims.ID), query.OauthToken.DeletedAt.IsNull()).First()
 		if err != nil {
 			return "", "", "", err
 		}
