@@ -10,8 +10,8 @@ import (
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/oklog/ulid"
 	"gorm.io/gorm"
 )
@@ -26,6 +26,18 @@ type AuthorizationRequest struct {
 	Prompt              *string `form:"prompt"`
 	CodeChallenge       *string `form:"code_challenge"`
 	CodeChallengeMethod *string `form:"code_challenge_method" binding:"omitempty,oneof=plain S256"`
+}
+
+type AuthorizationResponse struct {
+	ClientID            string  `json:"client_id" binding:"required"`
+	RedirectURI         string  `json:"redirect_uri" binding:"required"`
+	ResponseType        string  `json:"response_type" binding:"required,oneof=code token"`
+	Scope               string  `json:"scope" binding:"required"`
+	State               *string `json:"state"`
+	Nonce               *string `json:"nonce"`
+	Prompt              *string `json:"prompt"`
+	CodeChallenge       *string `json:"code_challenge"`
+	CodeChallengeMethod *string `json:"code_challenge_method" binding:"omitempty,oneof=plain S256"`
 }
 
 // AuthorizationGet godoc
@@ -128,22 +140,6 @@ func AuthorizationGet(c *gin.Context) {
 	// preserve original params so frontend can render without extra API calls
 	v := url.Values{}
 	v.Set("auth_request_id", createdAuthorizationRequest.ID)
-	v.Set("client_id", req.ClientID)
-	v.Set("redirect_uri", req.RedirectURI)
-	v.Set("response_type", req.ResponseType)
-	v.Set("scope", req.Scope)
-	if req.State != nil {
-		v.Set("state", *req.State)
-	}
-	if req.Nonce != nil {
-		v.Set("nonce", *req.Nonce)
-	}
-	if req.CodeChallenge != nil {
-		v.Set("code_challenge", *req.CodeChallenge)
-	}
-	if req.CodeChallengeMethod != nil {
-		v.Set("code_challenge_method", *req.CodeChallengeMethod)
-	}
 	c.Redirect(302, strings.TrimRight(contextConfig.FrontendURL, "/")+"/authorization?"+v.Encode())
 }
 
@@ -155,14 +151,19 @@ func derefPrompt(s *string) string {
 	return *s
 }
 
-// AuthorizationPost handles user's consent submission from the frontend form.
-// It creates a Consent, marks the AuthorizationRequest as consented and generates
-// an authorization code, then redirects to /consented which will forward to the client.
+// AuthPost godoc
+// @Summary consent authorization request
+// @Schemes
+// @Description ユーザーが認可を許可した際に呼び出されるエンドポイントです。Consent レコードを作成し、認可コードを生成してクライアントアプリケーションのリダイレクトURIにリダイレクトします。
+// @Tags authorization
+// @Accept x-www-form-urlencoded
+// @Param auth_request_id formData string false "Authorization Request ID"
+// @Param session_jwt formData string false "Session ID"
+// @Success 301 {string} string "Redirect to client application with authorization code"
+// @Router /authorization [post]
 func AuthorizationPost(c *gin.Context) {
-	clientID := c.PostForm("client_id")
-	redirectURI := c.PostForm("redirect_uri")
-	scope := c.PostForm("scope")
 	authReqID := c.PostForm("auth_request_id")
+	sessionJWT := c.PostForm("session_jwt")
 
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
@@ -175,59 +176,33 @@ func AuthorizationPost(c *gin.Context) {
 	// locate authorization request
 	var authReq *model.AuthorizationRequest
 	var err error
-	if authReqID != "" {
-		authReq, err = q.AuthorizationRequest.Where(q.AuthorizationRequest.ID.Eq(authReqID)).First()
-	} else {
-		authReq, err = q.AuthorizationRequest.Where(
-			q.AuthorizationRequest.ApplicationID.Eq(clientID),
-			q.AuthorizationRequest.RedirectURI.Eq(redirectURI),
-		).Order(q.AuthorizationRequest.CreatedAt.Desc()).First()
-	}
+	authReq, err = q.AuthorizationRequest.Where(q.AuthorizationRequest.ID.Eq(authReqID)).First()
 	if err != nil || authReq == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization request"})
 		return
 	}
 
-	// get session from cookie or Authorization header
-	token := ""
-	if authHeader := c.GetHeader("Authorization"); authHeader != "" {
-		if strings.HasPrefix(authHeader, "Bearer ") {
-			token = strings.TrimPrefix(authHeader, "Bearer ")
-		}
-	}
-	if token == "" {
-		if cookie, err := c.Cookie("session_jwt"); err == nil {
-			token = cookie
-		}
-	}
+	// sessionJWTからsidを取得し、session, useridを検証
+	sessionID, userID, err := util.ValidateSessionJWT(sessionJWT, c)
 	cfg := c.MustGet("config").(*config.Config)
-	if token == "" {
+	if sessionID == "" {
 		c.Redirect(302, cfg.FrontendURL+"/signin?error=unauthorized")
 		return
 	}
-
-	// parse session JWT
-	parsed, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-		return &cfg.KeyPairs[0].PublicKey, nil
-	}, jwt.WithValidMethods([]string{"RS256"}))
-	if err != nil || !parsed.Valid {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session token"})
+	if err != nil {
+		c.Redirect(302, cfg.FrontendURL+"/signin?error=unauthorized")
 		return
 	}
-	claims, ok := parsed.Claims.(jwt.MapClaims)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session claims"})
+	if userID == "" {
+		c.Redirect(302, cfg.FrontendURL+"/signin?error=unauthorized")
 		return
 	}
-	sub, _ := claims["sub"].(string)
-	userID, _ := claims["user_id"].(string)
-	sessionID := strings.TrimPrefix(sub, "SID_")
 
 	// create consent record
 	newConsent := &model.Consent{
 		UserID:        userID,
 		ApplicationID: authReq.ApplicationID,
-		Scope:         scope,
+		Scope:         authReq.Scope,
 	}
 	if err := q.Consent.Create(newConsent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create consent"})
@@ -289,4 +264,107 @@ func derefPtr(s *string) string {
 		return *s
 	}
 	return ""
+}
+
+// InternalAuthorizationGet godoc
+// @Summary get authorization request details (internal use only)
+// @Schemes
+// @Description 内部使用のみのエンドポイントで、認可リクエストの詳細情報を取得します。
+// @Tags internal
+// @Param id path string true "Authorization Request ID"
+// @Success 200 {object} AuthorizationResponse
+// @Router /internal/auth-requests/:id [get]
+func InternalAuthorizationGet(c *gin.Context) {
+	authReqID := c.Param("id")
+
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+
+	authReq, err := q.AuthorizationRequest.Where(q.AuthorizationRequest.ID.Eq(authReqID)).First()
+	if err != nil || authReq == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization request"})
+		return
+	}
+
+	c.JSON(http.StatusOK, AuthorizationResponse{
+		ClientID:            authReq.ApplicationID,
+		RedirectURI:         authReq.RedirectURI,
+		ResponseType:        authReq.ResponseType,
+		Scope:               authReq.Scope,
+		State:               authReq.State,
+		Nonce:               authReq.Nonce,
+		Prompt:              &authReq.Prompt,
+		CodeChallenge:       authReq.CodeChallenge,
+		CodeChallengeMethod: authReq.CodeChallengeMethod,
+	})
+}
+
+// InternalConsentedPost godoc
+// @Summary mark authorization request as consented (internal use only)
+// @Schemes
+// @Description 内部使用のみのエンドポイントで、認可リクエストをユーザーが同意した状態に更新します。
+// @Tags internal
+// @Accept json
+// @Param id path string true "Authorization Request ID"
+// @Success 200 {string} string "Authorization request marked as consented"
+// @Router /internal/auth-requests/:id/consented [post]
+func InternalConsentedPost(c *gin.Context) {
+	authReqID := c.Param("id")
+
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+
+	authReq, err := q.AuthorizationRequest.Where(q.AuthorizationRequest.ID.Eq(authReqID)).First()
+	if err != nil || authReq == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid authorization request"})
+		return
+	}
+
+	// セッション取得
+	authorizationHeader := c.GetHeader("Authorization")
+	var sessionJWT string
+	if strings.HasPrefix(authorizationHeader, "Bearer ") {
+		sessionJWT = strings.TrimPrefix(authorizationHeader, "Bearer ")
+	}
+	sessionID, _, err := util.ValidateSessionJWT(sessionJWT, c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+		return
+	}
+	if sessionID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+		return
+	}
+
+	authReq.SessionID = &sessionID
+
+	authReq.IsConsented = true
+	if err := q.AuthorizationRequest.Save(authReq); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update auth request"})
+		return
+	}
+
+	if authReq.ResponseType == "code" {
+		// generate authorization code
+		t := time.Now()
+		e := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+		code := ulid.MustNew(ulid.Timestamp(t), e).String()
+		authReq.Code = &code
+		if err := q.AuthorizationRequest.Save(authReq); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update auth request with code"})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "authorization request marked as consented"})
 }

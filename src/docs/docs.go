@@ -124,6 +124,38 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "description": "ユーザーが認可を許可した際に呼び出されるエンドポイントです。Consent レコードを作成し、認可コードを生成してクライアントアプリケーションのリダイレクトURIにリダイレクトします。",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "tags": [
+                    "authorization"
+                ],
+                "summary": "consent authorization request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Authorization Request ID",
+                        "name": "auth_request_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_jwt",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "301": {
+                        "description": "Redirect to client application with authorization code",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/consented": {
@@ -176,6 +208,61 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/main.HealthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/auth-requests/:id": {
+            "get": {
+                "description": "内部使用のみのエンドポイントで、認可リクエストの詳細情報を取得します。",
+                "tags": [
+                    "internal"
+                ],
+                "summary": "get authorization request details (internal use only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Authorization Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.AuthorizationResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/auth-requests/:id/consented": {
+            "post": {
+                "description": "内部使用のみのエンドポイントで、認可リクエストをユーザーが同意した状態に更新します。",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "internal"
+                ],
+                "summary": "mark authorization request as consented (internal use only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Authorization Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authorization request marked as consented",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -790,6 +877,52 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "session_jwt": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.AuthorizationResponse": {
+            "type": "object",
+            "required": [
+                "client_id",
+                "redirect_uri",
+                "response_type",
+                "scope"
+            ],
+            "properties": {
+                "client_id": {
+                    "type": "string"
+                },
+                "code_challenge": {
+                    "type": "string"
+                },
+                "code_challenge_method": {
+                    "type": "string",
+                    "enum": [
+                        "plain",
+                        "S256"
+                    ]
+                },
+                "nonce": {
+                    "type": "string"
+                },
+                "prompt": {
+                    "type": "string"
+                },
+                "redirect_uri": {
+                    "type": "string"
+                },
+                "response_type": {
+                    "type": "string",
+                    "enum": [
+                        "code",
+                        "token"
+                    ]
+                },
+                "scope": {
+                    "type": "string"
+                },
+                "state": {
                     "type": "string"
                 }
             }

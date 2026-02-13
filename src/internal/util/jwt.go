@@ -312,3 +312,33 @@ func GenerateSessionJWT(sessionID, userID string, config config.Config) (string,
 	}
 	return sessionTokenString, nil
 }
+
+func ValidateSessionJWT(tokenString string, c *gin.Context) (sessionID, userID string, err error) {
+	config := *c.MustGet("config").(*config.Config)
+
+	// Parse and validate token
+	token, err := jwt.ParseWithClaims(tokenString, &SessionTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// Verify the signing method
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		// Return the public key for verification
+		if !hasValidKeyPair(config) {
+			return nil, errors.New("no valid keypair configured")
+		}
+		return &config.KeyPairs[0].PublicKey, nil
+	})
+	if err != nil {
+		return "", "", err
+	}
+
+	// Validate claims
+	if claims, ok := token.Claims.(*SessionTokenClaims); ok && token.Valid {
+		if len(claims.Subject) <= 4 || claims.Subject[:4] != "SID_" {
+			return "", "", errors.New("invalid session token subject")
+		}
+		return claims.Subject[4:], claims.UserID, nil
+	} else {
+		return "", "", errors.New("invalid session token claims")
+	}
+}
