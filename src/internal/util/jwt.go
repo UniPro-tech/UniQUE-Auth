@@ -252,7 +252,7 @@ func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string
 	return IDTokenString, err
 }
 
-func ValidateAccessToken(tokenString string, c *gin.Context) (jit, sub, scope string, err error) {
+func ValidateAccessToken(tokenString string, c *gin.Context) (jti, sub, scope string, err error) {
 	config := *c.MustGet("config").(*config.Config)
 	db := c.MustGet("db").(*gorm.DB)
 	q := query.Use(db)
