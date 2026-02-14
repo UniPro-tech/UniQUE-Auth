@@ -1,6 +1,7 @@
 package router
 
 import (
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
@@ -23,6 +24,7 @@ type TokenGetRequest struct {
 	ClientID     string `form:"client_id"`
 	ClientSecret string `form:"client_secret"`
 	RefreshToken string `form:"refresh_token"`
+	CodeVerifier string `form:"code_verifier"`
 }
 
 type TokenGetResponse struct {
@@ -89,6 +91,34 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
 	if authReq.RedirectURI != req.RedirectURI {
 		c.JSON(400, gin.H{"error": "redirect_uri does not match"})
 		return
+	}
+
+	// PKCE検証: AuthorizationRequest に code_challenge がある場合は code_verifier を検証する
+	challenge := derefPtr(authReq.CodeChallenge)
+	if challenge != "" {
+		verifier := req.CodeVerifier
+		if verifier == "" {
+			c.JSON(400, gin.H{"error": "invalid_request", "error_description": "code_verifier required"})
+			return
+		}
+		method := derefPtr(authReq.CodeChallengeMethod)
+		if method == "" {
+			method = "plain"
+		}
+
+		var expected string
+		switch method {
+		case "S256":
+			sum := sha256.Sum256([]byte(verifier))
+			expected = base64.RawURLEncoding.EncodeToString(sum[:])
+		default:
+			expected = verifier
+		}
+
+		if subtle.ConstantTimeCompare([]byte(expected), []byte(challenge)) != 1 {
+			c.JSON(400, gin.H{"error": "invalid_grant", "error_description": "pkce_verification_failed"})
+			return
+		}
 	}
 
 	// generate tokens and respond
