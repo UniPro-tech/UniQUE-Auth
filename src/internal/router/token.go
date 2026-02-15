@@ -8,6 +8,7 @@ import (
 	"errors"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
@@ -59,13 +60,19 @@ func TokenPost(c *gin.Context) {
 
 	switch req.GrantType {
 	case "authorization_code":
-		if ok := checkClientAuthentication(c, &req); !ok {
-			// 認証失敗時に処理を継続しない
+		clientID := checkClientAuthentication(c, &req)
+		if clientID == nil {
+			c.JSON(401, gin.H{"error": "invalid client credentials"})
 			return
 		}
-		handleAuthorizationCodeGrant(c, &req)
+		handleAuthorizationCodeGrant(c, &req, *clientID)
 	case "refresh_token":
-		handleRefreshTokenGrant(c, &req)
+		clientID := checkClientAuthentication(c, &req)
+		if clientID == nil {
+			c.JSON(401, gin.H{"error": "invalid client credentials"})
+			return
+		}
+		handleRefreshTokenGrant(c, &req, *clientID)
 	default:
 		c.JSON(400, gin.H{"error": "unsupported grant_type"})
 	}
@@ -74,7 +81,7 @@ func TokenPost(c *gin.Context) {
 // authorization_code グラントの処理
 // PKCE検証もここで行う
 // 成功時はアクセストークン、IDトークン、リフレッシュトークンを発行して返す
-func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
+func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest, clientID string) {
 	// get DB + query instance
 	dbAny := c.MustGet("db")
 	db, ok := dbAny.(*gorm.DB)
@@ -84,8 +91,9 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
 	}
 	q := query.Use(db)
 
-	// get authorization request by authorization code
-	authReq, err := q.AuthorizationRequest.Where(q.AuthorizationRequest.Code.Eq(req.Code)).First()
+	// Authorization RequestをCodeから取得する
+	// ここでClientIDもWhereの中に入れて検証してしまう
+	authReq, err := q.AuthorizationRequest.Where(q.AuthorizationRequest.Code.Eq(req.Code), q.AuthorizationRequest.ApplicationID.Eq(clientID)).First()
 	if err != nil || authReq == nil {
 		c.JSON(400, gin.H{"error": "invalid authorization code"})
 		return
@@ -146,6 +154,10 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
 		c.JSON(400, gin.H{"error": "failed to generate tokens"})
 		return
 	}
+
+	// Authorization Codeは使い捨てなので削除する
+	q.AuthorizationRequest.Where(q.AuthorizationRequest.ID.Eq(authReq.ID)).Delete()
+
 	c.JSON(200, TokenGetResponse{
 		AccessToken:  accessToken,
 		TokenType:    "Bearer",
@@ -158,7 +170,7 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
 // refresh_token グラントの処理
 // リフレッシュトークンを復号して JTI を取得し、その JTI に紐づくトークンセットと同じユーザー・アプリケーションの新しいトークンを発行して返す
 // リフレッシュトークンの復号に失敗した場合はエラーを返す（クライアントがトークンを改ざんしている可能性があるため、他の処理は行わない）
-func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
+func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest, clientID string) {
 	config := *c.MustGet("config").(*config.Config)
 	// parse refresh token; 新しい形式では先頭に "<kid>:<compact-jwe>" を付与している
 	tokenRaw := req.RefreshToken
@@ -225,6 +237,12 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
 	}
 	q := query.Use(db)
 
+	// Clientチェック: クレームの Audience に ClientID が含まれていることを確認する
+	if len(claims.Audience) == 0 || claims.Audience[0] != clientID {
+		c.JSON(400, gin.H{"error": "invalid refresh token"})
+		return
+	}
+
 	tokenset, err := q.OauthToken.Where(q.OauthToken.RefreshTokenJti.Eq(claims.ID)).First()
 
 	if err != nil || tokenset == nil {
@@ -246,6 +264,9 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
 		return
 	}
 
+	// 旧トークンを無効化する
+	q.OauthToken.Where(q.OauthToken.RefreshTokenJti.Eq(claims.ID)).Update(q.OauthToken.DeletedAt, time.Now())
+
 	c.JSON(200, TokenGetResponse{
 		AccessToken:  accessToken,
 		TokenType:    "Bearer",
@@ -257,54 +278,55 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
 
 // クライアント認証の検査
 // Authorization ヘッダーの Basic 認証を優先して検査し、なければフォームの client_id/client_secret を検査する
-// 成功すれば true を返し、失敗すればエラー応答を返して false を返す
-func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) bool {
+// 成功すれば client_id を返し、失敗すればエラー応答を返して false を返す
+func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) *string {
 	// check client_secret
 	if clientVerifyBasic := c.GetHeader("Authorization"); clientVerifyBasic != "" {
 		// if authorization header
 		clientID, clientSecret, err := parseBasicAuth(clientVerifyBasic)
 		if err != nil {
 			c.JSON(400, gin.H{"error": "not valid authorization header"})
-			return false
+			return nil
 		}
 		dbAny := c.MustGet("db")
 		db, ok := dbAny.(*gorm.DB)
 		if !ok || db == nil {
 			c.JSON(500, gin.H{"error": "database not available"})
-			return false
+			return nil
 		}
 		q := query.Use(db)
 		// DB側で平文比較するのではなく、IDで取得してから定数時間比較を行う
 		application, err := q.Application.Where(q.Application.ID.Eq(clientID)).First()
 		if err != nil || application == nil {
 			c.JSON(400, gin.H{"error": "invalid client credentials"})
-			return false
+			return nil
 		}
 		// 定数時間比較
 		if subtle.ConstantTimeCompare([]byte(application.ClientSecret), []byte(clientSecret)) != 1 {
 			c.JSON(400, gin.H{"error": "invalid client credentials"})
-			return false
+			return nil
 		}
+		return &clientID
 	} else {
 		// if form body
 		dbAny := c.MustGet("db")
 		db, ok := dbAny.(*gorm.DB)
 		if !ok || db == nil {
 			c.JSON(500, gin.H{"error": "database not available"})
-			return false
+			return nil
 		}
 		q := query.Use(db)
 		application, err := q.Application.Where(q.Application.ID.Eq(req.ClientID)).First()
 		if err != nil || application == nil {
 			c.JSON(400, gin.H{"error": "invalid client credentials"})
-			return false
+			return nil
 		}
 		if subtle.ConstantTimeCompare([]byte(application.ClientSecret), []byte(req.ClientSecret)) != 1 {
 			c.JSON(400, gin.H{"error": "invalid client credentials"})
-			return false
+			return nil
 		}
 	}
-	return true
+	return &req.ClientID
 }
 
 // Basic 認証ヘッダーをパースして client_id と client_secret を取得する
