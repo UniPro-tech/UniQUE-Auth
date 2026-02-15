@@ -71,6 +71,9 @@ func TokenPost(c *gin.Context) {
 	}
 }
 
+// authorization_code グラントの処理
+// PKCE検証もここで行う
+// 成功時はアクセストークン、IDトークン、リフレッシュトークンを発行して返す
 func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
 	// get DB + query instance
 	dbAny := c.MustGet("db")
@@ -152,6 +155,9 @@ func handleAuthorizationCodeGrant(c *gin.Context, req *TokenGetRequest) {
 	})
 }
 
+// refresh_token グラントの処理
+// リフレッシュトークンを復号して JTI を取得し、その JTI に紐づくトークンセットと同じユーザー・アプリケーションの新しいトークンを発行して返す
+// リフレッシュトークンの復号に失敗した場合はエラーを返す（クライアントがトークンを改ざんしている可能性があるため、他の処理は行わない）
 func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
 	config := *c.MustGet("config").(*config.Config)
 	// parse refresh token; 新しい形式では先頭に "<kid>:<compact-jwe>" を付与している
@@ -249,6 +255,9 @@ func handleRefreshTokenGrant(c *gin.Context, req *TokenGetRequest) {
 	})
 }
 
+// クライアント認証の検査
+// Authorization ヘッダーの Basic 認証を優先して検査し、なければフォームの client_id/client_secret を検査する
+// 成功すれば true を返し、失敗すればエラー応答を返して false を返す
 func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) bool {
 	// check client_secret
 	if clientVerifyBasic := c.GetHeader("Authorization"); clientVerifyBasic != "" {
@@ -298,6 +307,7 @@ func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) bool {
 	return true
 }
 
+// Basic 認証ヘッダーをパースして client_id と client_secret を取得する
 func parseBasicAuth(authHeader string) (string, string, error) {
 	base64Decoded, err := base64.StdEncoding.DecodeString(authHeader[len("Basic "):])
 	if err != nil {
