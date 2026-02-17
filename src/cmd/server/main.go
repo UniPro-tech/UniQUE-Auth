@@ -82,6 +82,7 @@ func main() {
 	r.GET("/internal/sessions", router.SessionsGet)
 	r.DELETE("/internal/sessions/:sid", router.SessionsDelete)
 	r.GET("/internal/session_verify", router.SessionVerifyGet)
+	r.GET("/internal/token_verify", router.TokenVerifyGet)
 	r.GET("/internal/auth-requests/:id", router.InternalAuthorizationGet)
 	r.POST("/internal/auth-requests/:id/consented", router.InternalConsentedPost)
 

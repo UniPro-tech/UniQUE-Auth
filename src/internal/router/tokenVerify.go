@@ -7,7 +7,7 @@ import (
 )
 
 type TokenVerifyRequest struct {
-	jti string `form:"jti" binding:"required"`
+	Jti string `form:"jti" binding:"required"`
 }
 
 type TokenVerifyResponse struct {
@@ -25,7 +25,7 @@ type TokenVerifyResponse struct {
 // @Router /internal/token_verify [get]
 func TokenVerifyGet(c *gin.Context) {
 	req := TokenVerifyRequest{}
-	if err := c.ShouldBind(&req); err != nil {
+	if err := c.ShouldBindQuery(&req); err != nil {
 		c.JSON(400, gin.H{"error": "bad request"})
 		return
 	}
@@ -38,7 +38,7 @@ func TokenVerifyGet(c *gin.Context) {
 	}
 	q := query.Use(db)
 
-	tokenset, err := q.OauthToken.Where(q.OauthToken.AccessTokenJti.Eq(req.jti), q.OauthToken.DeletedAt.IsNull()).First()
+	tokenset, err := q.OauthToken.Where(q.OauthToken.AccessTokenJti.Eq(req.Jti), q.OauthToken.DeletedAt.IsNull()).First()
 
 	if err != nil || tokenset == nil {
 		c.JSON(400, gin.H{"error": "invalid token"})
