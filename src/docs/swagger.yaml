@@ -16,16 +16,16 @@ definitions:
         type: boolean
       type:
         enum:
-          - password
-          - mfa
-          - totp
+        - password
+        - mfa
+        - totp
         type: string
       user_agent:
         type: string
       username:
         type: string
     required:
-      - type
+    - type
     type: object
   router.AuthenticationResponse:
     properties:
@@ -40,8 +40,8 @@ definitions:
         type: string
       code_challenge_method:
         enum:
-          - plain
-          - S256
+        - plain
+        - S256
         type: string
       nonce:
         type: string
@@ -51,18 +51,18 @@ definitions:
         type: string
       response_type:
         enum:
-          - code
-          - token
+        - code
+        - token
         type: string
       scope:
         type: string
       state:
         type: string
     required:
-      - client_id
-      - redirect_uri
-      - response_type
-      - scope
+    - client_id
+    - redirect_uri
+    - response_type
+    - scope
     type: object
   router.ConsentCreateRequest:
     properties:
@@ -73,9 +73,9 @@ definitions:
       user_id:
         type: string
     required:
-      - application_id
-      - scope
-      - user_id
+    - application_id
+    - scope
+    - user_id
     type: object
   router.ConsentResponse:
     properties:
@@ -98,7 +98,7 @@ definitions:
     properties:
       keys:
         items:
-          $ref: "#/definitions/router.JWKSKey"
+          $ref: '#/definitions/router.JWKSKey'
         type: array
     type: object
   router.JWKSKey:
@@ -121,7 +121,7 @@ definitions:
       password:
         type: string
     required:
-      - password
+    - password
     type: object
   router.PasswordHashResponse:
     properties:
@@ -135,8 +135,8 @@ definitions:
       password:
         type: string
     required:
-      - code
-      - password
+    - code
+    - password
     type: object
   router.PasswordResetConfirmResponse:
     properties:
@@ -148,7 +148,7 @@ definitions:
       email:
         type: string
     required:
-      - email
+    - email
     type: object
   router.PasswordResetRequestResponse:
     properties:
@@ -217,6 +217,10 @@ definitions:
         type: string
       preferred_username:
         type: string
+      roles:
+        items:
+          type: string
+        type: array
       sub:
         type: string
       twitter:
@@ -280,68 +284,68 @@ paths:
     get:
       description: .well-known/jwks.json エンドポイント
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/router.JWKS"
+            $ref: '#/definitions/router.JWKS'
       summary: JSON Web Key Set
       tags:
-        - metadata
+      - metadata
   /.well-known/openid-configuration:
     get:
       description: .well-known/openid-configuration エンドポイント
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/router.WellKnownOpenIDConfigurationResponse"
+            $ref: '#/definitions/router.WellKnownOpenIDConfigurationResponse'
       summary: OpenID Configuration
       tags:
-        - metadata
+      - metadata
   /authorization:
     get:
       description: OAuth 2.0 / OIDC における認可エンドポイントです。クライアントアプリケーションがユーザーの認可を取得するために使用します。
       parameters:
-        - description: Client ID
-          in: query
-          name: client_id
-          required: true
-          type: string
-        - description: Redirect URI
-          in: query
-          name: redirect_uri
-          required: true
-          type: string
-        - description: Response Type
-          in: query
-          name: response_type
-          required: true
-          type: string
-        - description: Scope
-          in: query
-          name: scope
-          required: true
-          type: string
-        - description: State
-          in: query
-          name: state
-          type: string
-        - description: Nonce
-          in: query
-          name: nonce
-          type: string
-        - description: Code Challenge
-          in: query
-          name: code_challenge
-          type: string
-        - description: Code Challenge Method
-          in: query
-          name: code_challenge_method
-          type: string
+      - description: Client ID
+        in: query
+        name: client_id
+        required: true
+        type: string
+      - description: Redirect URI
+        in: query
+        name: redirect_uri
+        required: true
+        type: string
+      - description: Response Type
+        in: query
+        name: response_type
+        required: true
+        type: string
+      - description: Scope
+        in: query
+        name: scope
+        required: true
+        type: string
+      - description: State
+        in: query
+        name: state
+        type: string
+      - description: Nonce
+        in: query
+        name: nonce
+        type: string
+      - description: Code Challenge
+        in: query
+        name: code_challenge
+        type: string
+      - description: Code Challenge Method
+        in: query
+        name: code_challenge_method
+        type: string
       responses:
         "302":
           description: Redirect to frontend authorization page
@@ -349,20 +353,20 @@ paths:
             type: string
       summary: authorization endpoint
       tags:
-        - authorization
+      - authorization
     post:
       consumes:
-        - application/x-www-form-urlencoded
+      - application/x-www-form-urlencoded
       description: ユーザーが認可を許可した際に呼び出されるエンドポイントです。Consent レコードを作成し、認可コードを生成してクライアントアプリケーションのリダイレクトURIにリダイレクトします。
       parameters:
-        - description: Authorization Request ID
-          in: formData
-          name: auth_request_id
-          type: string
-        - description: Session ID
-          in: formData
-          name: session_jwt
-          type: string
+      - description: Authorization Request ID
+        in: formData
+        name: auth_request_id
+        type: string
+      - description: Session ID
+        in: formData
+        name: session_jwt
+        type: string
       responses:
         "301":
           description: Redirect to client application with authorization code
@@ -370,20 +374,20 @@ paths:
             type: string
       summary: consent authorization request
       tags:
-        - authorization
+      - authorization
   /consented:
     get:
       consumes:
-        - application/json
+      - application/json
       description: 認可リクエストが完了したのちにリダイレクトするためのエンドポイントです。
       parameters:
-        - description: Authorization Request ID
-          in: query
-          name: authorization_id
-          required: true
-          type: string
+      - description: Authorization Request ID
+        in: query
+        name: authorization_id
+        required: true
+        type: string
       produces:
-        - application/json
+      - application/json
       responses:
         "301":
           description: Redirect to client application with authorization code
@@ -391,50 +395,50 @@ paths:
             type: string
       summary: Redirect for Authorization Request
       tags:
-        - authorization
+      - authorization
   /health:
     get:
       consumes:
-        - application/json
+      - application/json
       description: システムの稼働状況を確認するためのエンドポイントです。
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/main.HealthResponse"
+            $ref: '#/definitions/main.HealthResponse'
       summary: health check endpoint
       tags:
-        - system info
+      - system info
   /internal/auth-requests/:id:
     get:
       description: 内部使用のみのエンドポイントで、認可リクエストの詳細情報を取得します。
       parameters:
-        - description: Authorization Request ID
-          in: path
-          name: id
-          required: true
-          type: string
+      - description: Authorization Request ID
+        in: path
+        name: id
+        required: true
+        type: string
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/router.AuthorizationResponse"
+            $ref: '#/definitions/router.AuthorizationResponse'
       summary: get authorization request details (internal use only)
       tags:
-        - internal
+      - internal
   /internal/auth-requests/:id/consented:
     post:
       consumes:
-        - application/json
+      - application/json
       description: 内部使用のみのエンドポイントで、認可リクエストをユーザーが同意した状態に更新します。
       parameters:
-        - description: Authorization Request ID
-          in: path
-          name: id
-          required: true
-          type: string
+      - description: Authorization Request ID
+        in: path
+        name: id
+        required: true
+        type: string
       responses:
         "200":
           description: Authorization request marked as consented
@@ -442,89 +446,89 @@ paths:
             type: string
       summary: mark authorization request as consented (internal use only)
       tags:
-        - internal
+      - internal
   /internal/authentication:
     post:
       consumes:
-        - application/json
+      - application/json
       description: 内部用の認証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
       parameters:
-        - description: Authentication Request
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: "#/definitions/router.AuthenticationRequest"
+      - description: Authentication Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.AuthenticationRequest'
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/router.AuthenticationResponse"
+            $ref: '#/definitions/router.AuthenticationResponse'
       summary: authentication endpoint
       tags:
-        - internal
+      - internal
   /internal/consents:
     get:
       consumes:
-        - application/json
+      - application/json
       description: 一覧取得およびクエリ条件による検索を行う。
       parameters:
-        - description: User ID
-          in: query
-          name: user_id
-          type: string
-        - description: Application ID
-          in: query
-          name: application_id
-          type: string
-        - description: Scope
-          in: query
-          name: scope
-          type: string
+      - description: User ID
+        in: query
+        name: user_id
+        type: string
+      - description: Application ID
+        in: query
+        name: application_id
+        type: string
+      - description: Scope
+        in: query
+        name: scope
+        type: string
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: "#/definitions/router.ConsentResponse"
+              $ref: '#/definitions/router.ConsentResponse'
             type: array
       summary: list or search consents
       tags:
-        - internal
+      - internal
     post:
       consumes:
-        - application/json
+      - application/json
       parameters:
-        - description: Create Consent
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: "#/definitions/router.ConsentCreateRequest"
+      - description: Create Consent
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.ConsentCreateRequest'
       produces:
-        - application/json
+      - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: "#/definitions/router.ConsentResponse"
+            $ref: '#/definitions/router.ConsentResponse'
       summary: create consent
       tags:
-        - internal
+      - internal
   /internal/consents/{id}:
     delete:
       consumes:
-        - application/json
+      - application/json
       parameters:
-        - description: Consent ID
-          in: path
-          name: id
-          required: true
-          type: string
+      - description: Consent ID
+        in: path
+        name: id
+        required: true
+        type: string
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
@@ -534,63 +538,63 @@ paths:
             type: object
       summary: delete consent by id
       tags:
-        - internal
+      - internal
   /internal/password_hash:
     post:
       consumes:
-        - application/json
+      - application/json
       description: パスワードのハッシュ（bcrypt）を生成する内部エンドポイント
       parameters:
-        - description: Password to hash
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: "#/definitions/router.PasswordHashRequest"
+      - description: Password to hash
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.PasswordHashRequest'
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/router.PasswordHashResponse"
+            $ref: '#/definitions/router.PasswordHashResponse'
       summary: Generate password hash
       tags:
-        - internal
+      - internal
   /internal/session_verify:
     get:
       consumes:
-        - application/json
+      - application/json
       description: 内部用のセッション検証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
       parameters:
-        - description: JTI
-          in: query
-          name: jti
-          required: true
-          type: string
+      - description: JTI
+        in: query
+        name: jti
+        required: true
+        type: string
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/router.SessionVerifyResponse"
+            $ref: '#/definitions/router.SessionVerifyResponse'
       summary: session verify endpoint
       tags:
-        - internal
+      - internal
   /internal/sessions:
     get:
-      description: "内部用: 指定ユーザーのセッション一覧を取得する。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。"
+      description: '内部用: 指定ユーザーのセッション一覧を取得する。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。'
       parameters:
-        - description: User ID
-          in: query
-          name: user_id
-          required: true
-          type: string
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: string
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: "#/definitions/router.SessionResponse"
+              $ref: '#/definitions/router.SessionResponse'
             type: array
         "400":
           description: Bad Request
@@ -606,10 +610,10 @@ paths:
             type: object
       summary: Get sessions for a user
       tags:
-        - internal
+      - internal
   /internal/sessions/:sid:
     delete:
-      description: "内部用: 指定ユーザーのセッションを削除（ソフトデリート）する。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。"
+      description: '内部用: 指定ユーザーのセッションを削除（ソフトデリート）する。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。'
       responses:
         "204":
           description: No Content
@@ -629,26 +633,26 @@ paths:
             type: object
       summary: Delete sessions for a user
       tags:
-        - internal
+      - internal
   /internal/token_verify:
     get:
       consumes:
-        - application/json
+      - application/json
       description: 内部用のトークン検証エンドポイントです。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
       parameters:
-        - description: JTI
-          in: query
-          name: jti
-          required: true
-          type: string
+      - description: JTI
+        in: query
+        name: jti
+        required: true
+        type: string
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/router.TokenVerifyResponse"
+            $ref: '#/definitions/router.TokenVerifyResponse'
       summary: token verify endpoint
       tags:
-        - internal
+      - internal
   /internal/update_last_logined:
     post:
       description: 内部のLastLogined更新エンドポイント
@@ -665,28 +669,27 @@ paths:
             type: object
       summary: Update Last Logined
       tags:
-        - internal
+      - internal
   /password-reset-confirm:
     post:
       consumes:
-        - application/json
-      description:
-        Confirm password reset by providing the verification code and new
+      - application/json
+      description: Confirm password reset by providing the verification code and new
         password.
       parameters:
-        - description: Password Reset Confirmation
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: "#/definitions/router.PasswordResetConfirmRequest"
+      - description: Password Reset Confirmation
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.PasswordResetConfirmRequest'
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/router.PasswordResetConfirmResponse"
+            $ref: '#/definitions/router.PasswordResetConfirmResponse'
         "400":
           description: Bad Request
           schema:
@@ -707,28 +710,27 @@ paths:
             type: object
       summary: Confirm password reset
       tags:
-        - authentication
+      - authentication
   /password-reset-request:
     post:
       consumes:
-        - application/json
-      description:
-        Request password reset by providing external email. This sends
+      - application/json
+      description: Request password reset by providing external email. This sends
         a password reset email with a code.
       parameters:
-        - description: Password Reset Request
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: "#/definitions/router.PasswordResetRequestRequest"
+      - description: Password Reset Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.PasswordResetRequestRequest'
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/router.PasswordResetRequestResponse"
+            $ref: '#/definitions/router.PasswordResetRequestResponse'
         "400":
           description: Bad Request
           schema:
@@ -743,49 +745,80 @@ paths:
             type: object
       summary: Request password reset
       tags:
-        - authentication
-  /token:
+      - authentication
+  /revocation:
     post:
-      consumes:
-        - application/x-www-form-urlencoded
-      description: OAuth2 Token Endpoint
+      description: RFC7009に基づいてアクセストークンを失効させる。
       parameters:
-        - description: Grant Type
-          enum:
-            - authorization_code
-            - refresh_token
-            - client_credentials
-          in: formData
-          name: grant_type
-          required: true
-          type: string
-        - description: Authorization Code
-          in: formData
-          name: code
-          type: string
-        - description: Redirect URI
-          in: formData
-          name: redirect_uri
-          type: string
-        - description: Client ID
-          in: formData
-          name: client_id
-          type: string
-        - description: Client Secret
-          in: formData
-          name: client_secret
-          type: string
-        - description: Refresh Token
-          in: formData
-          name: refresh_token
-          type: string
-      produces:
-        - application/json
+      - description: Token to revoke
+        in: formData
+        name: token
+        required: true
+        type: string
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/router.TokenGetResponse"
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Revoke a token RFC7009
+      tags:
+      - internal
+  /token:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: OAuth2 Token Endpoint
+      parameters:
+      - description: Grant Type
+        enum:
+        - authorization_code
+        - refresh_token
+        - client_credentials
+        in: formData
+        name: grant_type
+        required: true
+        type: string
+      - description: Authorization Code
+        in: formData
+        name: code
+        type: string
+      - description: Redirect URI
+        in: formData
+        name: redirect_uri
+        type: string
+      - description: Client ID
+        in: formData
+        name: client_id
+        type: string
+      - description: Client Secret
+        in: formData
+        name: client_secret
+        type: string
+      - description: Refresh Token
+        in: formData
+        name: refresh_token
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.TokenGetResponse'
         "400":
           description: Bad Request
           schema:
@@ -794,19 +827,19 @@ paths:
             type: object
       summary: Token Endpoint
       tags:
-        - oauth2
+      - oauth2
   /userinfo:
     get:
       consumes:
-        - application/json
+      - application/json
       description: OAuth2 UserInfo Endpoint
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/router.UserInfoResponse"
+            $ref: '#/definitions/router.UserInfoResponse'
         "400":
           description: Bad Request
           schema:
@@ -815,5 +848,5 @@ paths:
             type: object
       summary: UserInfo Endpoint
       tags:
-        - userinfo
+      - userinfo
 swagger: "2.0"

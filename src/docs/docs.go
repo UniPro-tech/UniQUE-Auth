@@ -723,6 +723,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/revocation": {
+            "post": {
+                "description": "RFC7009に基づいてアクセストークンを失効させる。",
+                "tags": [
+                    "internal"
+                ],
+                "summary": "Revoke a token RFC7009",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token to revoke",
+                        "name": "token",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/token": {
             "post": {
                 "description": "OAuth2 Token Endpoint",
@@ -1161,6 +1208,12 @@ const docTemplate = `{
                 },
                 "preferred_username": {
                     "type": "string"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "sub": {
                     "type": "string"
