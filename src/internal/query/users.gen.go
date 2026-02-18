@@ -39,6 +39,7 @@ func newUser(db *gorm.DB, opts ...gen.DOOption) user {
 	_user.CreatedAt = field.NewTime(tableName, "created_at")
 	_user.UpdatedAt = field.NewTime(tableName, "updated_at")
 	_user.DeletedAt = field.NewField(tableName, "deleted_at")
+	_user.TotpSecret = field.NewString(tableName, "totp_secret")
 
 	_user.fillFieldMap()
 
@@ -61,6 +62,7 @@ type user struct {
 	CreatedAt         field.Time
 	UpdatedAt         field.Time
 	DeletedAt         field.Field
+	TotpSecret        field.String
 
 	fieldMap map[string]field.Expr
 }
@@ -88,6 +90,7 @@ func (u *user) updateTableName(table string) *user {
 	u.CreatedAt = field.NewTime(table, "created_at")
 	u.UpdatedAt = field.NewTime(table, "updated_at")
 	u.DeletedAt = field.NewField(table, "deleted_at")
+	u.TotpSecret = field.NewString(table, "totp_secret")
 
 	u.fillFieldMap()
 
@@ -104,7 +107,7 @@ func (u *user) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (u *user) fillFieldMap() {
-	u.fieldMap = make(map[string]field.Expr, 11)
+	u.fieldMap = make(map[string]field.Expr, 12)
 	u.fieldMap["id"] = u.ID
 	u.fieldMap["custom_id"] = u.CustomID
 	u.fieldMap["email"] = u.Email
@@ -116,6 +119,7 @@ func (u *user) fillFieldMap() {
 	u.fieldMap["created_at"] = u.CreatedAt
 	u.fieldMap["updated_at"] = u.UpdatedAt
 	u.fieldMap["deleted_at"] = u.DeletedAt
+	u.fieldMap["totp_secret"] = u.TotpSecret
 }
 
 func (u user) clone(db *gorm.DB) user {
