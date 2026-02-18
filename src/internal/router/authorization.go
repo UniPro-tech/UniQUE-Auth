@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/constants"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
@@ -198,6 +199,25 @@ func AuthorizationPost(c *gin.Context) {
 		return
 	}
 
+	// scope に紐づく権限要件を計算し、ユーザーがそれらの権限を持つか検証
+	requiredPerm := constants.Permission(0)
+	for _, sc := range splitAndTrim(authReq.Scope) {
+		if p, ok := constants.ScopeRequirementsPermissionMap[sc]; ok {
+			requiredPerm |= p
+		}
+	}
+	if requiredPerm != 0 {
+		perms, gerr := getUserPermissions(userID, db)
+		if gerr != nil {
+			c.Redirect(302, cfg.FrontendURL+"/authorization?error=internal_server_error")
+			return
+		}
+		if !perms.HasPermission(requiredPerm) {
+			c.Redirect(302, cfg.FrontendURL+"/authorization?error=forbidden_scope")
+			return
+		}
+	}
+
 	// create consent record
 	newConsent := &model.Consent{
 		UserID:        userID,
@@ -264,6 +284,35 @@ func derefPtr(s *string) string {
 		return *s
 	}
 	return ""
+}
+
+// getUserPermissions aggregates a user's permissions from their roles
+func getUserPermissions(userID string, db *gorm.DB) (constants.Permission, error) {
+	q := query.Use(db)
+
+	userRoles, err := q.UserRole.Where(q.UserRole.UserID.Eq(userID)).Find()
+	if err != nil {
+		return 0, err
+	}
+	if len(userRoles) == 0 {
+		return 0, nil
+	}
+
+	roleIDs := make([]string, len(userRoles))
+	for i, ur := range userRoles {
+		roleIDs[i] = ur.RoleID
+	}
+
+	roles, err := q.Role.Where(q.Role.ID.In(roleIDs...)).Find()
+	if err != nil {
+		return 0, err
+	}
+
+	var combined constants.Permission = 0
+	for _, r := range roles {
+		combined |= constants.Permission(r.PermissionBitmask)
+	}
+	return combined, nil
 }
 
 // InternalAuthorizationGet godoc
@@ -336,7 +385,7 @@ func InternalConsentedPost(c *gin.Context) {
 	if strings.HasPrefix(authorizationHeader, "Bearer ") {
 		sessionJWT = strings.TrimPrefix(authorizationHeader, "Bearer ")
 	}
-	sessionID, _, err := util.ValidateSessionJWT(sessionJWT, c)
+	sessionID, userID, err := util.ValidateSessionJWT(sessionJWT, c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
 		return
@@ -344,6 +393,30 @@ func InternalConsentedPost(c *gin.Context) {
 	if sessionID == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
 		return
+	}
+
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+		return
+	}
+
+	// scope に紐づく権限要件を計算し、ユーザーがそれらの権限を持つか検証
+	requiredPerm := constants.Permission(0)
+	for _, sc := range splitAndTrim(authReq.Scope) {
+		if p, ok := constants.ScopeRequirementsPermissionMap[sc]; ok {
+			requiredPerm |= p
+		}
+	}
+	if requiredPerm != 0 {
+		perms, gerr := getUserPermissions(userID, db)
+		if gerr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check permissions"})
+			return
+		}
+		if !perms.HasPermission(requiredPerm) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden_scope"})
+			return
+		}
 	}
 
 	authReq.SessionID = &sessionID
