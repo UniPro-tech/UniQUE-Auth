@@ -121,7 +121,7 @@ func AuthenticationPost(c *gin.Context) {
 }
 
 func passwordAuthentication(q *query.Query, username, password string) (*model.User, error) {
-	user, err := q.User.Where(q.User.CustomID.Eq(username)).First()
+	user, err := q.User.Where(q.User.CustomID.Eq(username), q.User.DeletedAt.IsNull(), q.User.Status.Eq("active")).First()
 	if err != nil {
 		return nil, err
 	}
