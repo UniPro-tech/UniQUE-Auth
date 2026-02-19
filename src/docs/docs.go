@@ -584,6 +584,97 @@ const docTemplate = `{
                 }
             }
         },
+        "/internal/totp/{user_id}": {
+            "post": {
+                "description": "TOTPのシークレットとQRコード用URIを生成します。ユーザーがTOTPをセットアップする際に使用します。",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "internal"
+                ],
+                "summary": "Generate TOTP secret and QR code",
+                "parameters": [
+                    {
+                        "description": "Generate TOTP Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/router.GenerateTOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.GenerateTOTPResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "TOTPを無効化します。ユーザーがTOTPを無効にする際に使用します。",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "internal"
+                ],
+                "summary": "Disable TOTP",
+                "parameters": [
+                    {
+                        "description": "Disable TOTP Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/router.DisableTOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.DisableTOTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/totp/{user_id}/verify": {
+            "post": {
+                "description": "TOTPコードを検証し、is_totp_enabledをtrueに設定します。ユーザーがTOTPセットアップを完了する際に使用します。",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "internal"
+                ],
+                "summary": "Verify TOTP code",
+                "parameters": [
+                    {
+                        "description": "Verify TOTP Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/router.VerifyTOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.VerifyTOTPResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/internal/update_last_logined": {
             "post": {
                 "description": "内部のLastLogined更新エンドポイント",
@@ -894,6 +985,10 @@ const docTemplate = `{
                 "type"
             ],
             "properties": {
+                "code": {
+                    "description": "for MFA/TOTP",
+                    "type": "string"
+                },
                 "ip_address": {
                     "type": "string"
                 },
@@ -923,6 +1018,16 @@ const docTemplate = `{
         "router.AuthenticationResponse": {
             "type": "object",
             "properties": {
+                "mfa_type": {
+                    "description": "\"totp\"",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "require_mfa": {
+                    "type": "boolean"
+                },
                 "session_jwt": {
                     "type": "string"
                 }
@@ -1015,6 +1120,50 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.DisableTOTPRequest": {
+            "type": "object",
+            "required": [
+                "password"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.DisableTOTPResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "description": "結果メッセージ",
+                    "type": "string"
+                }
+            }
+        },
+        "router.GenerateTOTPRequest": {
+            "type": "object",
+            "required": [
+                "password"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.GenerateTOTPResponse": {
+            "type": "object",
+            "properties": {
+                "secret": {
+                    "description": "TOTPシークレット",
+                    "type": "string"
+                },
+                "uri": {
+                    "description": "QRコード用URI (otpauth://...)",
                     "type": "string"
                 }
             }
@@ -1226,6 +1375,26 @@ const docTemplate = `{
                 },
                 "website": {
                     "type": "string"
+                }
+            }
+        },
+        "router.VerifyTOTPRequest": {
+            "type": "object",
+            "required": [
+                "code"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.VerifyTOTPResponse": {
+            "type": "object",
+            "properties": {
+                "valid": {
+                    "description": "TOTPコードが有効かどうか",
+                    "type": "boolean"
                 }
             }
         },

@@ -7,6 +7,9 @@ definitions:
     type: object
   router.AuthenticationRequest:
     properties:
+      code:
+        description: for MFA/TOTP
+        type: string
       ip_address:
         type: string
       password:
@@ -29,6 +32,13 @@ definitions:
     type: object
   router.AuthenticationResponse:
     properties:
+      mfa_type:
+        description: '"totp"'
+        items:
+          type: string
+        type: array
+      require_mfa:
+        type: boolean
       session_jwt:
         type: string
     type: object
@@ -92,6 +102,35 @@ definitions:
       updated_at:
         type: string
       user_id:
+        type: string
+    type: object
+  router.DisableTOTPRequest:
+    properties:
+      password:
+        type: string
+    required:
+    - password
+    type: object
+  router.DisableTOTPResponse:
+    properties:
+      message:
+        description: 結果メッセージ
+        type: string
+    type: object
+  router.GenerateTOTPRequest:
+    properties:
+      password:
+        type: string
+    required:
+    - password
+    type: object
+  router.GenerateTOTPResponse:
+    properties:
+      secret:
+        description: TOTPシークレット
+        type: string
+      uri:
+        description: QRコード用URI (otpauth://...)
         type: string
     type: object
   router.JWKS:
@@ -229,6 +268,19 @@ definitions:
         type: integer
       website:
         type: string
+    type: object
+  router.VerifyTOTPRequest:
+    properties:
+      code:
+        type: string
+    required:
+    - code
+    type: object
+  router.VerifyTOTPResponse:
+    properties:
+      valid:
+        description: TOTPコードが有効かどうか
+        type: boolean
     type: object
   router.WellKnownOpenIDConfigurationResponse:
     properties:
@@ -651,6 +703,65 @@ paths:
           schema:
             $ref: '#/definitions/router.TokenVerifyResponse'
       summary: token verify endpoint
+      tags:
+      - internal
+  /internal/totp/{user_id}:
+    delete:
+      consumes:
+      - application/json
+      description: TOTPを無効化します。ユーザーがTOTPを無効にする際に使用します。
+      parameters:
+      - description: Disable TOTP Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.DisableTOTPRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.DisableTOTPResponse'
+      summary: Disable TOTP
+      tags:
+      - internal
+    post:
+      consumes:
+      - application/json
+      description: TOTPのシークレットとQRコード用URIを生成します。ユーザーがTOTPをセットアップする際に使用します。
+      parameters:
+      - description: Generate TOTP Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.GenerateTOTPRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.GenerateTOTPResponse'
+      summary: Generate TOTP secret and QR code
+      tags:
+      - internal
+  /internal/totp/{user_id}/verify:
+    post:
+      consumes:
+      - application/json
+      description: TOTPコードを検証し、is_totp_enabledをtrueに設定します。ユーザーがTOTPセットアップを完了する際に使用します。
+      parameters:
+      - description: Verify TOTP Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.VerifyTOTPRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.VerifyTOTPResponse'
+      summary: Verify TOTP code
       tags:
       - internal
   /internal/update_last_logined:

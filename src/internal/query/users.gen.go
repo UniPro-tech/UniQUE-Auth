@@ -40,6 +40,7 @@ func newUser(db *gorm.DB, opts ...gen.DOOption) user {
 	_user.UpdatedAt = field.NewTime(tableName, "updated_at")
 	_user.DeletedAt = field.NewField(tableName, "deleted_at")
 	_user.TotpSecret = field.NewString(tableName, "totp_secret")
+	_user.IsTotpEnabled = field.NewBool(tableName, "is_totp_enabled")
 
 	_user.fillFieldMap()
 
@@ -63,6 +64,7 @@ type user struct {
 	UpdatedAt         field.Time
 	DeletedAt         field.Field
 	TotpSecret        field.String
+	IsTotpEnabled     field.Bool
 
 	fieldMap map[string]field.Expr
 }
@@ -91,6 +93,7 @@ func (u *user) updateTableName(table string) *user {
 	u.UpdatedAt = field.NewTime(table, "updated_at")
 	u.DeletedAt = field.NewField(table, "deleted_at")
 	u.TotpSecret = field.NewString(table, "totp_secret")
+	u.IsTotpEnabled = field.NewBool(table, "is_totp_enabled")
 
 	u.fillFieldMap()
 
@@ -107,7 +110,7 @@ func (u *user) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (u *user) fillFieldMap() {
-	u.fieldMap = make(map[string]field.Expr, 12)
+	u.fieldMap = make(map[string]field.Expr, 13)
 	u.fieldMap["id"] = u.ID
 	u.fieldMap["custom_id"] = u.CustomID
 	u.fieldMap["email"] = u.Email
@@ -120,6 +123,7 @@ func (u *user) fillFieldMap() {
 	u.fieldMap["updated_at"] = u.UpdatedAt
 	u.fieldMap["deleted_at"] = u.DeletedAt
 	u.fieldMap["totp_secret"] = u.TotpSecret
+	u.fieldMap["is_totp_enabled"] = u.IsTotpEnabled
 }
 
 func (u user) clone(db *gorm.DB) user {

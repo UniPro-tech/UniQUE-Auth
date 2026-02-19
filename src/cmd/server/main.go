@@ -74,17 +74,23 @@ func main() {
 	r.GET("/consented", router.ConsentedGet)
 
 	// Internal routes
-	r.POST("/internal/authentication", router.AuthenticationPost)
-	r.GET("/internal/consents", router.ConsentList)
-	r.POST("/internal/consents", router.ConsentCreate)
-	r.DELETE("/internal/consents/:id", router.ConsentDeleteByID)
-	r.POST("/internal/password_hash", router.PasswordHashPost)
-	r.GET("/internal/sessions", router.SessionsGet)
-	r.DELETE("/internal/sessions/:sid", router.SessionsDelete)
-	r.GET("/internal/session_verify", router.SessionVerifyGet)
-	r.GET("/internal/token_verify", router.TokenVerifyGet)
-	r.GET("/internal/auth-requests/:id", router.InternalAuthorizationGet)
-	r.POST("/internal/auth-requests/:id/consented", router.InternalConsentedPost)
+	ig := r.Group("/internal")
+	{
+		ig.POST("/authentication", router.AuthenticationPost)
+		ig.GET("/consents", router.ConsentList)
+		ig.POST("/consents", router.ConsentCreate)
+		ig.DELETE("/consents/:id", router.ConsentDeleteByID)
+		ig.POST("/password_hash", router.PasswordHashPost)
+		ig.GET("/sessions", router.SessionsGet)
+		ig.DELETE("/sessions/:sid", router.SessionsDelete)
+		ig.GET("/session_verify", router.SessionVerifyGet)
+		ig.GET("/token_verify", router.TokenVerifyGet)
+		ig.GET("/auth-requests/:id", router.InternalAuthorizationGet)
+		ig.POST("/auth-requests/:id/consented", router.InternalConsentedPost)
+		ig.POST("/totp/:uid", router.GenerateTOTP)
+		ig.POST("/totp/:uid/verify", router.VerifyTOTP)
+		ig.DELETE("/totp/:uid", router.DisableTOTP)
+	}
 
 	// Start server
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

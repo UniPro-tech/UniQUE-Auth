@@ -26,6 +26,7 @@ type User struct {
 	UpdatedAt         time.Time      `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 	DeletedAt         gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at"`
 	TotpSecret        string         `gorm:"column:totp_secret" json:"totp_secret"`
+	IsTotpEnabled     bool           `gorm:"column:is_totp_enabled;not null" json:"is_totp_enabled"`
 }
 
 // TableName User's table name
