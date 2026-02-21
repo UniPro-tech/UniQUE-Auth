@@ -887,7 +887,7 @@ paths:
             type: object
       summary: Revoke a token RFC7009
       tags:
-      - internal
+      - oauth2
   /token:
     post:
       consumes:

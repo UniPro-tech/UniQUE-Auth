@@ -818,7 +818,7 @@ const docTemplate = `{
             "post": {
                 "description": "RFC7009に基づいてアクセストークンを失効させる。",
                 "tags": [
-                    "internal"
+                    "oauth2"
                 ],
                 "summary": "Revoke a token RFC7009",
                 "parameters": [
