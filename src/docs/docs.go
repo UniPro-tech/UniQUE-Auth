@@ -473,7 +473,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/internal/sessions": {
+        "/internal/sessions/": {
             "get": {
                 "description": "内部用: 指定ユーザーのセッション一覧を取得する。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。",
                 "tags": [
@@ -493,28 +493,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/router.SessionResponse"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/router.SessionListResponse"
                         }
                     }
                 }
@@ -550,6 +529,32 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/sessions/{sid}": {
+            "get": {
+                "description": "内部用: セッションIDからセッション情報を取得する。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。",
+                "tags": [
+                    "internal"
+                ],
+                "summary": "Get session by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "sid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.SessionResponse"
                         }
                     }
                 }
@@ -613,8 +618,10 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "delete": {
+            }
+        },
+        "/internal/totp/{user_id}/disable": {
+            "post": {
                 "description": "TOTPを無効化します。ユーザーがTOTPを無効にする際に使用します。",
                 "consumes": [
                     "application/json"
@@ -1263,10 +1270,24 @@ const docTemplate = `{
                 }
             }
         },
+        "router.SessionListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/router.SessionResponse"
+                    }
+                }
+            }
+        },
         "router.SessionResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
                     "type": "string"
                 },
                 "expires_at": {

@@ -82,6 +82,7 @@ func main() {
 		ig.DELETE("/consents/:id", router.ConsentDeleteByID)
 		ig.POST("/password_hash", router.PasswordHashPost)
 		ig.GET("/sessions", router.SessionsGet)
+		ig.GET("/sessions/:sid", router.GetSessionById)
 		ig.DELETE("/sessions/:sid", router.SessionsDelete)
 		ig.GET("/session_verify", router.SessionVerifyGet)
 		ig.GET("/token_verify", router.TokenVerifyGet)
@@ -89,7 +90,7 @@ func main() {
 		ig.POST("/auth-requests/:id/consented", router.InternalConsentedPost)
 		ig.POST("/totp/:uid", router.GenerateTOTP)
 		ig.POST("/totp/:uid/verify", router.VerifyTOTP)
-		ig.DELETE("/totp/:uid", router.DisableTOTP)
+		ig.POST("/totp/:uid/disable", router.DisableTOTP)
 	}
 
 	// Start server
