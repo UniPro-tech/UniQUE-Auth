@@ -69,8 +69,6 @@ func main() {
 	r.GET("/.well-known/jwks.json", router.WellKnownJWKS)
 	r.POST("/token", router.TokenPost)
 	r.GET("/userinfo", router.UserInfoGet)
-	r.POST("/password-reset-request", router.PasswordResetRequestPost)
-	r.POST("/password-reset-confirm", router.PasswordResetConfirmPost)
 	r.GET("/consented", router.ConsentedGet)
 
 	// Internal routes
@@ -91,6 +89,8 @@ func main() {
 		ig.POST("/totp/:uid", router.GenerateTOTP)
 		ig.POST("/totp/:uid/verify", router.VerifyTOTP)
 		ig.POST("/totp/:uid/disable", router.DisableTOTP)
+		r.POST("/password_reset/request", router.PasswordResetRequestPost)
+		r.POST("/password_reset/confirm", router.PasswordResetConfirmPost)
 	}
 
 	// Start server

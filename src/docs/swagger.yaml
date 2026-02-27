@@ -622,6 +622,82 @@ paths:
       summary: Generate password hash
       tags:
       - internal
+  /internal/password_reset/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirm password reset by providing the verification code and new
+        password.
+      parameters:
+      - description: Password Reset Confirmation
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.PasswordResetConfirmRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.PasswordResetConfirmResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Confirm password reset
+      tags:
+      - authentication
+  /internal/password_reset/request:
+    post:
+      consumes:
+      - application/json
+      description: Request password reset by providing external email. This sends
+        a password reset email with a code.
+      parameters:
+      - description: Password Reset Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/router.PasswordResetRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.PasswordResetRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Request password reset
+      tags:
+      - authentication
   /internal/session_verify:
     get:
       consumes:
@@ -794,82 +870,6 @@ paths:
       summary: Update Last Logined
       tags:
       - internal
-  /password-reset-confirm:
-    post:
-      consumes:
-      - application/json
-      description: Confirm password reset by providing the verification code and new
-        password.
-      parameters:
-      - description: Password Reset Confirmation
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/router.PasswordResetConfirmRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/router.PasswordResetConfirmResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Confirm password reset
-      tags:
-      - authentication
-  /password-reset-request:
-    post:
-      consumes:
-      - application/json
-      description: Request password reset by providing external email. This sends
-        a password reset email with a code.
-      parameters:
-      - description: Password Reset Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/router.PasswordResetRequestRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/router.PasswordResetRequestResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Request password reset
-      tags:
-      - authentication
   /revocation:
     post:
       description: RFC7009に基づいてアクセストークンを失効させる。
