@@ -2,6 +2,7 @@ package router
 
 import (
 	"log"
+	"strings"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
@@ -213,7 +214,8 @@ func passwordAuthentication(q *query.Query, username, password string) (resuser 
 	}
 	if ok, err := util.VerifyPassword(password, user.PasswordHash); err != nil || !ok {
 		reason := "invalid_credentials"
-		log.Printf("Password verification failed for user %s: %v", username, err)
+		sanitizedUsername := strings.ReplaceAll(strings.ReplaceAll(username, "\n", "\\n"), "\r", "\\r")
+		log.Printf("Password verification failed for user %s: %v", sanitizedUsername, err)
 		return nil, nil, &reason
 	}
 	return user, nil, nil
