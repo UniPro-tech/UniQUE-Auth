@@ -171,6 +171,14 @@ func ConsentDeleteByID(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "internal server error"})
 		return
 	}
+	linkedTokens, err := q.OauthToken.Where(q.OauthToken.ConsentID.Eq(consent.ID)).Find()
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal server error"})
+		return
+	}
+	for _, token := range linkedTokens {
+		q.OauthToken.Delete(token)
+	}
 	writeAuditLog(c, "DELETE", "consents/"+id, &consent.UserID, &consent.ApplicationID, nil, map[string]interface{}{
 		"method":          c.Request.Method,
 		"path":            c.Request.URL.Path,

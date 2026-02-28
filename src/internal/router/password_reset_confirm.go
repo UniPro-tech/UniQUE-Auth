@@ -30,7 +30,7 @@ type PasswordResetConfirmResponse struct {
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /password-reset-confirm [post]
+// @Router /internal/password_reset/confirm [post]
 func PasswordResetConfirmPost(c *gin.Context) {
 	req := PasswordResetConfirmRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {

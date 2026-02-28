@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/constants"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
@@ -15,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/oklog/ulid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type AuthorizationRequest struct {
@@ -218,14 +221,75 @@ func AuthorizationPost(c *gin.Context) {
 		}
 	}
 
-	// create consent record
-	newConsent := &model.Consent{
-		UserID:        userID,
-		ApplicationID: authReq.ApplicationID,
-		Scope:         authReq.Scope,
-	}
-	if err := q.Consent.Create(newConsent); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create consent"})
+	var newConsentId string
+
+	// 既存のコンセントがあるかをトランザクション内でロック付きに確認し、
+	// 無ければ作成、あればスコープをマージして更新する（競合耐性あり）
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		var consent model.Consent
+
+		// 行ロックで取得を試みる
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ? AND application_id = ?", userID, authReq.ApplicationID).First(&consent).Error
+		if err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+
+			// レコードが存在しない -> 作成を試みる
+			newConsent := &model.Consent{
+				UserID:        userID,
+				ApplicationID: authReq.ApplicationID,
+				Scope:         authReq.Scope,
+			}
+			if err := tx.Create(newConsent).Error; err != nil {
+				// 競合で一意制約に引っかかった可能性があるため、再度ロック付きで取得して更新する
+				// これで他の並行処理が作成したレコードを取り込み、スコープをマージする
+				if err2 := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ? AND application_id = ?", userID, authReq.ApplicationID).First(&consent).Error; err2 != nil {
+					return err
+				}
+				// マージ
+				merged := map[string]bool{}
+				for _, s := range splitAndTrim(consent.Scope) {
+					merged[s] = true
+				}
+				for _, s := range splitAndTrim(authReq.Scope) {
+					merged[s] = true
+				}
+				var mergedScopes []string
+				for s := range merged {
+					mergedScopes = append(mergedScopes, s)
+				}
+				consent.Scope = strings.Join(mergedScopes, " ")
+				if err := tx.Save(&consent).Error; err != nil {
+					return err
+				}
+				newConsentId = consent.ID
+				return nil
+			}
+			newConsentId = newConsent.ID
+			return nil
+		}
+
+		// 既存レコードが見つかった -> スコープをマージして保存
+		merged := map[string]bool{}
+		for _, s := range splitAndTrim(consent.Scope) {
+			merged[s] = true
+		}
+		for _, s := range splitAndTrim(authReq.Scope) {
+			merged[s] = true
+		}
+		var mergedScopes []string
+		for s := range merged {
+			mergedScopes = append(mergedScopes, s)
+		}
+		consent.Scope = strings.Join(mergedScopes, " ")
+		if err := tx.Save(&consent).Error; err != nil {
+			return err
+		}
+		newConsentId = consent.ID
+		return nil
+	}); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create or update consent"})
 		return
 	}
 
@@ -251,7 +315,7 @@ func AuthorizationPost(c *gin.Context) {
 		"status":     http.StatusMovedPermanently,
 		"ip":         c.ClientIP(),
 		"user_agent": c.Request.UserAgent(),
-		"consent_id": newConsent.ID,
+		"consent_id": newConsentId,
 	})
 
 	// redirect to /consented which will forward to the client's redirect_uri

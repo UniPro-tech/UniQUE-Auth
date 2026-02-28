@@ -1,6 +1,8 @@
 package router
 
 import (
+	"log"
+	"strings"
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
@@ -55,13 +57,13 @@ func AuthenticationPost(c *gin.Context) {
 	switch req.Type {
 	case "password":
 		// Handle password authentication
-		user, err := passwordAuthentication(q, req.Username, req.Password)
+		user, err, _ := passwordAuthentication(q, req.Username, req.Password)
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
 		if user == nil {
-			c.JSON(401, gin.H{"error": "Invalid username or password"})
+			c.JSON(401, gin.H{"error": "Invalid credentials"})
 			return
 		}
 
@@ -193,18 +195,30 @@ func AuthenticationPost(c *gin.Context) {
 	}
 }
 
-func passwordAuthentication(q *query.Query, username, password string) (*model.User, error) {
-	user, err := q.User.Where(q.User.CustomID.Eq(username), q.User.DeletedAt.IsNull(), q.User.Status.Eq("active")).First()
+func passwordAuthentication(q *query.Query, username, password string) (resuser *model.User, reserr error, reason *string) {
+	user, err := q.User.Where(q.User.CustomID.Eq(username), q.User.DeletedAt.IsNull()).First()
 	if err != nil {
-		return nil, err
+		if err == gorm.ErrRecordNotFound {
+			reason := "invalid_credentials"
+			return nil, nil, &reason // user not found is not an error for this function
+		}
+		return nil, err, nil
 	}
 	if user == nil {
-		return nil, nil
+		reason := "invalid_credentials"
+		return nil, nil, &reason
+	}
+	if user.Status != "active" {
+		reason := "user_inactive"
+		return nil, nil, &reason
 	}
 	if ok, err := util.VerifyPassword(password, user.PasswordHash); err != nil || !ok {
-		return nil, err
+		reason := "invalid_credentials"
+		sanitizedUsername := strings.ReplaceAll(strings.ReplaceAll(username, "\n", "\\n"), "\r", "\\r")
+		log.Printf("Password verification failed for user %s: %v", sanitizedUsername, err)
+		return nil, nil, &reason
 	}
-	return user, nil
+	return user, nil, nil
 }
 
 // CalculateSessionExpiry calculates the session expiry time based on the remember flag.

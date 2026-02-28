@@ -5,12 +5,26 @@ import (
 	"time"
 
 	"github.com/UniPro-tech/UniQUE-Auth/internal/query"
+	"github.com/UniPro-tech/UniQUE-Auth/internal/util"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-type SessionsRequest struct {
-	UserID string `form:"user_id" binding:"required"`
+// SessionResponse is used for Swagger documentation to avoid gorm.DeletedAt parsing issues
+type SessionResponse struct {
+	ID          string     `json:"id"`
+	UserID      string     `json:"user_id"`
+	IPAddress   string     `json:"ip_address"`
+	UserAgent   string     `json:"user_agent"`
+	ExpiresAt   time.Time  `json:"expires_at"`
+	LastLoginAt time.Time  `json:"last_login_at"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+	DeletedAt   *time.Time `json:"deleted_at,omitempty"`
+}
+
+type SessionListResponse struct {
+	Data []SessionResponse `json:"data"`
 }
 
 // SessionsGet godoc
@@ -18,14 +32,12 @@ type SessionsRequest struct {
 // @Description 内部用: 指定ユーザーのセッション一覧を取得する。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
 // @Tags internal
 // @Param user_id query string true "User ID"
-// @Success 200 {array} SessionResponse "OK"
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /internal/sessions [get]
+// @Success 200 {object} SessionListResponse "OK"
+// @Router /internal/sessions/ [get]
 func SessionsGet(c *gin.Context) {
-	req := SessionsRequest{}
-	if err := c.ShouldBind(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+	userID := c.Query("user_id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id query parameter is required"})
 		return
 	}
 
@@ -37,14 +49,14 @@ func SessionsGet(c *gin.Context) {
 	}
 	q := query.Use(db)
 
-	sessions, err := q.Session.Where(q.Session.UserID.Eq(req.UserID), q.Session.DeletedAt.IsNull()).Order(q.Session.CreatedAt.Desc()).Find()
+	sessions, err := q.Session.Where(q.Session.UserID.Eq(userID), q.Session.DeletedAt.IsNull()).Order(q.Session.CreatedAt.Desc()).Find()
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 	// Map to response type to avoid exposing gorm.DeletedAt in Swagger
 	if sessions == nil {
-		c.JSON(http.StatusOK, []SessionResponse{})
+		c.JSON(http.StatusOK, SessionListResponse{Data: []SessionResponse{}})
 		return
 	}
 
@@ -62,21 +74,10 @@ func SessionsGet(c *gin.Context) {
 			LastLoginAt: s.LastLoginAt,
 			CreatedAt:   s.CreatedAt,
 			UpdatedAt:   s.UpdatedAt,
+			DeletedAt:   util.DeletedAtPtr(s.DeletedAt),
 		})
 	}
-	c.JSON(http.StatusOK, resp)
-}
-
-// SessionResponse is used for Swagger documentation to avoid gorm.DeletedAt parsing issues
-type SessionResponse struct {
-	ID          string    `json:"id"`
-	UserID      string    `json:"user_id"`
-	IPAddress   string    `json:"ip_address"`
-	UserAgent   string    `json:"user_agent"`
-	ExpiresAt   time.Time `json:"expires_at"`
-	LastLoginAt time.Time `json:"last_login_at"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	c.JSON(http.StatusOK, SessionListResponse{Data: resp})
 }
 
 // SessionsDelete godoc
@@ -99,7 +100,7 @@ func SessionsDelete(c *gin.Context) {
 	q := query.Use(db)
 
 	session, err := q.Session.Where(q.Session.ID.Eq(sid)).First()
-	if err != nil {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
@@ -122,4 +123,46 @@ func SessionsDelete(c *gin.Context) {
 	})
 
 	c.Status(204)
+}
+
+// getSessionById godoc
+// @Summary Get session by ID
+// @Description 内部用: セッションIDからセッション情報を取得する。Kubernetes / Istio の認証ポリシーにより外部からのアクセスは制限されています。
+// @Tags internal
+// @Param sid path string true "Session ID"
+// @Success 200 {object} SessionResponse "OK"
+// @Router /internal/sessions/{sid} [get]
+func GetSessionById(c *gin.Context) {
+	sid := c.Param("sid")
+
+	dbAny := c.MustGet("db")
+	db, ok := dbAny.(*gorm.DB)
+	if !ok || db == nil {
+		c.JSON(500, gin.H{"error": "database not available"})
+		return
+	}
+	q := query.Use(db)
+
+	session, err := q.Session.Where(q.Session.ID.Eq(sid)).First()
+	if err != nil && err != gorm.ErrRecordNotFound {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	if session == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "session not found"})
+		return
+	}
+
+	resp := SessionResponse{
+		ID:          session.ID,
+		UserID:      session.UserID,
+		IPAddress:   session.IPAddress,
+		UserAgent:   session.UserAgent,
+		ExpiresAt:   session.ExpiresAt,
+		LastLoginAt: session.LastLoginAt,
+		CreatedAt:   session.CreatedAt,
+		UpdatedAt:   session.UpdatedAt,
+		DeletedAt:   util.DeletedAtPtr(session.DeletedAt),
+	}
+	c.JSON(http.StatusOK, resp)
 }

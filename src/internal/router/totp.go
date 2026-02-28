@@ -52,14 +52,14 @@ func GenerateTOTP(c *gin.Context) {
 		return
 	}
 
-	user, err = passwordAuthentication(q, user.CustomID, req.Password)
+	user, err, reason := passwordAuthentication(q, user.CustomID, req.Password)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
 	if user == nil {
-		c.JSON(401, gin.H{"error": "invalid credentials"})
+		c.JSON(401, gin.H{"error": "invalid credentials", "reason": reason})
 		return
 	}
 
@@ -166,7 +166,7 @@ type DisableTOTPResponse struct {
 // @Success 200 {object} DisableTOTPResponse "OK"
 // @Param request body DisableTOTPRequest true "Disable TOTP Request"
 // @Accept json
-// @Router /internal/totp/{user_id} [DELETE]
+// @Router /internal/totp/{user_id}/disable [POST]
 func DisableTOTP(c *gin.Context) {
 	// Passwordを検証してユーザーを認証する
 	req := DisableTOTPRequest{}
@@ -194,14 +194,14 @@ func DisableTOTP(c *gin.Context) {
 		return
 	}
 
-	user, err = passwordAuthentication(q, user.CustomID, req.Password)
+	user, err, reason := passwordAuthentication(q, user.CustomID, req.Password)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
 	if user == nil {
-		c.JSON(401, gin.H{"error": "invalid credentials"})
+		c.JSON(401, gin.H{"error": "invalid credentials", "reason": reason})
 		return
 	}
 

@@ -14,7 +14,7 @@ type RevocationRequest struct {
 // Revocation godoc
 // @Summary Revoke a token RFC7009
 // @Description RFC7009に基づいてアクセストークンを失効させる。
-// @Tags internal
+// @Tags oauth2
 // @Param token formData string true "Token to revoke"
 // @Success 200 {object} map[string]string "OK"
 // @Failure 400 {object} map[string]string
