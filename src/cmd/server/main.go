@@ -89,8 +89,8 @@ func main() {
 		ig.POST("/totp/:uid", router.GenerateTOTP)
 		ig.POST("/totp/:uid/verify", router.VerifyTOTP)
 		ig.POST("/totp/:uid/disable", router.DisableTOTP)
-		r.POST("/password_reset/request", router.PasswordResetRequestPost)
-		r.POST("/password_reset/confirm", router.PasswordResetConfirmPost)
+		ig.POST("/password_reset/request", router.PasswordResetRequestPost)
+		ig.POST("/password_reset/confirm", router.PasswordResetConfirmPost)
 	}
 
 	// Start server
