@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/UniPro-tech/UniQUE-Auth/internal/config"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/constants"
 	"github.com/UniPro-tech/UniQUE-Auth/internal/model"
@@ -15,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/oklog/ulid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type AuthorizationRequest struct {
@@ -220,46 +223,74 @@ func AuthorizationPost(c *gin.Context) {
 
 	var newConsentId string
 
-	// 既存のコンセントがあるかを確認し、必要に応じて権限をマージして更新
-	existingConsent, err := q.Consent.Where(q.Consent.UserID.Eq(userID), q.Consent.ApplicationID.Eq(authReq.ApplicationID)).First()
-	if err != nil && err != gorm.ErrRecordNotFound {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check existing consent"})
-		return
-	}
-	if existingConsent != nil {
-		// 既存のコンセントがある場合は、スコープをマージして更新
-		existingScopes := map[string]bool{}
-		// 既存のスコープのtrue/falseを保持
-		for _, s := range splitAndTrim(existingConsent.Scope) {
-			existingScopes[s] = true
+	// 既存のコンセントがあるかをトランザクション内でロック付きに確認し、
+	// 無ければ作成、あればスコープをマージして更新する（競合耐性あり）
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		var consent model.Consent
+
+		// 行ロックで取得を試みる
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ? AND application_id = ?", userID, authReq.ApplicationID).First(&consent).Error
+		if err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+
+			// レコードが存在しない -> 作成を試みる
+			newConsent := &model.Consent{
+				UserID:        userID,
+				ApplicationID: authReq.ApplicationID,
+				Scope:         authReq.Scope,
+			}
+			if err := tx.Create(newConsent).Error; err != nil {
+				// 競合で一意制約に引っかかった可能性があるため、再度ロック付きで取得して更新する
+				// これで他の並行処理が作成したレコードを取り込み、スコープをマージする
+				if err2 := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id = ? AND application_id = ?", userID, authReq.ApplicationID).First(&consent).Error; err2 != nil {
+					return err
+				}
+				// マージ
+				merged := map[string]bool{}
+				for _, s := range splitAndTrim(consent.Scope) {
+					merged[s] = true
+				}
+				for _, s := range splitAndTrim(authReq.Scope) {
+					merged[s] = true
+				}
+				var mergedScopes []string
+				for s := range merged {
+					mergedScopes = append(mergedScopes, s)
+				}
+				consent.Scope = strings.Join(mergedScopes, " ")
+				if err := tx.Save(&consent).Error; err != nil {
+					return err
+				}
+				newConsentId = consent.ID
+				return nil
+			}
+			newConsentId = newConsent.ID
+			return nil
 		}
-		// リクエストのスコープのtrue/falseを保持（既存のスコープと重複している場合は上書き）
+
+		// 既存レコードが見つかった -> スコープをマージして保存
+		merged := map[string]bool{}
+		for _, s := range splitAndTrim(consent.Scope) {
+			merged[s] = true
+		}
 		for _, s := range splitAndTrim(authReq.Scope) {
-			existingScopes[s] = true
+			merged[s] = true
 		}
 		var mergedScopes []string
-		// マージされたスコープをスペース区切りの文字列に変換
-		for s := range existingScopes {
+		for s := range merged {
 			mergedScopes = append(mergedScopes, s)
 		}
-		existingConsent.Scope = strings.Join(mergedScopes, " ")
-		if err := q.Consent.Save(existingConsent); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update existing consent"})
-			return
+		consent.Scope = strings.Join(mergedScopes, " ")
+		if err := tx.Save(&consent).Error; err != nil {
+			return err
 		}
-		newConsentId = existingConsent.ID
-	} else {
-		// create consent record
-		newConsent := &model.Consent{
-			UserID:        userID,
-			ApplicationID: authReq.ApplicationID,
-			Scope:         authReq.Scope,
-		}
-		if err := q.Consent.Create(newConsent); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create consent"})
-			return
-		}
-		newConsentId = newConsent.ID
+		newConsentId = consent.ID
+		return nil
+	}); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create or update consent"})
+		return
 	}
 
 	// generate authorization code
