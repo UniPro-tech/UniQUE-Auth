@@ -196,6 +196,10 @@ func AuthenticationPost(c *gin.Context) {
 func passwordAuthentication(q *query.Query, username, password string) (resuser *model.User, reserr error, reason *string) {
 	user, err := q.User.Where(q.User.CustomID.Eq(username), q.User.DeletedAt.IsNull()).First()
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			reason := "invalid_credentials"
+			return nil, nil, &reason // user not found is not an error for this function
+		}
 		return nil, err, nil
 	}
 	if user == nil {
