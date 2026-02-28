@@ -55,13 +55,13 @@ func AuthenticationPost(c *gin.Context) {
 	switch req.Type {
 	case "password":
 		// Handle password authentication
-		user, err, reason := passwordAuthentication(q, req.Username, req.Password)
+		user, err, _ := passwordAuthentication(q, req.Username, req.Password)
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
 		if user == nil {
-			c.JSON(401, gin.H{"error": "Invalid credentials", "reason": reason})
+			c.JSON(401, gin.H{"error": "Invalid credentials"})
 			return
 		}
 

@@ -100,7 +100,7 @@ func SessionsDelete(c *gin.Context) {
 	q := query.Use(db)
 
 	session, err := q.Session.Where(q.Session.ID.Eq(sid)).First()
-	if err != nil {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
@@ -144,7 +144,7 @@ func GetSessionById(c *gin.Context) {
 	q := query.Use(db)
 
 	session, err := q.Session.Where(q.Session.ID.Eq(sid)).First()
-	if err != nil {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}

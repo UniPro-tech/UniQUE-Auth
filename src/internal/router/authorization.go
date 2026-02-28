@@ -222,7 +222,7 @@ func AuthorizationPost(c *gin.Context) {
 
 	// 既存のコンセントがあるかを確認し、必要に応じて権限をマージして更新
 	existingConsent, err := q.Consent.Where(q.Consent.UserID.Eq(userID), q.Consent.ApplicationID.Eq(authReq.ApplicationID)).First()
-	if err != nil {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check existing consent"})
 		return
 	}
