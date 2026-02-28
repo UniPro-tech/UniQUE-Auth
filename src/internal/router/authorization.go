@@ -218,15 +218,48 @@ func AuthorizationPost(c *gin.Context) {
 		}
 	}
 
-	// create consent record
-	newConsent := &model.Consent{
-		UserID:        userID,
-		ApplicationID: authReq.ApplicationID,
-		Scope:         authReq.Scope,
-	}
-	if err := q.Consent.Create(newConsent); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create consent"})
+	var newConsentId string
+
+	// 既存のコンセントがあるかを確認し、必要に応じて権限をマージして更新
+	existingConsent, err := q.Consent.Where(q.Consent.UserID.Eq(userID), q.Consent.ApplicationID.Eq(authReq.ApplicationID)).First()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check existing consent"})
 		return
+	}
+	if existingConsent != nil {
+		// 既存のコンセントがある場合は、スコープをマージして更新
+		existingScopes := map[string]bool{}
+		// 既存のスコープのtrue/falseを保持
+		for _, s := range splitAndTrim(existingConsent.Scope) {
+			existingScopes[s] = true
+		}
+		// リクエストのスコープのtrue/falseを保持（既存のスコープと重複している場合は上書き）
+		for _, s := range splitAndTrim(authReq.Scope) {
+			existingScopes[s] = true
+		}
+		var mergedScopes []string
+		// マージされたスコープをスペース区切りの文字列に変換
+		for s := range existingScopes {
+			mergedScopes = append(mergedScopes, s)
+		}
+		existingConsent.Scope = strings.Join(mergedScopes, " ")
+		if err := q.Consent.Save(existingConsent); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update existing consent"})
+			return
+		}
+		newConsentId = existingConsent.ID
+	} else {
+		// create consent record
+		newConsent := &model.Consent{
+			UserID:        userID,
+			ApplicationID: authReq.ApplicationID,
+			Scope:         authReq.Scope,
+		}
+		if err := q.Consent.Create(newConsent); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create consent"})
+			return
+		}
+		newConsentId = newConsent.ID
 	}
 
 	// generate authorization code
@@ -251,7 +284,7 @@ func AuthorizationPost(c *gin.Context) {
 		"status":     http.StatusMovedPermanently,
 		"ip":         c.ClientIP(),
 		"user_agent": c.Request.UserAgent(),
-		"consent_id": newConsent.ID,
+		"consent_id": newConsentId,
 	})
 
 	// redirect to /consented which will forward to the client's redirect_uri
