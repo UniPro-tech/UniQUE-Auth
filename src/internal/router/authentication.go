@@ -96,7 +96,7 @@ func AuthenticationPost(c *gin.Context) {
 			return
 		}
 		// Return session ID as a token
-		sessionJWT, err := util.GenerateSessionJWT(session.ID, user.ID, *c.MustGet("config").(*config.Config))
+		sessionJWT, err := util.GenerateSessionJWT(session.ID, user.ID, session.ExpiresAt, *c.MustGet("config").(*config.Config))
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
@@ -159,7 +159,7 @@ func AuthenticationPost(c *gin.Context) {
 			c.JSON(500, gin.H{"error": "Failed to create session"})
 			return
 		}
-		sessionJWT, err := util.GenerateSessionJWT(session.ID, user.ID, *c.MustGet("config").(*config.Config))
+		sessionJWT, err := util.GenerateSessionJWT(session.ID, user.ID, session.ExpiresAt, *c.MustGet("config").(*config.Config))
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
