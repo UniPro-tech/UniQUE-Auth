@@ -339,14 +339,14 @@ type SessionTokenClaims struct {
 	UserID string `json:"user_id"`
 }
 
-func GenerateSessionJWT(sessionID, userID string, config config.Config) (string, error) {
+func GenerateSessionJWT(sessionID, userID string, expiresAt time.Time, config config.Config) (string, error) {
 	// Generate Session JWT
 	sessionTokenClaims := jwt.NewWithClaims(jwt.SigningMethodRS256, SessionTokenClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   "SID_" + sessionID,
 			Issuer:    config.IssuerURL,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
 		},
 		UserID: userID,
 	})
