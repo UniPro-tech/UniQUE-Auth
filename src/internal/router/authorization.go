@@ -111,6 +111,12 @@ func AuthorizationGet(c *gin.Context) {
 		return
 	}
 
+	// Enforce PKCE for public clients: code_challenge must be present
+	if client.PublicClient && req.CodeChallenge == nil {
+		c.Redirect(302, contextConfig.FrontendURL+"/authorization?error=invalid_request")
+		return
+	}
+
 	// save the request parameters in the session or database as needed
 	err = q.AuthorizationRequest.Create(&model.AuthorizationRequest{
 		ApplicationID:       req.ClientID,

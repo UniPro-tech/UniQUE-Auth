@@ -1,5 +1,7 @@
 package router
 
+// Modified: support public clients without client_secret (PKCE enforced)
+
 import (
 	"crypto/sha256"
 	"crypto/subtle"
@@ -301,6 +303,10 @@ func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) *string {
 			c.JSON(400, gin.H{"error": "invalid client credentials"})
 			return nil
 		}
+		// If application is public client, skip secret validation (PKCE enforced elsewhere)
+		if application.PublicClient {
+			return &clientID
+		}
 		// 定数時間比較
 		if subtle.ConstantTimeCompare([]byte(application.ClientSecret), []byte(clientSecret)) != 1 {
 			c.JSON(400, gin.H{"error": "invalid client credentials"})
@@ -320,6 +326,10 @@ func checkClientAuthentication(c *gin.Context, req *TokenGetRequest) *string {
 		if err != nil || application == nil {
 			c.JSON(400, gin.H{"error": "invalid client credentials"})
 			return nil
+		}
+		// If application is public client, allow token endpoint without client_secret (PKCE must be used)
+		if application.PublicClient {
+			return &req.ClientID
 		}
 		if subtle.ConstantTimeCompare([]byte(application.ClientSecret), []byte(req.ClientSecret)) != 1 {
 			c.JSON(400, gin.H{"error": "invalid client credentials"})

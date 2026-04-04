@@ -48,7 +48,7 @@ func WellKnownOpenIDConfiguration(c *gin.Context) {
 		SubjectTypesSupported:             []string{"public"},
 		IDTokenSigningAlgValuesSupported:  []string{"RS256"},
 		ScopesSupported:                   config.Scopes.AllowedScopes,
-		TokenEndpointAuthMethodsSupported: []string{"client_secret_basic", "client_secret_post"},
+		TokenEndpointAuthMethodsSupported: []string{"client_secret_basic", "client_secret_post", "none"},
 		ClaimsSupported: []string{
 			"sub",
 			"iss",
