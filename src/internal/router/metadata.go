@@ -59,6 +59,7 @@ func WellKnownOpenIDConfiguration(c *gin.Context) {
 			"preferred_username",
 			"email",
 			"email_verified",
+			"roles",
 			// TODO: Impliment acr, amr, etc...
 		},
 		CodeChallengeMethodsSupported: []string{"S256"},

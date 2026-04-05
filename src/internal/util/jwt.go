@@ -174,13 +174,14 @@ type OIDCTokenClaims struct {
 	jwt.RegisteredClaims
 	Nonce string `json:"nonce,omitempty"`
 	// Standard Profile Claims
-	Name              string `json:"name"`
-	Email             string `json:"email,omitempty"`
-	EmailVerified     bool   `json:"email_verified,omitempty"`
-	PreferredUsername string `json:"preferred_username,omitempty"`
-	Website           string `json:"website,omitempty"`
-	Birthdate         string `json:"birthdate,omitempty"`
-	UpdatedAt         int64  `json:"updated_at,omitempty"`
+	Name              string   `json:"name"`
+	Email             string   `json:"email,omitempty"`
+	EmailVerified     bool     `json:"email_verified,omitempty"`
+	PreferredUsername string   `json:"preferred_username,omitempty"`
+	Website           string   `json:"website,omitempty"`
+	Birthdate         string   `json:"birthdate,omitempty"`
+	Roles             []string `json:"roles"`
+	UpdatedAt         int64    `json:"updated_at,omitempty"`
 }
 
 type AccessTokenClaims struct {
@@ -208,6 +209,17 @@ func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string
 	if profile == nil {
 		return "", errors.New("profile not found")
 	}
+	var roleNames []string
+
+	err = q.UserRole.
+		LeftJoin(q.Role, q.UserRole.RoleID.EqCol(q.Role.ID)).
+		Where(q.UserRole.UserID.Eq(userID)).
+		Select(q.Role.Name).
+		Scan(&roleNames)
+	if err != nil {
+		return "", err
+	}
+
 	IDTokenClaims := jwt.NewWithClaims(jwt.SigningMethodRS256, OIDCTokenClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   userID,
@@ -244,6 +256,7 @@ func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string
 			}
 			return ""
 		}(),
+		Roles:     roleNames,
 		UpdatedAt: profile.UpdatedAt.Unix(),
 	})
 	IDTokenClaims.Header["kid"] = kidForKey(config)
