@@ -209,13 +209,13 @@ func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string
 	if profile == nil {
 		return "", errors.New("profile not found")
 	}
-	var roleNames []string
+	var roleCustomID []string
 
 	err = q.UserRole.
 		LeftJoin(q.Role, q.UserRole.RoleID.EqCol(q.Role.ID)).
 		Where(q.UserRole.UserID.Eq(userID)).
-		Select(q.Role.Name).
-		Scan(&roleNames)
+		Select(q.Role.CustomID).
+		Scan(&roleCustomID)
 	if err != nil {
 		return "", err
 	}
@@ -256,7 +256,7 @@ func GenerateIDToken(q *query.Query, jti, userID, clientID, nonce, scopes string
 			}
 			return ""
 		}(),
-		Roles:     roleNames,
+		Roles:     roleCustomID,
 		UpdatedAt: profile.UpdatedAt.Unix(),
 	})
 	IDTokenClaims.Header["kid"] = kidForKey(config)
